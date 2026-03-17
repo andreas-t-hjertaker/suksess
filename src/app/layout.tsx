@@ -6,6 +6,8 @@ import { AuthProvider } from "@/components/auth-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { ConsentBanner } from "@/components/consent-banner";
+import { WebsiteJsonLd } from "@/components/json-ld";
 
 const geist = Geist({
   variable: "--font-sans",
@@ -25,6 +27,7 @@ export const metadata: Metadata = {
   },
   description:
     "SaaS-boilerplate med Next.js, Firebase og TypeScript. Alt du trenger for å bygge moderne webapplikasjoner.",
+  manifest: "/manifest.json",
   openGraph: {
     title: "ketl cloud",
     description:
@@ -51,12 +54,18 @@ export default function RootLayout({
       <body
         className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}
       >
+        <WebsiteJsonLd
+          name="ketl cloud"
+          url="https://ketlcloud.web.app"
+          description="SaaS-boilerplate med Next.js, Firebase og TypeScript."
+        />
         <ThemeProvider>
           <AuthProvider>
             <TooltipProvider>
               <AnalyticsProvider />
               {children}
               <Toaster />
+              <ConsentBanner />
             </TooltipProvider>
           </AuthProvider>
         </ThemeProvider>

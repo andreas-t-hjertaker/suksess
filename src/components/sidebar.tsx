@@ -19,11 +19,15 @@ import {
   PanelLeft,
   Menu,
   Cloud,
+  CreditCard,
+  Code,
 } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/dokumenter", label: "Dokumenter", icon: FileText },
+  { href: "/dashboard/abonnement", label: "Abonnement", icon: CreditCard },
+  { href: "/dashboard/utvikler", label: "Utvikler", icon: Code },
   { href: "/dashboard/innstillinger", label: "Innstillinger", icon: Settings },
 ];
 
