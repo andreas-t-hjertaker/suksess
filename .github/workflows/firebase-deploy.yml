@@ -1,4 +1,4 @@
-name: Deploy to Firebase Hosting
+name: Deploy to Firebase
 
 on:
   push:
@@ -15,12 +15,25 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install dependencies
+      # Build frontend
+      - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build frontend
         run: npm run build
 
+      # Build functions
+      - name: Install functions dependencies
+        run: cd functions && npm ci
+
+      - name: Build functions
+        run: cd functions && npm run build
+
+      # Write service account for CLI
+      - name: Setup credentials
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa.json
+
+      # Deploy hosting
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
@@ -28,3 +41,9 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId: live
           projectId: ketlcloud
+
+      # Deploy functions
+      - name: Deploy Firebase Functions
+        run: npx firebase-tools@latest deploy --only functions --project ketlcloud
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json
