@@ -23,6 +23,7 @@ import {
   Code,
   Shield,
   GraduationCap,
+  DatabaseZap,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/use-admin";
 
@@ -33,6 +34,7 @@ const navItems = [
   { href: "/dashboard/abonnement", label: "Abonnement", icon: CreditCard },
   { href: "/dashboard/utvikler", label: "Utvikler", icon: Code },
   { href: "/dashboard/innstillinger", label: "Innstillinger", icon: Settings },
+  { href: "/dashboard/mine-data", label: "Mine data", icon: DatabaseZap },
 ];
 
 function NavLinks({ onClick }: { onClick?: () => void }) {

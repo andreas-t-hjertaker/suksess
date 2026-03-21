@@ -35,6 +35,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Check,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +45,7 @@ import { cn } from "@/lib/utils";
 
 const STEPS = [
   { id: "welcome", label: "Velkommen", icon: Rocket },
+  { id: "consent", label: "Samtykke", icon: ShieldCheck },
   { id: "profile", label: "Profil", icon: Upload },
   { id: "bigfive", label: "Personlighet", icon: Brain },
   { id: "riasec", label: "Interesser", icon: Compass },
@@ -90,6 +92,10 @@ export function OnboardingStepper() {
   const [checking, setChecking] = useState(true);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+
+  // GDPR-samtykke
+  const [consentPersonality, setConsentPersonality] = useState(false);
+  const [consentAnalytics, setConsentAnalytics] = useState(false);
 
   // Profil-steg
   const [displayName, setDisplayName] = useState("");
@@ -199,11 +205,14 @@ export function OnboardingStepper() {
         completedAt: null,
       });
 
-      // Marker onboarding ferdig
+      // Marker onboarding ferdig (inkl. GDPR-samtykke)
       await setDoc(
         doc(db, "users", firebaseUser.uid),
         {
           onboardingComplete: true,
+          consentPersonality: true,
+          consentAnalytics: consentAnalytics,
+          consentTimestamp: new Date().toISOString(),
           displayName: displayName || firebaseUser.displayName,
           email: firebaseUser.email,
           uid: firebaseUser.uid,
@@ -236,6 +245,9 @@ export function OnboardingStepper() {
 
   function canGoNext(): boolean {
     const current = STEPS[step].id;
+    if (current === "consent") {
+      return consentPersonality; // personlighetstest-samtykke er påkrevd
+    }
     if (current === "bigfive") {
       const block = BIG_FIVE_BLOCKS[bigFiveBlock];
       return block.every((q) => bigFiveAnswers[q.id] !== undefined);
@@ -377,6 +389,70 @@ export function OnboardingStepper() {
                   <p className="text-xs text-muted-foreground">VIA-inspirert</p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ---- STEG: SAMTYKKE (GDPR) ---- */}
+          {currentStepId === "consent" && (
+            <div className="space-y-5 py-4">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-6 w-6 text-primary" />
+                <CardTitle className="text-xl">Personvern og samtykke</CardTitle>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Vi behandler dine personopplysninger i henhold til GDPR.
+                Du kan se, eksportere og slette all data fra <strong>Mine data</strong>-siden.
+              </p>
+              <div className="space-y-3">
+                {/* Påkrevd */}
+                <label className="flex items-start gap-3 rounded-lg border p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={consentPersonality}
+                    onChange={(e) => setConsentPersonality(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded accent-primary"
+                    aria-required="true"
+                  />
+                  <div>
+                    <p className="text-sm font-medium">
+                      Behandling av personlighetsdata
+                      <span className="ml-1.5 text-xs text-destructive font-semibold">Påkrevd</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Jeg samtykker til at Suksess lagrer og bruker mine svar fra
+                      personlighets- og interessetestene til å gi personalisert veiledning.
+                      Data brukes kun til dette formålet og deles ikke med tredjeparter.
+                    </p>
+                  </div>
+                </label>
+                {/* Valgfritt */}
+                <label className="flex items-start gap-3 rounded-lg border p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={consentAnalytics}
+                    onChange={(e) => setConsentAnalytics(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded accent-primary"
+                  />
+                  <div>
+                    <p className="text-sm font-medium">
+                      Anonymisert bruksanalyse
+                      <span className="ml-1.5 text-xs text-muted-foreground font-normal">Valgfritt</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Hjelp oss forbedre tjenesten ved å dele anonymisert bruksdata
+                      (klikk, tid brukt, funksjonspreferanser). Ingen personlig
+                      identifiserbar informasjon.
+                    </p>
+                  </div>
+                </label>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Les vår{" "}
+                <a href="/personvern" className="underline underline-offset-2" target="_blank" rel="noopener noreferrer">
+                  personvernerklæring
+                </a>{" "}
+                for mer informasjon. Du kan trekke tilbake samtykke når som helst.
+              </p>
             </div>
           )}
 
