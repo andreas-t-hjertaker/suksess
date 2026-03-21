@@ -24,11 +24,13 @@ import {
   Shield,
   GraduationCap,
   DatabaseZap,
+  User,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/use-admin";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/profil", label: "Min profil", icon: User },
   { href: "/dashboard/karakterer", label: "Karakterer", icon: GraduationCap },
   { href: "/dashboard/dokumenter", label: "Dokumenter", icon: FileText },
   { href: "/dashboard/abonnement", label: "Abonnement", icon: CreditCard },
