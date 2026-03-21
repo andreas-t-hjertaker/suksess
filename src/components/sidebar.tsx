@@ -22,11 +22,13 @@ import {
   CreditCard,
   Code,
   Shield,
+  GraduationCap,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/use-admin";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/karakterer", label: "Karakterer", icon: GraduationCap },
   { href: "/dashboard/dokumenter", label: "Dokumenter", icon: FileText },
   { href: "/dashboard/abonnement", label: "Abonnement", icon: CreditCard },
   { href: "/dashboard/utvikler", label: "Utvikler", icon: Code },
