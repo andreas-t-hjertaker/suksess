@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { XpProgress } from "@/components/xp-progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -223,6 +224,9 @@ export default function DashboardPage() {
           </StaggerItem>
         ))}
       </StaggerList>
+
+      {/* XP og fremgang */}
+      <XpProgress />
 
       <Separator />
 

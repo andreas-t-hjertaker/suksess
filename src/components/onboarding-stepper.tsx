@@ -7,6 +7,7 @@ import { db } from "@/lib/firebase/firestore";
 import { updateProfile } from "firebase/auth";
 import { uploadFile } from "@/lib/firebase/storage";
 import { saveUserProfile, saveTestResult } from "@/lib/firebase/profiles";
+import { serverTimestamp as firestoreServerTimestamp } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -219,6 +220,19 @@ export function OnboardingStepper() {
           role: "student",
           tenantId: null,
           photoURL: firebaseUser.photoURL,
+        },
+        { merge: true }
+      );
+
+      // Gi XP for fullført onboarding
+      await setDoc(
+        doc(db, "users", firebaseUser.uid, "gamification", "xp"),
+        {
+          totalXp: 110, // onboarding(50) + personality_test(30) + riasec_test(30)
+          earnedAchievements: ["first_login", "profile_complete", "test_taker"],
+          streak: 1,
+          lastLoginDate: new Date().toISOString().split("T")[0],
+          updatedAt: firestoreServerTimestamp(),
         },
         { merge: true }
       );
