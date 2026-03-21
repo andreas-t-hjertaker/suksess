@@ -1,4 +1,5 @@
 // Delte typer for hele prosjektet
+export * from "./domain";
 
 /** Standard API-respons fra Cloud Functions */
 export type ApiResponse<T> =

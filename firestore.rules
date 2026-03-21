@@ -1,9 +1,166 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Åpent for utvikling — stram inn før prod
-    match /{document=**} {
-      allow read, write: if true;
+
+    // ---------------------------------------------------------------------------
+    // Hjelpefunksjoner
+    // ---------------------------------------------------------------------------
+
+    /** Er brukeren innlogget? */
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    /** Er brukeren eier av dokumentet? */
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    /** Har brukeren admin-rolle (custom claim)? */
+    function isAdmin() {
+      return isAuthenticated() &&
+        request.auth.token.get("role", "") in ["admin", "superadmin"];
+    }
+
+    /** Har brukeren superadmin-rolle? */
+    function isSuperAdmin() {
+      return isAuthenticated() &&
+        request.auth.token.get("role", "") == "superadmin";
+    }
+
+    /** Henter tenantId fra brukerens custom claim */
+    function userTenantId() {
+      return request.auth.token.get("tenantId", null);
+    }
+
+    /** Er brukeren en del av samme tenant? */
+    function isSameTenant(tenantId) {
+      return isAuthenticated() && userTenantId() == tenantId;
+    }
+
+    /** Er brukeren rådgiver eller admin? */
+    function isCounselorOrAdmin() {
+      return isAuthenticated() &&
+        request.auth.token.get("role", "") in ["counselor", "admin", "superadmin"];
+    }
+
+    // ---------------------------------------------------------------------------
+    // users/{userId}
+    // ---------------------------------------------------------------------------
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isCounselorOrAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isSuperAdmin();
+
+      // Personlighetsprofil (subcollection)
+      match /personalityProfile/{docId} {
+        allow read, write: if isOwner(userId);
+        allow read: if isCounselorOrAdmin();
+      }
+
+      // Testresultater (subcollection)
+      match /testResults/{resultId} {
+        allow read, write: if isOwner(userId);
+        allow read: if isCounselorOrAdmin();
+      }
+
+      // Karakterer (subcollection)
+      match /grades/{gradeId} {
+        allow read, write: if isOwner(userId);
+        allow read: if isCounselorOrAdmin();
+      }
+
+      // Samtalehistorikk med AI (subcollection)
+      match /conversations/{convId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // ---------------------------------------------------------------------------
+    // profiles/{userId} — profilens hoveddokument
+    // ---------------------------------------------------------------------------
+
+    match /profiles/{userId} {
+      allow read: if isOwner(userId) || isCounselorOrAdmin();
+      allow write: if isOwner(userId);
+    }
+
+    // ---------------------------------------------------------------------------
+    // tenants/{tenantId}
+    // ---------------------------------------------------------------------------
+
+    match /tenants/{tenantId} {
+      allow read: if isSameTenant(tenantId) || isAdmin();
+      allow create, update: if isAdmin();
+      allow delete: if isSuperAdmin();
+    }
+
+    // ---------------------------------------------------------------------------
+    // careerPaths/{pathId} — delte karriereveier (read-only for brukere)
+    // ---------------------------------------------------------------------------
+
+    match /careerPaths/{pathId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------------------
+    // studyPrograms/{programId}
+    // ---------------------------------------------------------------------------
+
+    match /studyPrograms/{programId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------------------
+    // programfag/{fagId}
+    // ---------------------------------------------------------------------------
+
+    match /programfag/{fagId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------------------
+    // generatedContent/{contentId} — AI-generert innhold
+    // ---------------------------------------------------------------------------
+
+    match /generatedContent/{contentId} {
+      // Bruker kan lese eget eller klynge-delt innhold (userId == null)
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid ||
+         resource.data.userId == null);
+      // Kun Cloud Functions (admin SDK) skriver hit
+      allow write: if false;
+    }
+
+    // ---------------------------------------------------------------------------
+    // subscriptions/{userId}
+    // ---------------------------------------------------------------------------
+
+    match /subscriptions/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if false; // kun via Cloud Functions / Stripe webhook
+    }
+
+    // ---------------------------------------------------------------------------
+    // apiKeys/{userId}/keys/{keyId}
+    // ---------------------------------------------------------------------------
+
+    match /apiKeys/{userId}/keys/{keyId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // ---------------------------------------------------------------------------
+    // featureFlags/{flagId}
+    // ---------------------------------------------------------------------------
+
+    match /featureFlags/{flagId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
   }
 }
