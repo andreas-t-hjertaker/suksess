@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { ConsentBanner } from "@/components/consent-banner";
 import { WebsiteJsonLd } from "@/components/json-ld";
+import { PersonalityProvider } from "@/components/personality-provider";
 
 const geist = Geist({
   variable: "--font-sans",
@@ -61,12 +62,14 @@ export default function RootLayout({
         />
         <ThemeProvider>
           <AuthProvider>
-            <TooltipProvider>
-              <AnalyticsProvider />
-              {children}
-              <Toaster />
-              <ConsentBanner />
-            </TooltipProvider>
+            <PersonalityProvider>
+              <TooltipProvider>
+                <AnalyticsProvider />
+                {children}
+                <Toaster />
+                <ConsentBanner />
+              </TooltipProvider>
+            </PersonalityProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

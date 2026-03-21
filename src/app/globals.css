@@ -115,12 +115,55 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ---------------------------------------------------------------------------
+ * Personlighets-design-tokens (defaults, overskrives av PersonalityProvider)
+ * ------------------------------------------------------------------------- */
+:root {
+  --personality-primary: oklch(0.48 0.14 230);
+  --personality-primary-dark: oklch(0.68 0.11 230);
+  --personality-radius: 0.625rem;
+  --personality-transition: 250ms;
+  --personality-letter-spacing: 0em;
+  --personality-line-height: 1.6;
+  --personality-spacing-scale: 1;
+}
+
+/* Applicer personality-radius på radius-variabler når profil er aktiv */
+[data-personality="true"] {
+  --radius: var(--personality-radius);
+}
+
+/* Applicer primærfarge i light-mode */
+[data-personality="true"]:not(.dark) {
+  --primary: var(--personality-primary);
+  --sidebar-primary: var(--personality-primary);
+}
+
+/* Applicer primærfarge i dark-mode */
+[data-personality="true"].dark {
+  --primary: var(--personality-primary-dark);
+  --sidebar-primary: var(--personality-primary-dark);
+}
+
+/* Globale transitions styrt av animasjonsintensitet */
+[data-personality="true"] * {
+  transition-duration: var(--personality-transition) !important;
+}
+
+/* Ingen animasjoner */
+[data-animation="none"] * {
+  transition: none !important;
+  animation: none !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
     }
   body {
     @apply bg-background text-foreground;
+    line-height: var(--personality-line-height, 1.6);
+    letter-spacing: var(--personality-letter-spacing, 0em);
     }
   html {
     @apply font-sans;
