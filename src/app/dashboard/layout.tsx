@@ -35,10 +35,16 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Topplinje */}
-        <header className="flex h-14 items-center justify-between border-b border-border px-4">
+        <header
+          role="banner"
+          className="flex h-14 items-center justify-between border-b border-border px-4"
+        >
           <MobileSidebar />
           <div className="ml-auto flex items-center gap-3">
-            <span className="hidden text-sm text-muted-foreground sm:inline">
+            <span
+              className="hidden text-sm text-muted-foreground sm:inline"
+              aria-hidden="true"
+            >
               {user?.displayName || user?.email}
             </span>
             <ThemeToggle />
@@ -49,6 +55,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                     variant="ghost"
                     size="icon"
                     className="rounded-full"
+                    aria-label={`Brukermeny for ${user?.displayName || user?.email || "bruker"}`}
                   />
                 }
               >
@@ -57,14 +64,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                     src={user?.photoURL || undefined}
                     alt={user?.displayName || "Bruker"}
                   />
-                  <AvatarFallback className="text-xs">
+                  <AvatarFallback className="text-xs" aria-hidden="true">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={signOut}>
-                  <LogOut className="mr-2 h-4 w-4" />
+                  <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
                   Logg ut
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -73,7 +80,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Hovedinnhold */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main id="main-content" className="flex-1 overflow-y-auto p-6" tabIndex={-1}>
           <PageTransition>{children}</PageTransition>
         </main>
       </div>

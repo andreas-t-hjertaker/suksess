@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ConsentBanner } from "@/components/consent-banner";
 import { WebsiteJsonLd } from "@/components/json-ld";
 import { PersonalityProvider } from "@/components/personality-provider";
+import { SkipLink } from "@/components/skip-link";
 
 const geist = Geist({
   variable: "--font-sans",
@@ -55,6 +56,7 @@ export default function RootLayout({
       <body
         className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}
       >
+        <SkipLink />
         <WebsiteJsonLd
           name="ketl cloud"
           url="https://ketlcloud.web.app"

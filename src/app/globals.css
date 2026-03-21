@@ -156,6 +156,44 @@
   animation: none !important;
 }
 
+/* ---------------------------------------------------------------------------
+ * Tilgjengelighet — fokus-stiler (WCAG 2.4.7, nivå AA)
+ * ------------------------------------------------------------------------- */
+
+/* Tydelig fokusrektangel for alle interaktive elementer */
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Fjern fokusring for mus-klikk (kun tastatur) */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Screen-reader-only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Respekter prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

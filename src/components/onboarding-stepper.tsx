@@ -330,7 +330,12 @@ export function OnboardingStepper() {
   const progress = innerProgress();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Onboarding — steg ${step + 1} av ${TOTAL_STEPS}: ${STEPS[step].label}`}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+    >
       <Card className="w-full max-w-xl shadow-2xl">
         {/* Steg-indikatorer */}
         <div className="flex items-center justify-between px-6 pt-6 pb-2">
@@ -720,16 +725,20 @@ function QuestionRow({
   onChange: (v: number) => void;
 }) {
   return (
-    <div className="space-y-1.5">
-      <p className="text-sm">{text}</p>
-      <div className="flex gap-1.5">
+    <div className="space-y-1.5" role="group" aria-label={text}>
+      <p className="text-sm" id={undefined}>{text}</p>
+      <div className="flex gap-1.5" role="radiogroup" aria-label={`Svar på: ${text}`}>
         {LIKERT.map((l) => (
           <button
             key={l.value}
-            title={l.label}
+            type="button"
+            role="radio"
+            aria-checked={value === l.value}
+            aria-label={`${l.value} — ${l.label}`}
             onClick={() => onChange(l.value)}
             className={cn(
               "flex h-8 w-8 flex-1 items-center justify-center rounded border text-xs font-medium transition-colors",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
               value === l.value
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-border hover:border-primary/50 hover:bg-primary/5"

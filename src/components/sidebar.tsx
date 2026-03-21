@@ -46,7 +46,7 @@ function NavLinks({ onClick }: { onClick?: () => void }) {
     : navItems;
 
   return (
-    <nav className="space-y-1">
+    <nav aria-label="Hovednavigasjon" className="space-y-1">
       {allItems.map((item) => {
         const isActive =
           pathname === item.href ||
@@ -56,6 +56,7 @@ function NavLinks({ onClick }: { onClick?: () => void }) {
             key={item.href}
             href={item.href}
             onClick={onClick}
+            aria-current={isActive ? "page" : undefined}
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200",
               isActive
@@ -63,7 +64,7 @@ function NavLinks({ onClick }: { onClick?: () => void }) {
                 : "text-muted-foreground hover:bg-accent/50 hover:text-foreground hover:translate-x-0.5"
             )}
           >
-            <item.icon className="h-4 w-4" />
+            <item.icon className="h-4 w-4" aria-hidden="true" />
             {item.label}
           </Link>
         );
