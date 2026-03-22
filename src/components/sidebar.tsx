@@ -26,12 +26,14 @@ import {
   DatabaseZap,
   User,
   Compass,
+  Sparkles,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/use-admin";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/profil", label: "Min profil", icon: User },
+  { href: "/dashboard/veileder", label: "AI-veileder", icon: Sparkles },
   { href: "/dashboard/karriere", label: "Karriere", icon: Compass },
   { href: "/dashboard/karakterer", label: "Karakterer", icon: GraduationCap },
   { href: "/dashboard/dokumenter", label: "Dokumenter", icon: FileText },
@@ -161,8 +163,8 @@ export function MobileBottomNav() {
 
   const primaryItems = [
     { href: "/dashboard", label: "Hjem", icon: LayoutDashboard },
+    { href: "/dashboard/veileder", label: "Veileder", icon: Sparkles },
     { href: "/dashboard/karriere", label: "Karriere", icon: Compass },
-    { href: "/dashboard/karakterer", label: "Karakterer", icon: GraduationCap },
     { href: "/dashboard/profil", label: "Profil", icon: User },
     { href: "/dashboard/innstillinger", label: "Mer", icon: Settings },
   ];
