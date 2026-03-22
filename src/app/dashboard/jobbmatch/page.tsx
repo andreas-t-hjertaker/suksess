@@ -15,10 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Briefcase,
   Search,
-  MapPin,
-  Clock,
   Star,
   StarOff,
   Sparkles,
@@ -329,7 +326,6 @@ function JobMatchPage() {
   const [search, setSearch] = useState("");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
-  const [generatedLetter, setGeneratedLetter] = useState<string | null>(null);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
   useEffect(() => {
@@ -355,7 +351,6 @@ function JobMatchPage() {
 Profil: RIASEC-kode ${riasecCode}${strengths ? `, styrker: ${strengths}` : ""}.
 Skriv alltid på norsk. Skriv profesjonelle, personlige søknadsbrev på 3–4 avsnitt.
 Tilpass brevet til stilling og bedrift. Fremhev relevante styrker og motivasjon.`;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, riasecCode, profile]);
 
   const { sendMessage, messages, isStreaming } = useChatSession(context, { systemPrompt });
@@ -382,7 +377,6 @@ Tilpass brevet til stilling og bedrift. Fremhev relevante styrker og motivasjon.
 
   async function handleGenerateLetter(job: Job) {
     setSelectedJob(job);
-    setGeneratedLetter(null);
     setGenerating(true);
     const prompt = `Skriv et søknadsbrev for stilling som "${job.title}" hos ${job.company} i ${job.location}.
 Krav: ${job.requirements.join("; ")}.

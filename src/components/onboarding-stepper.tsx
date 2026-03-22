@@ -241,7 +241,7 @@ export function OnboardingStepper() {
     } finally {
       setSaving(false);
     }
-  }, [firebaseUser, displayName, bigFiveAnswers, riasecAnswers, strengthAnswers]);
+  }, [firebaseUser, displayName, bigFiveAnswers, riasecAnswers, strengthAnswers, consentAnalytics]);
 
   async function handleSkip() {
     if (!firebaseUser) return;

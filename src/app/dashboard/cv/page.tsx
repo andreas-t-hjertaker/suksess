@@ -5,7 +5,7 @@
  * Støtter forhåndsvisning og nedlasting som HTML (print-vennlig).
  */
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { FeatureGate } from "@/components/feature-gate";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
@@ -22,17 +22,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import {
   Download,
   User,
   GraduationCap,
   Star,
   Briefcase,
-  Globe,
-  Phone,
-  Mail,
-  Lock,
   Pencil,
   Eye,
   RotateCcw,

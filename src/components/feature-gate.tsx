@@ -6,11 +6,10 @@
  */
 
 import { useXp } from "@/hooks/use-xp";
-import { isFeatureUnlocked, getLevelForXp, LEVELS } from "@/lib/gamification/xp";
+import { isFeatureUnlocked, LEVELS } from "@/lib/gamification/xp";
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 
 type FeatureGateProps = {
   feature: string;

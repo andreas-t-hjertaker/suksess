@@ -92,7 +92,7 @@ type PaletteKey = keyof typeof PALETTES;
 
 export function computePersonalityUI(
   bigFive: BigFiveScores,
-  riasec?: RiasecScores | null
+  _riasec?: RiasecScores | null
 ): PersonalityUIConfig {
   const { openness, conscientiousness, extraversion, agreeableness, neuroticism } = bigFive;
 

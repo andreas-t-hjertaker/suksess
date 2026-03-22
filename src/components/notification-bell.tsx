@@ -5,7 +5,7 @@
  */
 
 import { useState, useRef, useEffect } from "react";
-import { Bell, BellRing, Check, CheckCheck, Trophy, Zap, Lightbulb, CalendarClock, Info, ExternalLink } from "lucide-react";
+import { Bell, BellRing, CheckCheck, Trophy, Zap, Lightbulb, CalendarClock, Info, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useNotifications, type Notification, type NotificationType } from "@/hooks/use-notifications";

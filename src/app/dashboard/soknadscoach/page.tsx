@@ -11,13 +11,12 @@
 import { useState, useMemo } from "react";
 import { useGrades } from "@/hooks/use-grades";
 import { calculateGradePoints, STUDY_PROGRAMS, type StudyProgramEntry } from "@/lib/grades/calculator";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
-  TrendingUp,
   Search,
   Star,
   StarOff,
@@ -151,7 +150,6 @@ function TrendSparkline({ data }: { data: TrendEntry[] }) {
   const x = (i: number) => PAD + (i / (data.length - 1)) * (W - PAD * 2);
   const y = (v: number) => H - PAD - ((v - minV) / (maxV - minV)) * (H - PAD * 2);
 
-  const path = data.map((d, i) => `${i === 0 ? "M" : "L"} ${x(i)} ${y(d.required)}`).join(" ");
   const last = data[data.length - 1];
   const first = data[0];
   const rising = last.required > first.required;

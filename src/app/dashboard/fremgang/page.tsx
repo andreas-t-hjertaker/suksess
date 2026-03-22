@@ -14,7 +14,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Flame, Trophy, Zap, Star, Lock, ChevronRight } from "lucide-react";
+import { Flame, Trophy, Zap, Star, Lock } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Nivå-farger / bakgrunner
@@ -56,7 +56,7 @@ const XP_GUIDE = [
 // ---------------------------------------------------------------------------
 
 export default function FremgangPage() {
-  const { totalXp, level, streak, earnedAchievements, loading } = useXp();
+  const { totalXp, level, streak, earnedAchievements } = useXp();
   const progress = getXpProgress(totalXp);
   const nextLevel = getNextLevel(level.name);
   const levelStyle = LEVEL_STYLES[level.name] ?? LEVEL_STYLES.nybegynner;
@@ -115,7 +115,6 @@ export default function FremgangPage() {
           {LEVELS.map((l, i) => {
             const isPast = totalXp >= l.minXp;
             const isCurrent = level.name === l.name;
-            const style = LEVEL_STYLES[l.name];
             const nextL = LEVELS[i + 1];
 
             return (

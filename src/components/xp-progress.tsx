@@ -7,7 +7,7 @@
 
 import { useEffect } from "react";
 import { useXp } from "@/hooks/use-xp";
-import { LEVELS, ACHIEVEMENTS, getLevelForXp, getNextLevel } from "@/lib/gamification/xp";
+import { LEVELS, ACHIEVEMENTS, getNextLevel } from "@/lib/gamification/xp";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Flame, Trophy, Zap, Lock } from "lucide-react";

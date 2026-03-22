@@ -120,7 +120,7 @@ export function useImplicitProfiling() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const trackClick = useCallback((elementType: string) => {
+  const trackClick = useCallback((_elementType: string) => {
     signals.totalClicks++;
     // Logg implisitt preferanse uten å sende data eksternt
   }, []);

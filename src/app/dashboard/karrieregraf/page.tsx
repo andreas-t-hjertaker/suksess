@@ -9,7 +9,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { getRiasecCode } from "@/lib/personality/scoring";
-import { CAREER_NODES, calcFitScore, fitScoreColor } from "@/lib/karriere/data";
+import { CAREER_NODES, calcFitScore } from "@/lib/karriere/data";
 import {
   Sheet,
   SheetContent,
@@ -28,7 +28,6 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/types/domain";
 import type { CareerNode } from "@/lib/karriere/data";
 
