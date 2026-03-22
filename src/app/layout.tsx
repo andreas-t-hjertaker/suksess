@@ -22,27 +22,27 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://ketlcloud.web.app"),
+  metadataBase: new URL("https://suksess.no"),
   title: {
-    default: "ketl cloud",
-    template: "%s | ketl cloud",
+    default: "Suksess – Karriere og utdanning",
+    template: "%s | Suksess",
   },
   description:
-    "SaaS-boilerplate med Next.js, Firebase og TypeScript. Alt du trenger for å bygge moderne webapplikasjoner.",
+    "AI-drevet karriere- og utdanningsveiledning for norske VGS-elever. Finn studieretningen som passer deg basert på personlighet, interesser og karakterer.",
   manifest: "/manifest.json",
   openGraph: {
-    title: "ketl cloud",
+    title: "Suksess – Din personlige karriereveileder",
     description:
-      "SaaS-boilerplate med Next.js, Firebase og TypeScript. Alt du trenger for å bygge moderne webapplikasjoner.",
+      "AI-drevet karriere- og utdanningsveiledning for norske VGS-elever.",
     type: "website",
-    siteName: "ketl cloud",
+    siteName: "Suksess",
     locale: "nb_NO",
   },
   twitter: {
     card: "summary_large_image",
-    title: "ketl cloud",
+    title: "Suksess – Karriere og utdanning",
     description:
-      "SaaS-boilerplate med Next.js, Firebase og TypeScript.",
+      "AI-drevet karriere- og utdanningsveiledning for norske VGS-elever.",
   },
 };
 
@@ -58,9 +58,9 @@ export default function RootLayout({
       >
         <SkipLink />
         <WebsiteJsonLd
-          name="ketl cloud"
-          url="https://ketlcloud.web.app"
-          description="SaaS-boilerplate med Next.js, Firebase og TypeScript."
+          name="Suksess"
+          url="https://suksess.no"
+          description="AI-drevet karriere- og utdanningsveiledning for norske VGS-elever."
         />
         <ThemeProvider>
           <AuthProvider>

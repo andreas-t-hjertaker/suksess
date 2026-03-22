@@ -1,20 +1,42 @@
 {
-  "name": "ketl cloud",
-  "short_name": "ketl",
+  "name": "Suksess – Karriere og utdanning",
+  "short_name": "Suksess",
+  "description": "AI-drevet karriere- og utdanningsveiledning for norske VGS-elever",
   "start_url": "/dashboard",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#ffffff",
-  "theme_color": "#171717",
+  "theme_color": "#7c3aed",
+  "categories": ["education", "productivity"],
+  "lang": "nb",
   "icons": [
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "maskable any"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "AI-veileder",
+      "short_name": "Veileder",
+      "description": "Chat med din personlige AI-veileder",
+      "url": "/dashboard/veileder",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Karriere",
+      "short_name": "Karriere",
+      "description": "Utforsk karrieremuligheter",
+      "url": "/dashboard/karriere",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

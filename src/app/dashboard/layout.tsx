@@ -33,13 +33,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Skip-to-content for tastaturbrukere (WCAG 2.1 AA) */}
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-lg"
-      >
-        Hopp til innhold
-      </a>
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Topplinje */}
