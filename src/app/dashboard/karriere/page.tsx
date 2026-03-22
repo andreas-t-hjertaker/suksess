@@ -359,7 +359,7 @@ export default function KarrierePage() {
     return unsub;
   }, [user]);
 
-  const riasec = profile?.riasecScores ?? null;
+  const riasec = profile?.riasec ?? null;
 
   const filtered = useMemo(() => {
     let list = CAREER_NODES;
