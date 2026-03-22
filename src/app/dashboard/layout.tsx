@@ -1,7 +1,7 @@
 "use client";
 
 import { ProtectedRoute } from "@/components/protected-route";
-import { Sidebar, MobileSidebar } from "@/components/sidebar";
+import { Sidebar, MobileSidebar, MobileBottomNav } from "@/components/sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -80,10 +80,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Hovedinnhold */}
-        <main id="main-content" className="flex-1 overflow-y-auto p-6" tabIndex={-1}>
+        <main id="main-content" className="flex-1 overflow-y-auto p-6 pb-20 md:pb-6" tabIndex={-1}>
           <PageTransition>{children}</PageTransition>
         </main>
       </div>
+      <MobileBottomNav />
       <AiAssistant
         title="ketl assistent"
         welcomeMessage="Hei! Jeg er din AI-assistent. Spør meg om hva som helst!"

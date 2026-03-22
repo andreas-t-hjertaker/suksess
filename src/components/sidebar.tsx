@@ -154,6 +154,58 @@ function CollapsedNav() {
   );
 }
 
+/** Bottom-navigasjon for mobil (viser 5 primære lenker) */
+export function MobileBottomNav() {
+  const pathname = usePathname();
+  const { isAdmin } = useAdmin();
+
+  const primaryItems = [
+    { href: "/dashboard", label: "Hjem", icon: LayoutDashboard },
+    { href: "/dashboard/karriere", label: "Karriere", icon: Compass },
+    { href: "/dashboard/karakterer", label: "Karakterer", icon: GraduationCap },
+    { href: "/dashboard/profil", label: "Profil", icon: User },
+    { href: "/dashboard/innstillinger", label: "Mer", icon: Settings },
+  ];
+
+  if (isAdmin) {
+    primaryItems[4] = { href: "/admin", label: "Admin", icon: Shield };
+  }
+
+  return (
+    <nav
+      aria-label="Mobilnavigasjon"
+      className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-border bg-background/95 backdrop-blur-sm md:hidden"
+    >
+      {primaryItems.map((item) => {
+        const isActive =
+          pathname === item.href ||
+          (item.href !== "/dashboard" && pathname.startsWith(item.href));
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-current={isActive ? "page" : undefined}
+            className={cn(
+              "flex flex-1 flex-col items-center justify-center gap-1 py-2 text-center transition-colors",
+              isActive
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <item.icon
+              className={cn("h-5 w-5", isActive && "text-primary")}
+              aria-hidden="true"
+            />
+            <span className={cn("text-[10px] font-medium", isActive && "text-primary")}>
+              {item.label}
+            </span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
 /** Mobil-sidebar som Sheet/drawer */
 export function MobileSidebar() {
   const [open, setOpen] = useState(false);
