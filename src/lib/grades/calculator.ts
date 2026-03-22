@@ -97,7 +97,7 @@ export function calculateGradePoints(grades: GradeWithId[]): GradePoints {
     quotaPoints,
     sciencePoints,
     totalPoints,
-    subjectCount: latest.size,
+    subjectCount: latest.length,
   };
 }
 
