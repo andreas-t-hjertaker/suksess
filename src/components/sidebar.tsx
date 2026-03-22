@@ -28,6 +28,7 @@ import {
   Compass,
   Sparkles,
   ScrollText,
+  BarChart2,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/use-admin";
 
@@ -37,6 +38,7 @@ const navItems = [
   { href: "/dashboard/veileder", label: "AI-veileder", icon: Sparkles },
   { href: "/dashboard/karriere", label: "Karriere", icon: Compass },
   { href: "/dashboard/cv", label: "CV-builder", icon: ScrollText },
+  { href: "/dashboard/analyse", label: "Analyse", icon: BarChart2 },
   { href: "/dashboard/karakterer", label: "Karakterer", icon: GraduationCap },
   { href: "/dashboard/dokumenter", label: "Dokumenter", icon: FileText },
   { href: "/dashboard/abonnement", label: "Abonnement", icon: CreditCard },
