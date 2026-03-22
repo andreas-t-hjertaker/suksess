@@ -15,11 +15,13 @@ import { LogOut } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AiAssistant } from "@/modules/ai-assistant";
 import { NotificationBell } from "@/components/notification-bell";
+import { useImplicitProfiling } from "@/hooks/use-implicit-profiling";
 import { OnboardingStepper } from "@/components/onboarding-stepper";
 import { PageTransition } from "@/components/motion";
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
+  useImplicitProfiling(); // Sporer atferd og justerer UI gradvis
 
   // Lag initialer fra visningsnavn eller e-post
   const initials = user?.displayName
