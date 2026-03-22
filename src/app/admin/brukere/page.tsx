@@ -13,7 +13,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { apiGet, apiPost, apiDelete } from "@/lib/api-client";
 import { showToast } from "@/lib/toast";
-import { MoreHorizontal, Shield, Ban, Trash2, Loader2 } from "lucide-react";
+import { MoreHorizontal, Shield, Ban, Trash2, Loader2, UserCheck } from "lucide-react";
+
+type TenantRole = "student" | "counselor" | "admin" | "superadmin";
 
 type AdminUser = {
   uid: string;
@@ -23,7 +25,21 @@ type AdminUser = {
   disabled: boolean;
   creationTime: string;
   lastSignInTime: string;
-  isAdmin: boolean;
+  customClaims: { role?: TenantRole; admin?: boolean; tenantId?: string };
+};
+
+const ROLE_LABELS: Record<TenantRole, string> = {
+  student: "Student",
+  counselor: "Rådgiver",
+  admin: "Admin",
+  superadmin: "Superadmin",
+};
+
+const ROLE_VARIANTS: Record<TenantRole, "default" | "secondary" | "destructive"> = {
+  student: "secondary",
+  counselor: "default",
+  admin: "default",
+  superadmin: "destructive",
 };
 
 export default function BrukerePage() {
@@ -43,11 +59,11 @@ export default function BrukerePage() {
     loadUsers();
   }, [loadUsers]);
 
-  async function handleSetAdmin(uid: string, admin: boolean) {
+  async function handleSetRole(uid: string, role: TenantRole) {
     setActionLoading(uid);
-    const res = await apiPost("/admin/set-role", { uid, role: "admin", enabled: admin });
+    const res = await apiPost("/admin/set-role", { uid, role });
     if (res.success) {
-      showToast.success(admin ? "Admin-rolle tildelt" : "Admin-rolle fjernet");
+      showToast.success(`Rolle oppdatert: ${ROLE_LABELS[role]}`);
       await loadUsers();
     } else {
       showToast.error("Kunne ikke oppdatere rolle");
@@ -111,13 +127,20 @@ export default function BrukerePage() {
       ),
     },
     {
-      key: "isAdmin",
+      key: "customClaims",
       header: "Rolle",
-      render: (val) => (
-        <Badge variant={val ? "default" : "secondary"}>
-          {val ? "Admin" : "Bruker"}
-        </Badge>
-      ),
+      render: (val) => {
+        const claims = val as AdminUser["customClaims"];
+        const role = (claims?.role ?? "student") as TenantRole;
+        return (
+          <div className="flex flex-col gap-0.5">
+            <Badge variant={ROLE_VARIANTS[role]}>{ROLE_LABELS[role]}</Badge>
+            {claims?.tenantId && (
+              <span className="text-xs text-muted-foreground">{claims.tenantId}</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "creationTime",
@@ -148,10 +171,20 @@ export default function BrukerePage() {
             )}
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => handleSetAdmin(row.uid, !row.isAdmin)}>
-              <Shield className="mr-2 h-4 w-4" />
-              {row.isAdmin ? "Fjern admin" : "Gi admin"}
-            </DropdownMenuItem>
+            {(["student", "counselor", "admin"] as TenantRole[]).map((role) => (
+              <DropdownMenuItem
+                key={role}
+                onClick={() => handleSetRole(row.uid, role)}
+                disabled={row.customClaims?.role === role}
+              >
+                {role === "admin" ? (
+                  <Shield className="mr-2 h-4 w-4" />
+                ) : (
+                  <UserCheck className="mr-2 h-4 w-4" />
+                )}
+                Sett som {ROLE_LABELS[role]}
+              </DropdownMenuItem>
+            ))}
             <DropdownMenuItem onClick={() => handleDisable(row.uid, !row.disabled)}>
               <Ban className="mr-2 h-4 w-4" />
               {row.disabled ? "Aktiver" : "Deaktiver"}
