@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogOut } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AiAssistant } from "@/modules/ai-assistant";
+import { NotificationBell } from "@/components/notification-bell";
 import { OnboardingStepper } from "@/components/onboarding-stepper";
 import { PageTransition } from "@/components/motion";
 
@@ -32,6 +33,13 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden">
+      {/* Skip-to-content for tastaturbrukere (WCAG 2.1 AA) */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-lg"
+      >
+        Hopp til innhold
+      </a>
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Topplinje */}
@@ -47,6 +55,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             >
               {user?.displayName || user?.email}
             </span>
+            <NotificationBell />
             <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -86,16 +95,16 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       </div>
       <MobileBottomNav />
       <AiAssistant
-        title="ketl assistent"
-        welcomeMessage="Hei! Jeg er din AI-assistent. Spør meg om hva som helst!"
+        title="Suksess-assistent"
+        welcomeMessage="Hei! Jeg er din AI-assistent for Suksess. Spør meg om karakterer, karrierevalg, utdanning og mer!"
         contextProvider={() => ({
           user: user
             ? { displayName: user.displayName, email: user.email, uid: user.uid }
             : undefined,
-          appName: "ketl cloud",
+          appName: "Suksess",
           currentPath: typeof window !== "undefined" ? window.location.pathname : "/dashboard",
           customContext:
-            "Tilgjengelige tjenester: Firebase Hosting, Firestore, Cloud Storage, Cloud Functions, AI Logic, Analytics.",
+            "Suksess er en plattform for norske videregående elever med karriereveiledning, karakterkalkulator, CV-builder og AI-veileder.",
         })}
       />
       <OnboardingStepper />
