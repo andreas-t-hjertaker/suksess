@@ -350,11 +350,13 @@ function JobMatchPage() {
 
   const systemPrompt = useMemo(() => {
     const name = user?.displayName ?? "eleven";
+    const strengths = profile?.strengths?.join(", ") ?? "";
     return `Du er en norsk karriererådgiver som hjelper ${name} med å skrive søknadsbrev.
-Profil: RIASEC-kode ${riasecCode}${profile?.strengths?.length ? `, styrker: ${profile.strengths.join(", ")}` : ""}.
+Profil: RIASEC-kode ${riasecCode}${strengths ? `, styrker: ${strengths}` : ""}.
 Skriv alltid på norsk. Skriv profesjonelle, personlige søknadsbrev på 3–4 avsnitt.
 Tilpass brevet til stilling og bedrift. Fremhev relevante styrker og motivasjon.`;
-  }, [user?.displayName, riasecCode, profile?.strengths]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, riasecCode, profile]);
 
   const { sendMessage, messages, isStreaming } = useChatSession(context, { systemPrompt });
 

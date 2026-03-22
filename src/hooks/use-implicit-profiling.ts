@@ -49,7 +49,33 @@ const ANALYTICAL_PAGES = ["/dashboard/karakterer", "/dashboard/dokumenter", "/da
 export function useImplicitProfiling() {
   const pathname = usePathname();
   const { overrideConfig } = usePersonality();
-  const pageEntryTime = useRef<number>(Date.now());
+  // Initialiser med 0, sett riktig tid i effect (unngår impure Date.now() under render)
+  const pageEntryTime = useRef<number>(0);
+
+  function adjustUiFromSignals() {
+    const totalVisits = signals.visualPageVisits + signals.analyticalPageVisits;
+    if (totalVisits < 3) return;
+
+    const visualRatio = signals.visualPageVisits / totalVisits;
+    const exploratoryNav = signals.pagesVisited.size > 5;
+
+    if (signals.fastScrollCount > 10) {
+      overrideConfig({ animationIntensity: "subtle" });
+    }
+    if (exploratoryNav) {
+      overrideConfig({ navigationStyle: "exploratory" });
+    }
+    if (visualRatio > 0.7) {
+      overrideConfig({ infoDensity: "minimal" });
+    } else if (visualRatio < 0.3) {
+      overrideConfig({ infoDensity: "detailed" });
+    }
+  }
+
+  // Initialiser pageEntryTime ved mount
+  useEffect(() => {
+    pageEntryTime.current = Date.now();
+  }, []);
 
   // Spor sideskifte
   useEffect(() => {
@@ -70,9 +96,8 @@ export function useImplicitProfiling() {
     }
     pageEntryTime.current = Date.now();
 
-    // Analyser signaler og juster gradvis
     adjustUiFromSignals();
-  }, [pathname]);
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Spor hurtig scroll (proxy for animasjonstolerance)
   useEffect(() => {
@@ -94,31 +119,6 @@ export function useImplicitProfiling() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  function adjustUiFromSignals() {
-    const totalVisits = signals.visualPageVisits + signals.analyticalPageVisits;
-    if (totalVisits < 3) return; // Ikke nok data
-
-    const visualRatio = signals.visualPageVisits / totalVisits;
-    const exploratoryNav = signals.pagesVisited.size > 5;
-
-    // Juster animasjoner basert på scroll-hastighet
-    if (signals.fastScrollCount > 10) {
-      overrideConfig({ animationIntensity: "subtle" });
-    }
-
-    // Juster navigasjonsstil basert på utforskende mønster
-    if (exploratoryNav) {
-      overrideConfig({ navigationStyle: "exploratory" });
-    }
-
-    // Juster informasjonstetthet basert på analytiske vs. visuelle preferanser
-    if (visualRatio > 0.7) {
-      overrideConfig({ infoDensity: "minimal" });
-    } else if (visualRatio < 0.3) {
-      overrideConfig({ infoDensity: "detailed" });
-    }
-  }
 
   const trackClick = useCallback((elementType: string) => {
     signals.totalClicks++;

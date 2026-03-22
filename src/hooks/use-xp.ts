@@ -50,8 +50,7 @@ export function useXp() {
       return;
     }
 
-    let unsub: Unsubscribe | undefined;
-    unsub = onSnapshot(
+    const unsub: Unsubscribe = onSnapshot(
       doc(db, "users", firebaseUser.uid, "gamification", "xp"),
       (snap) => {
         if (snap.exists()) {
