@@ -27,6 +27,7 @@ import {
   User,
   Compass,
   Sparkles,
+  ScrollText,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/use-admin";
 
@@ -35,6 +36,7 @@ const navItems = [
   { href: "/dashboard/profil", label: "Min profil", icon: User },
   { href: "/dashboard/veileder", label: "AI-veileder", icon: Sparkles },
   { href: "/dashboard/karriere", label: "Karriere", icon: Compass },
+  { href: "/dashboard/cv", label: "CV-builder", icon: ScrollText },
   { href: "/dashboard/karakterer", label: "Karakterer", icon: GraduationCap },
   { href: "/dashboard/dokumenter", label: "Dokumenter", icon: FileText },
   { href: "/dashboard/abonnement", label: "Abonnement", icon: CreditCard },
