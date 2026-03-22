@@ -9,6 +9,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { getRiasecCode } from "@/lib/personality/scoring";
+import { FeatureGate } from "@/components/feature-gate";
 import { useChatSession } from "@/modules/ai-assistant/hooks/use-chat";
 import { ChatMessages } from "@/modules/ai-assistant/components/chat-messages";
 import { ChatInput } from "@/modules/ai-assistant/components/chat-input";
@@ -114,7 +115,7 @@ const SUGGESTED_WITH_PROFILE = (riasecCode: string) => [
 // Page
 // ---------------------------------------------------------------------------
 
-export default function VeilederPage() {
+function VeilederPage() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -254,5 +255,13 @@ export default function VeilederPage() {
         />
       </div>
     </div>
+  );
+}
+
+export default function VeilederPageGated() {
+  return (
+    <FeatureGate feature="ai-veileder-full">
+      <VeilederPage />
+    </FeatureGate>
   );
 }

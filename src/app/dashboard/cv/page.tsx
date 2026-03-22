@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { FeatureGate } from "@/components/feature-gate";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { useGrades } from "@/hooks/use-grades";
 import { calculateGradePoints } from "@/lib/grades/calculator";
@@ -253,7 +254,7 @@ function downloadCv(name: string) {
 // Main page
 // ---------------------------------------------------------------------------
 
-export default function CvPage() {
+function CvPage() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [tab, setTab] = useState<"edit" | "preview">("edit");
@@ -554,5 +555,13 @@ export default function CvPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function CvPageGated() {
+  return (
+    <FeatureGate feature="cv-builder">
+      <CvPage />
+    </FeatureGate>
   );
 }

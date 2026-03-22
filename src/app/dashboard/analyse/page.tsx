@@ -11,6 +11,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { FeatureGate } from "@/components/feature-gate";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { getRiasecCode } from "@/lib/personality/scoring";
 import { computePersonalityUI } from "@/lib/personality/engine";
@@ -188,7 +189,7 @@ function TrendIcon({ trend }: { trend: Trend }) {
 // Page
 // ---------------------------------------------------------------------------
 
-export default function AnalysePage() {
+function AnalysePage() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -541,5 +542,13 @@ export default function AnalysePage() {
         </CardContent>
       </Card>
     </main>
+  );
+}
+
+export default function AnalysePageGated() {
+  return (
+    <FeatureGate feature="avansert-analyse">
+      <AnalysePage />
+    </FeatureGate>
   );
 }

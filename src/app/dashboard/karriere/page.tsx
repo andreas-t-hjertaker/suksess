@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
+import { FeatureGate } from "@/components/feature-gate";
 import type { UserProfile, RiasecScores } from "@/types/domain";
 import {
   CAREER_NODES,
@@ -338,7 +339,7 @@ function CareerDetail({
   );
 }
 
-export default function KarrierePage() {
+function KarrierePage() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -601,5 +602,13 @@ export default function KarrierePage() {
         />
       )}
     </main>
+  );
+}
+
+export default function KarrierePageGated() {
+  return (
+    <FeatureGate feature="karrierestiutforsker">
+      <KarrierePage />
+    </FeatureGate>
   );
 }
