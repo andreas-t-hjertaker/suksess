@@ -60,12 +60,12 @@ export function FeatureGate({ feature, children, lockedMessage }: FeatureGatePro
       )}
 
       <div className="flex gap-3">
-        <Link href="/dashboard">
-          <Button variant="outline" size="sm">Tilbake til dashboard</Button>
-        </Link>
-        <Link href="/dashboard/profil">
-          <Button size="sm">Fullfør profil (+XP)</Button>
-        </Link>
+        <Button variant="outline" size="sm" render={<Link href="/dashboard" />}>
+          Tilbake til dashboard
+        </Button>
+        <Button size="sm" render={<Link href="/dashboard/profil" />}>
+          Fullfør profil (+XP)
+        </Button>
       </div>
     </div>
   );
