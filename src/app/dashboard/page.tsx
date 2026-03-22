@@ -28,6 +28,10 @@ import {
   TrendingUp,
   CheckCircle2,
   Circle,
+  ClipboardList,
+  Briefcase,
+  BookOpen,
+  GitBranch,
 } from "lucide-react";
 import { SlideIn, StaggerList, StaggerItem } from "@/components/motion";
 import Link from "next/link";
@@ -56,12 +60,44 @@ const QUICK_LINKS = [
     bg: "bg-blue-500/10",
   },
   {
+    href: "/dashboard/soknadscoach",
+    label: "Søknads-coach",
+    desc: "Sjekk sjanser og poenggrenser",
+    icon: ClipboardList,
+    color: "text-orange-500",
+    bg: "bg-orange-500/10",
+  },
+  {
     href: "/dashboard/karakterer",
-    label: "Karakterer",
+    label: "Karakterer & SO-poeng",
     desc: "Beregn SO-poeng og se studieprogram",
     icon: GraduationCap,
     color: "text-amber-500",
     bg: "bg-amber-500/10",
+  },
+  {
+    href: "/dashboard/jobbmatch",
+    label: "Jobbmatch",
+    desc: "Finn jobber som passer din profil",
+    icon: Briefcase,
+    color: "text-emerald-500",
+    bg: "bg-emerald-500/10",
+  },
+  {
+    href: "/dashboard/studier",
+    label: "Studiemestring",
+    desc: "Følg opp ECTS-poeng og eksamen",
+    icon: BookOpen,
+    color: "text-cyan-500",
+    bg: "bg-cyan-500/10",
+  },
+  {
+    href: "/dashboard/karrieregraf",
+    label: "Karrieregraf",
+    desc: "Visualiser mulige karriereveier",
+    icon: GitBranch,
+    color: "text-indigo-500",
+    bg: "bg-indigo-500/10",
   },
   {
     href: "/dashboard/analyse",
@@ -118,9 +154,24 @@ function getChecklist(profile: UserProfile | null, gradeCount: number): CheckIte
       href: "/dashboard/karakterer",
     },
     {
+      label: "Utforsk karrierestier",
+      done: !!profile?.riasec,
+      href: "/dashboard/karriere",
+    },
+    {
       label: "Chat med AI-veilederen",
       done: false,
       href: "/dashboard/veileder",
+    },
+    {
+      label: "Sjekk søknadssjansene dine",
+      done: false,
+      href: "/dashboard/soknadscoach",
+    },
+    {
+      label: "Last ned din CV",
+      done: false,
+      href: "/dashboard/cv",
     },
   ];
 }
