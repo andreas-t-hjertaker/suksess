@@ -37,7 +37,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { showToast } from "@/lib/toast";
-import { Loader2, Upload, Lock, Link2, Unlink, Trash2 } from "lucide-react";
+import { Loader2, Upload, Lock, Link2, Unlink, Trash2, Globe } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 // ─── Profil-skjema ──────────────────────────────────────────
 const profileSchema = z.object({
@@ -65,6 +66,7 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 export default function InnstillingerPage() {
   const { user, firebaseUser } = useAuth();
+  const { locale, setLocale, locales } = useLocale();
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
@@ -403,6 +405,43 @@ export default function InnstillingerPage() {
               </Button>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Språk-kort */}
+      <Card className="max-w-2xl">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Globe className="h-4 w-4 text-primary" aria-hidden="true" />
+            <CardTitle>Språk</CardTitle>
+          </div>
+          <CardDescription>
+            Velg visningsspråk for plattformen.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {locales.map((l) => (
+              <button
+                key={l.code}
+                onClick={() => {
+                  setLocale(l.code);
+                  showToast.success(`Språk endret til ${l.nativeName}`);
+                }}
+                className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  locale === l.code
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:bg-accent"
+                }`}
+                aria-pressed={locale === l.code}
+              >
+                {l.nativeName}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Valgt språk huskes mellom sesjoner. AI-innhold genereres på valgt språk.
+          </p>
         </CardContent>
       </Card>
 
