@@ -6,11 +6,7 @@ import { generateId } from "@/lib/utils";
 import { buildSystemPrompt } from "../lib/system-prompt";
 import type { ChatMessage, ChatConfig, AssistantContext } from "../types";
 
-type ChatSession = {
-  sendMessageStream: (msg: string) => Promise<{
-    stream: AsyncIterable<{ text: () => string }>;
-  }>;
-};
+type FirebaseChatSession = ReturnType<ReturnType<typeof getModel>["startChat"]>;
 
 export function useChatSession(
   context: AssistantContext,
@@ -18,7 +14,7 @@ export function useChatSession(
 ) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
-  const chatRef = useRef<ChatSession | null>(null);
+  const chatRef = useRef<FirebaseChatSession | null>(null);
   const contextRef = useRef(context);
 
   // Opprett ny chat-sesjon med gjeldende kontekst
@@ -34,7 +30,7 @@ export function useChatSession(
         parts: [{ text: systemPrompt }],
       },
     });
-    chatRef.current = session as unknown as ChatSession;
+    chatRef.current = session;
     contextRef.current = context;
     return session;
   }
@@ -76,7 +72,7 @@ export function useChatSession(
 
       try {
         const session = getSession();
-        const result = await (session as ChatSession).sendMessageStream(
+        const result = await session.sendMessageStream(
           text.trim()
         );
 

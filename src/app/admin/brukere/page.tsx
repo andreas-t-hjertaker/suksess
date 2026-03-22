@@ -219,9 +219,9 @@ export default function BrukerePage() {
         </p>
       </div>
 
-      <DataTable
-        data={users as unknown as Record<string, unknown>[]}
-        columns={columns as unknown as ColumnDef<Record<string, unknown>>[]}
+      <DataTable<AdminUser>
+        data={users}
+        columns={columns}
         searchable
         searchKey="email"
         pageSize={10}
