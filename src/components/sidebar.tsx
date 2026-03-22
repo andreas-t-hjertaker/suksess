@@ -25,12 +25,14 @@ import {
   GraduationCap,
   DatabaseZap,
   User,
+  Compass,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/use-admin";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/profil", label: "Min profil", icon: User },
+  { href: "/dashboard/karriere", label: "Karriere", icon: Compass },
   { href: "/dashboard/karakterer", label: "Karakterer", icon: GraduationCap },
   { href: "/dashboard/dokumenter", label: "Dokumenter", icon: FileText },
   { href: "/dashboard/abonnement", label: "Abonnement", icon: CreditCard },
