@@ -30,13 +30,17 @@ import {
   Menu,
   PanelLeftClose,
   PanelLeft,
+  School,
+  Building2,
 } from "lucide-react";
 import { Loader2 } from "lucide-react";
 
 const adminNavItems = [
   { href: "/admin", label: "Oversikt", icon: BarChart3 },
   { href: "/admin/brukere", label: "Brukere", icon: Users },
+  { href: "/admin/radgivere", label: "Skoler & rådgivere", icon: School },
   { href: "/admin/feature-flags", label: "Feature flags", icon: ToggleLeft },
+  { href: "/admin/tenant", label: "Tenanter", icon: Building2 },
 ];
 
 function AdminNavLinks({ onClick }: { onClick?: () => void }) {

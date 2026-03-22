@@ -1,7 +1,7 @@
 "use client";
 
 import { ProtectedRoute } from "@/components/protected-route";
-import { Sidebar, MobileSidebar } from "@/components/sidebar";
+import { Sidebar, MobileSidebar, MobileBottomNav } from "@/components/sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,11 +14,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogOut } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AiAssistant } from "@/modules/ai-assistant";
+import { NotificationBell } from "@/components/notification-bell";
+import { useImplicitProfiling } from "@/hooks/use-implicit-profiling";
 import { OnboardingStepper } from "@/components/onboarding-stepper";
 import { PageTransition } from "@/components/motion";
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
+  useImplicitProfiling(); // Sporer atferd og justerer UI gradvis
 
   // Lag initialer fra visningsnavn eller e-post
   const initials = user?.displayName
@@ -35,12 +38,19 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Topplinje */}
-        <header className="flex h-14 items-center justify-between border-b border-border px-4">
+        <header
+          role="banner"
+          className="flex h-14 items-center justify-between border-b border-border px-4"
+        >
           <MobileSidebar />
           <div className="ml-auto flex items-center gap-3">
-            <span className="hidden text-sm text-muted-foreground sm:inline">
+            <span
+              className="hidden text-sm text-muted-foreground sm:inline"
+              aria-hidden="true"
+            >
               {user?.displayName || user?.email}
             </span>
+            <NotificationBell />
             <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger
@@ -49,6 +59,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                     variant="ghost"
                     size="icon"
                     className="rounded-full"
+                    aria-label={`Brukermeny for ${user?.displayName || user?.email || "bruker"}`}
                   />
                 }
               >
@@ -57,14 +68,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                     src={user?.photoURL || undefined}
                     alt={user?.displayName || "Bruker"}
                   />
-                  <AvatarFallback className="text-xs">
+                  <AvatarFallback className="text-xs" aria-hidden="true">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={signOut}>
-                  <LogOut className="mr-2 h-4 w-4" />
+                  <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
                   Logg ut
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -73,21 +84,22 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Hovedinnhold */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main id="main-content" className="flex-1 overflow-y-auto p-6 pb-20 md:pb-6" tabIndex={-1}>
           <PageTransition>{children}</PageTransition>
         </main>
       </div>
+      <MobileBottomNav />
       <AiAssistant
-        title="ketl assistent"
-        welcomeMessage="Hei! Jeg er din AI-assistent. Spør meg om hva som helst!"
+        title="Suksess-assistent"
+        welcomeMessage="Hei! Jeg er din AI-assistent for Suksess. Spør meg om karakterer, karrierevalg, utdanning og mer!"
         contextProvider={() => ({
           user: user
             ? { displayName: user.displayName, email: user.email, uid: user.uid }
             : undefined,
-          appName: "ketl cloud",
+          appName: "Suksess",
           currentPath: typeof window !== "undefined" ? window.location.pathname : "/dashboard",
           customContext:
-            "Tilgjengelige tjenester: Firebase Hosting, Firestore, Cloud Storage, Cloud Functions, AI Logic, Analytics.",
+            "Suksess er en plattform for norske videregående elever med karriereveiledning, karakterkalkulator, CV-builder og AI-veileder.",
         })}
       />
       <OnboardingStepper />

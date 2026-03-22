@@ -28,3 +28,16 @@ export {
   completeEmailLinkSignIn,
 } from "./auth";
 export { fetchApi, apiGet, apiPost, apiPut, apiDelete } from "../api-client";
+export {
+  getUserDoc,
+  createUserDoc,
+  updateUserDoc,
+  subscribeToUserDoc,
+  getUserProfile,
+  saveUserProfile,
+  subscribeToUserProfile,
+  saveTestResult,
+  saveGrade,
+  updateGrade,
+  saveConversation,
+} from "./profiles";

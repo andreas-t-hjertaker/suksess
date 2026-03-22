@@ -8,6 +8,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { ConsentBanner } from "@/components/consent-banner";
 import { WebsiteJsonLd } from "@/components/json-ld";
+import { PersonalityProvider } from "@/components/personality-provider";
+import { SkipLink } from "@/components/skip-link";
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 
 const geist = Geist({
   variable: "--font-sans",
@@ -20,27 +23,27 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://ketlcloud.web.app"),
+  metadataBase: new URL("https://suksess.no"),
   title: {
-    default: "ketl cloud",
-    template: "%s | ketl cloud",
+    default: "Suksess – Karriere og utdanning",
+    template: "%s | Suksess",
   },
   description:
-    "SaaS-boilerplate med Next.js, Firebase og TypeScript. Alt du trenger for å bygge moderne webapplikasjoner.",
+    "AI-drevet karriere- og utdanningsveiledning for norske VGS-elever. Finn studieretningen som passer deg basert på personlighet, interesser og karakterer.",
   manifest: "/manifest.json",
   openGraph: {
-    title: "ketl cloud",
+    title: "Suksess – Din personlige karriereveileder",
     description:
-      "SaaS-boilerplate med Next.js, Firebase og TypeScript. Alt du trenger for å bygge moderne webapplikasjoner.",
+      "AI-drevet karriere- og utdanningsveiledning for norske VGS-elever.",
     type: "website",
-    siteName: "ketl cloud",
+    siteName: "Suksess",
     locale: "nb_NO",
   },
   twitter: {
     card: "summary_large_image",
-    title: "ketl cloud",
+    title: "Suksess – Karriere og utdanning",
     description:
-      "SaaS-boilerplate med Next.js, Firebase og TypeScript.",
+      "AI-drevet karriere- og utdanningsveiledning for norske VGS-elever.",
   },
 };
 
@@ -54,19 +57,23 @@ export default function RootLayout({
       <body
         className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}
       >
+        <SkipLink />
         <WebsiteJsonLd
-          name="ketl cloud"
-          url="https://ketlcloud.web.app"
-          description="SaaS-boilerplate med Next.js, Firebase og TypeScript."
+          name="Suksess"
+          url="https://suksess.no"
+          description="AI-drevet karriere- og utdanningsveiledning for norske VGS-elever."
         />
+        <ServiceWorkerRegistration />
         <ThemeProvider>
           <AuthProvider>
-            <TooltipProvider>
-              <AnalyticsProvider />
-              {children}
-              <Toaster />
-              <ConsentBanner />
-            </TooltipProvider>
+            <PersonalityProvider>
+              <TooltipProvider>
+                <AnalyticsProvider />
+                {children}
+                <Toaster />
+                <ConsentBanner />
+              </TooltipProvider>
+            </PersonalityProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

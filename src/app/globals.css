@@ -115,12 +115,93 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ---------------------------------------------------------------------------
+ * Personlighets-design-tokens (defaults, overskrives av PersonalityProvider)
+ * ------------------------------------------------------------------------- */
+:root {
+  --personality-primary: oklch(0.48 0.14 230);
+  --personality-primary-dark: oklch(0.68 0.11 230);
+  --personality-radius: 0.625rem;
+  --personality-transition: 250ms;
+  --personality-letter-spacing: 0em;
+  --personality-line-height: 1.6;
+  --personality-spacing-scale: 1;
+}
+
+/* Applicer personality-radius på radius-variabler når profil er aktiv */
+[data-personality="true"] {
+  --radius: var(--personality-radius);
+}
+
+/* Applicer primærfarge i light-mode */
+[data-personality="true"]:not(.dark) {
+  --primary: var(--personality-primary);
+  --sidebar-primary: var(--personality-primary);
+}
+
+/* Applicer primærfarge i dark-mode */
+[data-personality="true"].dark {
+  --primary: var(--personality-primary-dark);
+  --sidebar-primary: var(--personality-primary-dark);
+}
+
+/* Globale transitions styrt av animasjonsintensitet */
+[data-personality="true"] * {
+  transition-duration: var(--personality-transition) !important;
+}
+
+/* Ingen animasjoner */
+[data-animation="none"] * {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* ---------------------------------------------------------------------------
+ * Tilgjengelighet — fokus-stiler (WCAG 2.4.7, nivå AA)
+ * ------------------------------------------------------------------------- */
+
+/* Tydelig fokusrektangel for alle interaktive elementer */
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Fjern fokusring for mus-klikk (kun tastatur) */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Screen-reader-only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Respekter prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
     }
   body {
     @apply bg-background text-foreground;
+    line-height: var(--personality-line-height, 1.6);
+    letter-spacing: var(--personality-letter-spacing, 0em);
     }
   html {
     @apply font-sans;
