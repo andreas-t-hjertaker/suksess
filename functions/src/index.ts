@@ -644,36 +644,30 @@ const awardXp = withAuth(async ({ user, req, res }) => {
   const xpToAward = Math.min(Math.max(1, Number(amount) || maxXp), maxXp);
 
   const userRef = db.collection("users").doc(user.uid);
-  const xpRef = userRef.collection("xp").doc("current");
+  // Bruker samme sti som klient-hooken: users/{uid}/gamification/xp
+  const xpRef = userRef.collection("gamification").doc("xp");
 
-  // Atomisk oppdatering med serverTimestamp
   const xpDoc = await xpRef.get();
-  const currentXp = (xpDoc.data()?.total as number) || 0;
+  const currentXp = (xpDoc.data()?.totalXp as number) || 0;
   const newTotal = currentXp + xpToAward;
 
   await xpRef.set({
-    total: newTotal,
-    lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    totalXp: newTotal,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   }, { merge: true });
-
-  // Logg hendelsen
-  await userRef.collection("xp").add({
-    source,
-    amount: xpToAward,
-    timestamp: admin.firestore.FieldValue.serverTimestamp(),
-  });
 
   success(res, { awarded: xpToAward, total: newTotal });
 });
 
 /** GET /xp — Hent brukerens XP-status */
 const getXp = withAuth(async ({ user, res }) => {
-  const xpRef = db.collection("users").doc(user.uid).collection("xp").doc("current");
-  const doc = await xpRef.get();
+  const xpRef = db.collection("users").doc(user.uid).collection("gamification").doc("xp");
+  const snap = await xpRef.get();
 
   success(res, {
-    total: (doc.data()?.total as number) || 0,
-    lastUpdated: doc.data()?.lastUpdated ?? null,
+    totalXp: (snap.data()?.totalXp as number) || 0,
+    streak: (snap.data()?.streak as number) || 0,
+    lastUpdated: snap.data()?.updatedAt ?? null,
   });
 });
 

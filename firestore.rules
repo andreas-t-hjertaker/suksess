@@ -85,16 +85,16 @@ service cloud.firestore {
         allow delete: if isOwner(userId) || isAdmin();
       }
 
-      // XP og gamification (subcollection) — skrives kun av Cloud Functions
-      match /xp/{docId} {
+      // Gamification (subcollection) — XP og achievements
+      match /gamification/{docId} {
         allow read: if isOwner(userId) || isCounselorOrAdmin();
-        allow write: if false;
+        allow write: if isOwner(userId); // klient-side XP-oppdatering
       }
 
-      // Achievements (subcollection) — skrives kun av Cloud Functions
+      // Achievements (subcollection)
       match /achievements/{achievId} {
         allow read: if isOwner(userId);
-        allow write: if false;
+        allow write: if isOwner(userId);
       }
 
       // AI-innholdscache (subcollection)
