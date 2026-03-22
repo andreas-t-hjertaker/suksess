@@ -1,5 +1,6 @@
 import { onRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import type { DocumentReference } from "firebase-admin/firestore";
 import * as crypto from "crypto";
 import Stripe from "stripe";
 import { z } from "zod";
@@ -571,7 +572,7 @@ const updateFeatureFlag = withAdmin(async ({ req, res }) => {
 // ============================================================
 
 /** Hjelpefunksjon: slett en hel subcollection */
-async function deleteSubcollection(parentRef: FirebaseFirestore.DocumentReference, subcollectionName: string) {
+async function deleteSubcollection(parentRef: DocumentReference, subcollectionName: string) {
   const snap = await parentRef.collection(subcollectionName).get();
   if (snap.empty) return;
   const batch = db.batch();
