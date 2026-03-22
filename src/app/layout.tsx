@@ -10,6 +10,7 @@ import { ConsentBanner } from "@/components/consent-banner";
 import { WebsiteJsonLd } from "@/components/json-ld";
 import { PersonalityProvider } from "@/components/personality-provider";
 import { SkipLink } from "@/components/skip-link";
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 
 const geist = Geist({
   variable: "--font-sans",
@@ -62,6 +63,7 @@ export default function RootLayout({
           url="https://suksess.no"
           description="AI-drevet karriere- og utdanningsveiledning for norske VGS-elever."
         />
+        <ServiceWorkerRegistration />
         <ThemeProvider>
           <AuthProvider>
             <PersonalityProvider>
