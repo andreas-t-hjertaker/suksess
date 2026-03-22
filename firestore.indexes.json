@@ -44,7 +44,7 @@
       "collectionGroup": "grades",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "semester", "order": "ASCENDING" },
+        { "fieldPath": "term", "order": "ASCENDING" },
         { "fieldPath": "year", "order": "DESCENDING" }
       ]
     }
