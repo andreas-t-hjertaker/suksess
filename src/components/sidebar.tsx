@@ -29,6 +29,7 @@ import {
   Sparkles,
   ScrollText,
   BarChart2,
+  ClipboardList,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/use-admin";
 
@@ -39,6 +40,7 @@ const navItems = [
   { href: "/dashboard/karriere", label: "Karriere", icon: Compass },
   { href: "/dashboard/cv", label: "CV-builder", icon: ScrollText },
   { href: "/dashboard/analyse", label: "Analyse", icon: BarChart2 },
+  { href: "/dashboard/soknadscoach", label: "Søknads-coach", icon: ClipboardList },
   { href: "/dashboard/karakterer", label: "Karakterer", icon: GraduationCap },
   { href: "/dashboard/dokumenter", label: "Dokumenter", icon: FileText },
   { href: "/dashboard/abonnement", label: "Abonnement", icon: CreditCard },
