@@ -14,7 +14,7 @@ export function getDefaultContext(
           uid: user.uid,
         }
       : undefined,
-    appName: "ketl cloud",
+    appName: "Suksess",
     currentPath: pathname,
   };
 }

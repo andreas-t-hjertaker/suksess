@@ -8,6 +8,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://ketlcloud.web.app/sitemap.xml",
+    sitemap: "https://suksess.no/sitemap.xml",
   };
 }

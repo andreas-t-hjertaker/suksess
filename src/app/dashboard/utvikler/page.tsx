@@ -248,7 +248,7 @@ export default function UtviklerPage() {
         <CardContent>
           <pre className="overflow-x-auto rounded-md bg-muted p-4 text-sm">
             <code>{`curl -X GET \\
-  https://ketlcloud.web.app/api/me \\
+  https://suksess.no/api/me \\
   -H "x-api-key: sk_live_din_nøkkel_her"`}</code>
           </pre>
         </CardContent>

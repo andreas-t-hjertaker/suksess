@@ -18,7 +18,7 @@ import {
   PanelLeftClose,
   PanelLeft,
   Menu,
-  Cloud,
+  Rocket,
   CreditCard,
   Code,
   Shield,
@@ -110,8 +110,8 @@ export function Sidebar() {
             href="/dashboard"
             className="flex items-center gap-2 font-semibold tracking-tight"
           >
-            <Cloud className="h-5 w-5" />
-            <span>ketl cloud</span>
+            <Rocket className="h-5 w-5" />
+            <span>Suksess</span>
           </Link>
         )}
         <Button
@@ -241,8 +241,8 @@ export function MobileSidebar() {
             className="flex items-center gap-2 font-semibold tracking-tight"
             onClick={() => setOpen(false)}
           >
-            <Cloud className="h-5 w-5" />
-            <span>ketl cloud</span>
+            <Rocket className="h-5 w-5" />
+            <span>Suksess</span>
           </Link>
         </div>
         <div className="p-3">
