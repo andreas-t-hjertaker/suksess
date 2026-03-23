@@ -19,7 +19,7 @@ import * as admin from "firebase-admin";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onRequest } from "firebase-functions/v2/https";
 import { withAdmin } from "../middleware";
-import { fetchUtdanningNoPrograms, ingestStudyPrograms, ingestYrker, ingestStyrk08, ingestVgsPrograms } from "./utdanning-no";
+import { fetchUtdanningNoPrograms, ingestStudyPrograms, ingestYrker, ingestStyrk08, ingestVgsPrograms, ingestStudievelgeren, ingestGrepFagkoder } from "./utdanning-no";
 import { fetchAdmissionStats, ingestAdmissionStats, fetchHistoricalAdmissionPoints, ingestHistoricalAdmissionPoints } from "./dbh";
 import { fetchJobMarketData } from "./nav-arbeidsplassen";
 import { ingestAllYrkesfag } from "./yrkesfag";
@@ -49,13 +49,20 @@ export const ingestUtdanningNoScheduled = onSchedule(
       ingestVgsPrograms(),
     ]);
 
+    // Studievelgeren + Grep (Issue #58)
+    const [studievelgerenCount, grepCount] = await Promise.all([
+      ingestStudievelgeren(),
+      ingestGrepFagkoder(),
+    ]);
+
     // Legacy: studieprogrammer
     const programs = await fetchUtdanningNoPrograms();
     const studyCount = await ingestStudyPrograms(programs);
 
     console.info(
       `[ingest] utdanning.no: ${yrkerCount} yrker, ${styrkCount} STYRK-08, ` +
-      `${vgsCount} VGS-program, ${studyCount} studieprogrammer lagret`
+      `${vgsCount} VGS-program, ${studyCount} studieprogrammer, ` +
+      `${studievelgerenCount} studievelgeren, ${grepCount} grep-fagkoder lagret`
     );
   }
 );

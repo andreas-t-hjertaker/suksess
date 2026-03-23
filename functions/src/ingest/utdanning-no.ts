@@ -202,6 +202,138 @@ export async function ingestVgsPrograms(): Promise<number> {
   return written;
 }
 
+// ─── Studievelgeren API (Issue #58) ──────────────────────────────────────────
+// Verifisert: https://api.utdanning.no/studievelgeren/result?page=1&size=2000
+// ~1395 studieprogram med poenggrenser, institusjon, nivå, interessetagger.
+
+type StudievelgerenProgram = {
+  so_kode?: string;
+  tittel?: string;
+  institusjon_navn?: string;
+  niva?: string;
+  poeng_forste?: number;
+  poeng_ordinar?: number;
+  interesser?: string[];
+  leveringsmate?: string;
+};
+
+export async function ingestStudievelgeren(): Promise<number> {
+  let page = 1;
+  let totalWritten = 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    try {
+      const resp = await fetch(
+        `${UTDANNING_NO_BASE}/studievelgeren/result?page=${page}&size=500`,
+        {
+          headers: { Accept: "application/json" },
+          signal: AbortSignal.timeout(FETCH_TIMEOUT),
+        }
+      );
+      if (!resp.ok) {
+        console.warn(`[studievelgeren] side ${page} svarte ${resp.status}`);
+        break;
+      }
+
+      const data = await resp.json();
+      const programs: StudievelgerenProgram[] = Array.isArray(data)
+        ? data
+        : (data as { results?: StudievelgerenProgram[] }).results ?? [];
+
+      if (programs.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      const batch = db.batch();
+      for (const p of programs) {
+        const docId = p.so_kode || `sv_${page}_${totalWritten}`;
+        const ref = db.collection("studyPrograms").doc(docId);
+        batch.set(ref, {
+          soCode: p.so_kode ?? null,
+          name: p.tittel ?? "",
+          institution: p.institusjon_navn ?? "",
+          level: p.niva ?? "bachelor",
+          pointsFirst: p.poeng_forste ?? null,
+          pointsOrdinary: p.poeng_ordinar ?? null,
+          interests: p.interesser ?? [],
+          deliveryMode: p.leveringsmate ?? null,
+          source: "utdanning.no/studievelgeren",
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+        totalWritten++;
+      }
+      await batch.commit();
+
+      hasMore = programs.length === 500;
+      page++;
+    } catch (err) {
+      console.error(`[studievelgeren] Feil side ${page}:`, err);
+      break;
+    }
+  }
+
+  return totalWritten;
+}
+
+// ─── Grep/Udir VGS-fagkoder (Issue #58) ─────────────────────────────────────
+// https://data.udir.no/kl06/v201906/ — 18 utdanningsprogram, 6588 fagkoder
+
+export async function ingestGrepFagkoder(): Promise<number> {
+  try {
+    const resp = await fetch("https://data.udir.no/kl06/v201906/fagkoder-lk20.json", {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT),
+    });
+    if (!resp.ok) {
+      // Fallback til eldre versjon
+      const fallback = await fetch("https://data.udir.no/kl06/v201906/fagkoder.json", {
+        signal: AbortSignal.timeout(FETCH_TIMEOUT),
+      });
+      if (!fallback.ok) {
+        console.warn("[grep] Ingen fagkode-endepunkt tilgjengelig");
+        return 0;
+      }
+      return processGrepData(await fallback.json());
+    }
+    return processGrepData(await resp.json());
+  } catch (err) {
+    console.error("[grep] Feil ved henting av fagkoder:", err);
+    return 0;
+  }
+}
+
+async function processGrepData(data: unknown): Promise<number> {
+  const items = Array.isArray(data) ? data : [];
+  if (items.length === 0) return 0;
+
+  const BATCH_SIZE = 400;
+  let written = 0;
+
+  for (let i = 0; i < items.length; i += BATCH_SIZE) {
+    const batch = db.batch();
+    const chunk = items.slice(i, i + BATCH_SIZE);
+
+    for (const item of chunk) {
+      const code = String((item as Record<string, unknown>).kode ?? (item as Record<string, unknown>).id ?? `grep_${written}`);
+      const ref = db.collection("programfag").doc(code);
+      batch.set(ref, {
+        code,
+        title: String((item as Record<string, unknown>).tittel ?? (item as Record<string, unknown>).navn ?? ""),
+        type: String((item as Record<string, unknown>).type ?? ""),
+        source: "grep/udir",
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+      written++;
+    }
+
+    await batch.commit();
+  }
+
+  return written;
+}
+
 // ─── Legacy-eksporter (bakoverkompatibilitet med index.ts) ───────────────────
 
 /**
