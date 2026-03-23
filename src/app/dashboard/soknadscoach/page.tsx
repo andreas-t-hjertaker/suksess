@@ -14,6 +14,7 @@ import { useXp } from "@/hooks/use-xp";
 import { useGrades } from "@/hooks/use-grades";
 import { calculateGradePoints, type StudyProgramEntry } from "@/lib/grades/calculator";
 import { useStudyPrograms } from "@/hooks/use-study-programs";
+import { PoenggrenseTrend } from "@/components/poenggrense-trend";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { Card, CardContent } from "@/components/ui/card";
@@ -205,11 +206,13 @@ function ProgramCard({
   myPoints,
   isFavorite,
   onToggleFavorite,
+  nusCode,
 }: {
   program: StudyProgramEntry;
   myPoints: number;
   isFavorite: boolean;
   onToggleFavorite: () => void;
+  nusCode?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const chance = calcChance(myPoints, program);
@@ -270,29 +273,33 @@ function ProgramCard({
             </div>
           </div>
 
-          {/* Historisk trend */}
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-              Historisk poenggrense (2020–2024)
-            </p>
-            <div className="grid grid-cols-5 gap-1">
-              {trend.map((t) => (
-                <div key={t.year} className="text-center">
-                  <div className="text-xs font-semibold">{t.required}</div>
-                  <div className="text-[10px] text-muted-foreground">{t.year}</div>
-                </div>
-              ))}
+          {/* Historisk trend — Firestore (DBH) eller fallback */}
+          {nusCode ? (
+            <PoenggrenseTrend nusCode={nusCode} snitt={myPoints} />
+          ) : (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                Historisk poenggrense (2020–2024)
+              </p>
+              <div className="grid grid-cols-5 gap-1">
+                {trend.map((t) => (
+                  <div key={t.year} className="text-center">
+                    <div className="text-xs font-semibold">{t.required}</div>
+                    <div className="text-[10px] text-muted-foreground">{t.year}</div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Trend: {trendDir > 0 ? (
+                  <span className="text-green-600">↑ Stigende ({trendDir.toFixed(1)} p over 5 år)</span>
+                ) : trendDir < 0 ? (
+                  <span className="text-red-600">↓ Synkende ({Math.abs(trendDir).toFixed(1)} p over 5 år)</span>
+                ) : (
+                  <span className="text-muted-foreground">→ Stabil</span>
+                )}
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Trend: {trendDir > 0 ? (
-                <span className="text-green-600">↑ Stigende ({trendDir.toFixed(1)} p over 5 år)</span>
-              ) : trendDir < 0 ? (
-                <span className="text-red-600">↓ Synkende ({Math.abs(trendDir).toFixed(1)} p over 5 år)</span>
-              ) : (
-                <span className="text-muted-foreground">→ Stabil</span>
-              )}
-            </p>
-          </div>
+          )}
 
           {/* Hva mangler */}
           {myPoints < program.requiredPoints && (
@@ -330,7 +337,18 @@ export default function SoknadsCoachPage() {
   const myPoints = gradePoints.totalPoints;
 
   // Reelle studieprogram fra Firestore (Issue #52), fallback til statiske data
-  const { programs: studyPrograms, loading: programsLoading, fromFirestore: programsFromFirestore } = useStudyPrograms(500);
+  const { programs: studyPrograms, firestorePrograms, loading: programsLoading, fromFirestore: programsFromFirestore } = useStudyPrograms(500);
+
+  // Bygg nusCode-oppslag for PoenggrenseTrend (Issue #60)
+  const nusCodeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of firestorePrograms) {
+      if (p.nusCode) {
+        map.set(`${p.name}|${p.institution}`, p.nusCode);
+      }
+    }
+    return map;
+  }, [firestorePrograms]);
 
   const [search, setSearch] = useState("");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -515,6 +533,7 @@ export default function SoknadsCoachPage() {
                   myPoints={myPoints}
                   isFavorite={favorites.has(programKey(p))}
                   onToggleFavorite={() => toggleFavorite(programKey(p))}
+                  nusCode={nusCodeMap.get(programKey(p))}
                 />
               ))
             )}
