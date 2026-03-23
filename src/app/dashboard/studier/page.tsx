@@ -387,8 +387,8 @@ export default function StudierPage() {
                 <div key={i} className="flex items-start gap-3 rounded-xl border px-4 py-3">
                   <BookOpen className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" aria-hidden="true" />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">{p.institution}</p>
+                    <p className="text-sm font-medium">{p.navn}</p>
+                    <p className="text-xs text-muted-foreground">{p.institusjon}</p>
                   </div>
                 </div>
               ))}
