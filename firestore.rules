@@ -357,5 +357,34 @@ service cloud.firestore {
         request.resource.data.userId == request.auth.uid;
       allow update, delete: if false; // immutable audit trail
     }
+
+    // ---------------------------------------------------------------------------
+    // counselorInvites/{inviteId} — rådgiver-invitasjoner (Issue #39)
+    // ---------------------------------------------------------------------------
+
+    match /counselorInvites/{inviteId} {
+      // Admin/counselor kan opprette invitasjoner
+      allow create: if isCounselorOrAdmin();
+      // Invitert kan lese sin invite via token-basert oppslag (offentlig for UI)
+      allow read: if isAuthenticated();
+      // Kun Cloud Functions kan oppdatere (sette emailSentAt, accepted)
+      allow update: if isAuthenticated() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(["accepted", "acceptedAt", "acceptedBy"]);
+      allow delete: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------------------
+    // users/{userId}/consent/{consentId} — foresatt-samtykke (Issue #38)
+    // ---------------------------------------------------------------------------
+
+    match /users/{userId}/consent/{consentId} {
+      // Eier kan opprette og lese sin samtykkesøknad
+      allow read, create: if isOwner(userId);
+      // Oppdatering tillatt for eier (ved foresatt-svar via /samtykke-side)
+      // og for Cloud Functions (setter emailSentAt)
+      allow update: if isOwner(userId) || isAuthenticated();
+      allow delete: if isAdmin();
+    }
   }
 }
