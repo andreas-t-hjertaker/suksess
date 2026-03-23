@@ -38,8 +38,75 @@ import {
   ChevronRight,
   Check,
   ShieldCheck,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// ---------------------------------------------------------------------------
+// XP per steg (gamification)
+// ---------------------------------------------------------------------------
+const STEP_XP: Record<string, number> = {
+  welcome: 0,
+  consent: 5,
+  profile: 15,
+  bigfive: 30,
+  riasec: 30,
+  strengths: 20,
+  results: 10,
+};
+
+// ---------------------------------------------------------------------------
+// Mini-konfetti-komponent (CSS-animasjon, ingen eksternt lib)
+// ---------------------------------------------------------------------------
+function Confetti() {
+  const pieces = Array.from({ length: 18 }, (_, i) => i);
+  const colors = ["bg-primary", "bg-violet-400", "bg-pink-400", "bg-amber-400", "bg-green-400", "bg-blue-400"];
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl" aria-hidden>
+      {pieces.map((i) => (
+        <div
+          key={i}
+          className={cn(
+            "absolute h-2 w-1.5 rounded-sm opacity-0",
+            colors[i % colors.length],
+          )}
+          style={{
+            left: `${8 + (i * 5.2) % 84}%`,
+            top: "-8px",
+            animation: `confetti-fall ${0.7 + (i % 5) * 0.2}s ease-out ${(i % 4) * 0.1}s forwards`,
+            transform: `rotate(${i * 23}deg)`,
+          }}
+        />
+      ))}
+      <style>{`
+        @keyframes confetti-fall {
+          0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+          100% { opacity: 0; transform: translateY(280px) rotate(540deg); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// XP-toast — vises ved steg-fullføring
+// ---------------------------------------------------------------------------
+function XpToast({ xp, show }: { xp: number; show: boolean }) {
+  if (!show || xp === 0) return null;
+  return (
+    <div
+      className={cn(
+        "absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-amber-400/90 px-3 py-1.5 text-xs font-bold text-amber-900 shadow-lg z-10",
+        "animate-in slide-in-from-top-2 duration-300"
+      )}
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      <Zap className="h-3.5 w-3.5" />
+      +{xp} XP
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Steg-definisjon
@@ -118,6 +185,12 @@ export function OnboardingStepper() {
   // Beregnede resultater
   const [bigFiveScores, setBigFiveScores] = useState<ReturnType<typeof scoreBigFive> | null>(null);
   const [riasecScores, setRiasecScores] = useState<ReturnType<typeof scoreRiasec> | null>(null);
+
+  // Gamification
+  const [totalXpEarned, setTotalXpEarned] = useState(0);
+  const [showXpToast, setShowXpToast] = useState(false);
+  const [lastXp, setLastXp] = useState(0);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     if (!firebaseUser) {
@@ -293,6 +366,15 @@ export function OnboardingStepper() {
     if (current === "bigfive") setBigFiveBlock(0);
     if (current === "riasec") setRiasecBlock(0);
 
+    // XP for fullført steg
+    const xp = STEP_XP[current] ?? 0;
+    if (xp > 0) {
+      setLastXp(xp);
+      setTotalXpEarned((prev) => prev + xp);
+      setShowXpToast(true);
+      setTimeout(() => setShowXpToast(false), 2000);
+    }
+
     setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
   }
 
@@ -354,70 +436,87 @@ export function OnboardingStepper() {
       aria-label={`Onboarding — steg ${step + 1} av ${TOTAL_STEPS}: ${STEPS[step].label}`}
       className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
     >
-      <Card className="w-full max-w-xl shadow-2xl">
+      <Card className="w-full max-w-xl shadow-2xl relative overflow-hidden">
+        {/* Konfetti på resultater-steg */}
+        {currentStepId === "results" && <Confetti />}
+        {/* XP toast */}
+        <XpToast xp={lastXp} show={showXpToast} />
         {/* Fremdriftslinje øverst */}
         <Progress
           value={overallProgress}
-          className="h-1 rounded-none rounded-t-xl"
+          className="h-1.5 rounded-none rounded-t-xl"
           aria-label={`Onboarding ${overallProgress}% fullført`}
         />
-        {/* Steg-indikatorer */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-2">
-          {STEPS.map((s, i) => {
-            const Icon = s.icon;
-            const isActive = i === step;
-            const isDone = i < step;
-            return (
-              <div key={s.id} className="flex flex-col items-center gap-1">
-                <div
-                  className={cn(
-                    "flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors",
-                    isActive && "border-primary bg-primary text-primary-foreground",
-                    isDone && "border-primary/50 bg-primary/10 text-primary",
-                    !isActive && !isDone && "border-muted text-muted-foreground"
-                  )}
-                >
-                  {isDone ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+        {/* Steg-indikatorer + XP-teller */}
+        <div className="flex items-start justify-between px-6 pt-5 pb-2">
+          <div className="flex items-center gap-1">
+            {STEPS.map((s, i) => {
+              const Icon = s.icon;
+              const isActive = i === step;
+              const isDone = i < step;
+              return (
+                <div key={s.id} className="flex flex-col items-center gap-1">
+                  <div
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all duration-200",
+                      isActive && "border-primary bg-primary text-primary-foreground scale-110 shadow-sm",
+                      isDone && "border-primary/50 bg-primary/10 text-primary",
+                      !isActive && !isDone && "border-muted text-muted-foreground"
+                    )}
+                  >
+                    {isDone ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+                  </div>
+                  <span className={cn(
+                    "hidden text-[10px] font-medium sm:block",
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  )}>
+                    {s.label}
+                  </span>
                 </div>
-                <span className={cn(
-                  "hidden text-[10px] font-medium sm:block",
-                  isActive ? "text-primary" : "text-muted-foreground"
-                )}>
-                  {s.label}
-                </span>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+          {/* XP-teller */}
+          {totalXpEarned > 0 && (
+            <div className="flex items-center gap-1 rounded-full bg-amber-400/15 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
+              <Zap className="h-3 w-3" />
+              {totalXpEarned} XP
+            </div>
+          )}
         </div>
 
         <CardContent className="px-6 pb-4 pt-2 min-h-[340px]">
 
           {/* ---- STEG: VELKOMMEN ---- */}
           {currentStepId === "welcome" && (
-            <div className="space-y-4 text-center py-6">
-              <Rocket className="mx-auto h-12 w-12 text-primary" />
-              <CardTitle className="text-2xl">Velkommen til Suksess!</CardTitle>
-              <p className="text-muted-foreground">
-                Vi hjelper deg med å finne den studieveien og karrieren som passer deg best.
-                Svar på noen spørsmål om deg selv — det tar ca. 10–15 minutter.
-              </p>
-              <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
-                <div className="rounded-lg bg-muted p-3">
-                  <Brain className="mx-auto mb-1 h-5 w-5 text-primary" />
-                  <p className="font-medium">Personlighetstest</p>
-                  <p className="text-xs text-muted-foreground">Big Five (OCEAN)</p>
-                </div>
-                <div className="rounded-lg bg-muted p-3">
-                  <Compass className="mx-auto mb-1 h-5 w-5 text-primary" />
-                  <p className="font-medium">Interessetest</p>
-                  <p className="text-xs text-muted-foreground">RIASEC / Holland</p>
-                </div>
-                <div className="rounded-lg bg-muted p-3">
-                  <Star className="mx-auto mb-1 h-5 w-5 text-primary" />
-                  <p className="font-medium">Styrker</p>
-                  <p className="text-xs text-muted-foreground">VIA-inspirert</p>
-                </div>
+            <div className="space-y-4 text-center py-4">
+              <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-lg animate-float">
+                <Rocket className="h-8 w-8 text-primary-foreground" />
               </div>
+              <div>
+                <CardTitle className="text-2xl">Velkommen til Suksess! 🎉</CardTitle>
+                <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
+                  Vi hjelper deg finne studieveien som passer deg best — basert på hvem du er.
+                  Svar på noen spørsmål (10–15 min) og tjen{" "}
+                  <span className="font-semibold text-amber-600">110 XP</span>!
+                </p>
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
+                {[
+                  { icon: Brain, label: "Personlighet", sub: "Big Five · +30 XP", color: "text-violet-500", bg: "bg-violet-500/10" },
+                  { icon: Compass, label: "Interesser", sub: "RIASEC · +30 XP", color: "text-blue-500", bg: "bg-blue-500/10" },
+                  { icon: Star, label: "Styrker", sub: "VIA · +20 XP", color: "text-amber-500", bg: "bg-amber-500/10" },
+                ].map(({ icon: Icon, label, sub, color, bg }) => (
+                  <div key={label} className={cn("rounded-xl border p-3", bg)}>
+                    <Icon className={cn("mx-auto mb-1.5 h-5 w-5", color)} />
+                    <p className="font-semibold text-xs">{label}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{sub}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Data lagres sikkert i EU · GDPR-compliant · Kan slettes når som helst
+              </p>
             </div>
           )}
 
@@ -663,6 +762,10 @@ export function OnboardingStepper() {
             return (
               <div className="space-y-4 py-2">
                 <div className="text-center">
+                  <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-amber-400/15 px-4 py-1.5 text-sm font-bold text-amber-700 dark:text-amber-300">
+                    <Zap className="h-4 w-4" />
+                    +{totalXpEarned + (STEP_XP["results"] ?? 0)} XP opptjent! 🎉
+                  </div>
                   <CardTitle className="text-xl">Din personlighetsprofil</CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">
                     RIASEC-kode: <span className="font-bold text-primary">{riasecCode}</span>
