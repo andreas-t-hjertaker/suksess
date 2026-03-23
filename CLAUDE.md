@@ -8,20 +8,37 @@ Suksess er en AI-drevet karriereveiledningsplattform for norske VGS-elever. Livs
 
 ## Status (mars 2026)
 
-**54 issues totalt — 47 lukket, 7 åpne (6 gjenåpnet etter kodeaudit, 1 ny).**
+**72 issues totalt — 47 lukket, 22 åpne (3 kodeauditer gjennomført).**
 
-PR #56 (64 commits, 110 filer, 8857 linjer) implementerte store deler av plattformen. Etter grundig kodegjennomgang ble 6 issues gjenåpnet fordi implementasjonen var ufullstendig.
+PR #56 (64 commits, 110 filer, 8857 linjer) implementerte store deler av plattformen. Etter 3 kodeauditer ble 6 issues gjenåpnet og 15 nye issues opprettet basert på detaljert kodeanalyse og research.
 
-### Gjenåpnede issues (halvveis/ufullstendig)
+### Gjenåpnede issues (PARTIAL — kode finnes men er ufullstendig)
 - **#34** — LLM Backend bruker Google AI Studio (global), ikke VertexAI europe-west1 server-side
-- **#8** — Weaviate mangler søkeproxy i backend, bruker OpenAI embedding istedenfor NorSBERT4
-- **#35** — RAG Pipeline er skrevet men aldri importert/brukt i chatten
-- **#47** — Chat-persistens har type-feil og mangler UI for samtalehistorikk
-- **#11** — utdanning.no ingest er stub/mock, Samordna Opptak mangler
-- **#52** — Studiedata-kobling kaller stub-API
+- **#8** — Weaviate mangler søkeproxy, bruker OpenAI embedding istedenfor NorSBERT4
+- **#35** — RAG Pipeline er skrevet men aldri importert/brukt i chatten (dead code)
+- **#47** — Chat-persistens har type-feil (`sources`) og mangler UI for samtalehistorikk
+- **#11** — utdanning.no ingest er stub/mock, NAV/DBH/SSB fungerer
+- **#52** — Studiedata-kobling: kode finnes men er 100% frakoblet (orphaned)
+- **#32** — Stripe: fungerende kode men placeholder Price IDs, EHF/Peppol mangler
 
-### Fortsatt åpen
-- **#32** — Stripe: trenger ekte Price IDs, EHF/Peppol
+### Nye issues fra kodeaudit (NOT STARTED)
+- **#57** — AI Safety: ingen Gemini safety settings, ingen PII/krise-deteksjon
+- **#58** — Ekte studiedata: utdanning.no Studievelgeren API + Grep VGS-data
+- **#59** — PWA offline + push
+- **#60** — Samordna Opptak poenggrenser fra DBH
+- **#62** — Lærling- og yrkesfagdata
+- **#63** — Samtalehistorikk-UI
+- **#64** — Vertex AI Node SDK server (fikser #34 GDPR-brudd)
+- **#65** — Weaviate søkeproxy (fikser #8 brutt søkesti)
+- **#66** — E2E testdekning med Playwright
+
+### Nye issues fra research (NOT STARTED)
+- **#67** — Universell utforming: WCAG 2.2 AA (lovpålagt for edtech)
+- **#68** — Rådgiverdashbord: læringsanalyse for Skole-plan
+- **#69** — Onboarding: RIASEC + Big Five personlighetsprofil med gamifisert flyt
+- **#70** — Gamification: badge/XP/streak-system
+- **#71** — Arbeidsgiverportal: lærlingplasser og employer branding
+- **#72** — Karrierementoring: RIASEC-basert matching elev ↔ mentor
 
 ### Kjente build-feil (2 stk)
 - `next.config.ts(12)`: `eslint` property finnes ikke i NextConfig
@@ -205,18 +222,30 @@ suksess/
 ## Avhengigheter mellom åpne issues
 
 ```
-#34 (VertexAI server)  ──────────────────┐
-                                          │
-#8 (Weaviate søkeproxy) ────┐             │
-                             ├── #35 (RAG integrering i chat)
-#11 (utdanning.no data) ────┘             │
-                                          │
-#47 (Chat-persistens UI) ← uavhengig     │
-#52 (Studiedata-kobling) ← avhenger av #11
-#32 (Stripe) ← uavhengig
+FASE 1 — KRITISK (GDPR/lovkrav):
+  #64 (VertexAI SDK) ──→ fikser #34 GDPR-brudd
+  #57 (AI Safety)    ──→ lovkrav + mindreårige
+  #67 (WCAG 2.2 AA)  ──→ lovkrav for edtech B2B-salg
+
+FASE 2 — KJERNEFUNKSJONALITET:
+  #65 (søkeproxy) ──→ fikser #8 ──→ #35 (RAG) ──→ fungerende AI-veileder
+  #58 (utdanning.no API) ──→ fikser #11 ──→ #52 (studiedata-kobling)
+  #60 (Samordna Opptak) ──→ reelle poenggrenser
+  #47 (Chat type-feil) ──→ #63 (Samtalehistorikk-UI)
+  #69 (Onboarding RIASEC/Big Five) ──→ kjerneverdi for plattformen
+  #68 (Rådgiverdashbord) ──→ Skole-plan revenue
+
+FASE 3 — AVANSERT:
+  #70 (Gamification) ← avhenger av #69
+  #71 (Arbeidsgiverportal) ← avhenger av #69 + #68 RBAC
+  #72 (Mentoring) ← avhenger av #69 + #71
+  #32 (Stripe) ← uavhengig
+  #62 (Yrkesfagdata) ← uavhengig
+  #59 (PWA) ← uavhengig
+  #66 (E2E tester) ← koordineres med #67
 ```
 
-**Anbefalt rekkefølge:** #34 → #8 → #11 → #35 → #52 → #47 → #32
+**Anbefalt rekkefølge:** #64 → #57 → #67 → #65 → #58 → #69 → #35 → #68 → #47/#63 → #52/#60 → #70 → #32 → #71 → #72
 
 ## Konvensjoner
 
@@ -230,6 +259,8 @@ suksess/
 ## Research-filer
 
 Detaljerte tekniske guider i `/research/`-mappen:
+
+### Teknisk research (tidlig)
 - `feide-oidc.md` — Feide OIDC-flyt, claims mapping, Firebase Custom Token
 - `data-ingest.md` — utdanning.no, DBH, NAV, SSB, Samordna opptak
 - `weaviate-kmeans.md` — Weaviate Cloud, NorSBERT4, hybrid search, k-means
@@ -237,3 +268,16 @@ Detaljerte tekniske guider i `/research/`-mappen:
 - `firebase-ai-architecture.md` — Hybridarkitektur, VertexAI vs GoogleAI
 - `nav-stillinger-api.md` — pam-stilling-feed, autentisering, STYRK→RIASEC
 - `gdpr-minors-norway.md` — Aldersgrense, samtykke, DPIA, Datatilsynet
+
+### Kodeaudit-rapporter (mars 2026)
+- `utdanning-data-sources.md` — Verifiserte API-er: `api.utdanning.no/studievelgeren/result` (1395 programmer), Grep/Udir 6588 fagkoder
+- `pwa-mobile-strategy.md` — Serwist anbefalt, 97% smarttelefon-dekning
+- `education-finance-data.md` — Lånekassen har ingen API, old.api.utdanning.no 118 endepunkter
+- `ai-safety-guardrails.md` — Gemini safety OFF som standard, EU AI Act aug 2026
+
+### Strategisk research (mars 2026)
+- `universell-utforming.md` — WCAG 2.2 AA, IKT-forskriften, UUtilsynet, EAA
+- `laeringsanalyse-skoler.md` — Rådgiverdashbord, RBAC, trafikklys-modell, GDPR
+- `onboarding-personlighetstest.md` — BFI-20, RIASEC UX, progressiv profiling, adaptiv UI
+- `gamification-motivasjon.md` — SDT, Octalysis, badges/XP/streaks, etikk
+- `arbeidsgiver-mentoring.md` — Handshake-modell, Ungdomsløftet, RIASEC-matching, revenue
