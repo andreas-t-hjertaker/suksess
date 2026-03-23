@@ -12,6 +12,9 @@ export { onParentalConsentCreated, onCounselorInvited, onNotificationCreated } f
 // Re-eksporter Feide OIDC claims handler og user onCreate-trigger
 export { feideSetClaims, onUserCreated } from "./feide-claims";
 
+// Re-eksporter K-means clustering jobb
+export { runClusteringJob, triggerClustering } from "./clustering";
+
 // Re-eksporter LLM API (server-side RAG og innholdsgenerering)
 export { llmApi } from "./llm";
 
