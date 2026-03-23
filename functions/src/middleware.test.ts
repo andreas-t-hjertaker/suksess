@@ -86,7 +86,7 @@ describe("withAuth()", () => {
 
   beforeEach(() => {
     mockAuth = vi.fn();
-    vi.mocked(adminModule.default.auth).mockReturnValue({ verifyIdToken: mockAuth } as never);
+    vi.mocked(adminModule.auth).mockReturnValue({ verifyIdToken: mockAuth } as never);
   });
 
   it("returnerer 401 uten Authorization-header", async () => {
@@ -125,7 +125,7 @@ describe("withAdmin()", () => {
 
   beforeEach(() => {
     mockAuth = vi.fn();
-    vi.mocked(adminModule.default.auth).mockReturnValue({ verifyIdToken: mockAuth } as never);
+    vi.mocked(adminModule.auth).mockReturnValue({ verifyIdToken: mockAuth } as never);
   });
 
   it("returnerer 403 for bruker uten admin-claim", async () => {
@@ -155,7 +155,7 @@ describe("withTenant()", () => {
 
   beforeEach(() => {
     mockAuth = vi.fn();
-    vi.mocked(adminModule.default.auth).mockReturnValue({ verifyIdToken: mockAuth } as never);
+    vi.mocked(adminModule.auth).mockReturnValue({ verifyIdToken: mockAuth } as never);
   });
 
   it("passer tenantId fra custom claims til handler", async () => {

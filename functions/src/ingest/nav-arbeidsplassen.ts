@@ -13,13 +13,6 @@ const db = admin.firestore();
 
 const NAV_BASE = process.env.NAV_API_BASE ?? "https://arbeidsplassen.nav.no/api/intern";
 
-type NavJobListing = {
-  id: string;
-  title: string;
-  occupationList?: { level1?: string; level2?: string }[];
-  published: string;
-  source?: string;
-};
 
 /** Hent aktive stillingsannonser for et yrkesområde */
 export async function fetchJobMarketData(

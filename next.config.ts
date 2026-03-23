@@ -5,12 +5,9 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  // Typescript og ESLint sjekkes i CI
+  // Typescript-sjekk skjer i CI via npx tsc --noEmit
   typescript: {
     ignoreBuildErrors: false,
-  },
-  eslint: {
-    ignoreDuringBuilds: false,
   },
   // Optimalisering
   compress: true,
