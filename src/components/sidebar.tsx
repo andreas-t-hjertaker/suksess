@@ -35,6 +35,8 @@ import {
   BookOpen,
   GitBranch,
   HardHat,
+  Users,
+  Building2,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/use-admin";
 
@@ -49,6 +51,8 @@ const navItems = [
   { href: "/dashboard/soknadscoach", label: "Søknads-coach", icon: ClipboardList },
   { href: "/dashboard/jobbmatch", label: "Jobbmatch", icon: Briefcase },
   { href: "/dashboard/laerling", label: "Lærling & yrkesfag", icon: HardHat },
+  { href: "/dashboard/mentorer", label: "Karrierementor", icon: Users },
+  { href: "/dashboard/arbeidsgivere", label: "Arbeidsgivere", icon: Building2 },
   { href: "/dashboard/studier", label: "Studiemestring", icon: BookOpen },
   { href: "/dashboard/karakterer", label: "Karakterer", icon: GraduationCap },
   { href: "/dashboard/dokumenter", label: "Dokumenter", icon: FileText },

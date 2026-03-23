@@ -223,3 +223,68 @@ export type Conversation = WithFirestoreTimestamps & {
   messages: ChatMessage[];
   lastMessageAt: Timestamp | null;
 };
+
+// ---------------------------------------------------------------------------
+// Karrierementor (mentors/{mentorId})
+// ---------------------------------------------------------------------------
+
+export type Mentor = WithFirestoreTimestamps & {
+  id: string;
+  displayName: string;
+  photoURL: string | null;
+  yrke: string;
+  bransje: string;
+  bio: string;
+  riasec: RiasecScores;
+  tilgjengelighet: string[];
+  linkedinUrl: string | null;
+  godkjent: boolean;
+};
+
+export type MentoringMilestoneId = "intro" | "karrierekartlegging" | "oppfolging";
+
+export type MentoringMilestone = {
+  id: MentoringMilestoneId;
+  label: string;
+  completed: boolean;
+  completedAt: Timestamp | null;
+};
+
+export type MentoringRequest = WithFirestoreTimestamps & {
+  id: string;
+  elevId: string;
+  mentorId: string;
+  status: "pending" | "accepted" | "rejected" | "completed";
+  melding: string;
+  milestones: MentoringMilestone[];
+};
+
+// ---------------------------------------------------------------------------
+// Arbeidsgiverportal (employers/{employerId}, jobListings/{listingId})
+// ---------------------------------------------------------------------------
+
+export type Employer = WithFirestoreTimestamps & {
+  id: string;
+  navn: string;
+  bransje: string;
+  fylke: string;
+  logoUrl: string | null;
+  beskrivelse: string;
+  nettside: string | null;
+  kontaktEpost: string | null;
+  godkjent: boolean;
+};
+
+export type JobListingType = "lærling" | "sommerjobb" | "deltid" | "fast";
+
+export type JobListing = WithFirestoreTimestamps & {
+  id: string;
+  employerId: string;
+  tittel: string;
+  type: JobListingType;
+  beskrivelse: string;
+  krav: string[];
+  frist: Timestamp | null;
+  aktiv: boolean;
+  riasecCodes: (keyof RiasecScores)[];
+};
