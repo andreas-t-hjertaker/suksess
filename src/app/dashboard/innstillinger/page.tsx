@@ -37,8 +37,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { showToast } from "@/lib/toast";
-import { Loader2, Upload, Lock, Link2, Unlink, Trash2, Globe } from "lucide-react";
+import { Loader2, Upload, Lock, Link2, Unlink, Trash2, Globe, Bell } from "lucide-react";
 import { useLocale } from "@/hooks/use-locale";
+import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase/firestore";
 
 // ─── Profil-skjema ──────────────────────────────────────────
 const profileSchema = z.object({
@@ -64,6 +66,32 @@ const passwordSchema = z
 
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 
+// ---------------------------------------------------------------------------
+// Varsel-innstillinger
+// ---------------------------------------------------------------------------
+
+type NotifPrefs = {
+  inApp: boolean;
+  emailDeadlines: boolean;
+  emailCareerSuggestions: boolean;
+  emailCounselorContact: boolean;
+  pushEnabled: boolean;
+};
+
+const DEFAULT_NOTIF_PREFS: NotifPrefs = {
+  inApp: true,
+  emailDeadlines: true,
+  emailCareerSuggestions: false,
+  emailCounselorContact: true,
+  pushEnabled: false,
+};
+
+async function requestPushPermission(): Promise<boolean> {
+  if (!("Notification" in window) || !("serviceWorker" in navigator)) return false;
+  const result = await Notification.requestPermission();
+  return result === "granted";
+}
+
 export default function InnstillingerPage() {
   const { user, firebaseUser } = useAuth();
   const { locale, setLocale, locales } = useLocale();
@@ -72,6 +100,52 @@ export default function InnstillingerPage() {
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [notifPrefs, setNotifPrefs] = useState<NotifPrefs>(DEFAULT_NOTIF_PREFS);
+  const [notifSaving, setNotifSaving] = useState(false);
+
+  // Last varselinnstillinger fra Firestore
+  useState(() => {
+    if (!user) return;
+    getDoc(doc(db, "users", user.uid, "prefs", "notifications"))
+      .then((snap) => {
+        if (snap.exists()) {
+          setNotifPrefs({ ...DEFAULT_NOTIF_PREFS, ...(snap.data() as Partial<NotifPrefs>) });
+        }
+      })
+      .catch(() => {});
+  });
+
+  async function saveNotifPrefs(updated: NotifPrefs) {
+    if (!user) return;
+    setNotifSaving(true);
+    try {
+      await updateDoc(doc(db, "users", user.uid, "prefs", "notifications"), updated).catch(
+        async () => {
+          // Dokument finnes ikke ennå — bruk set via updateDoc fallback
+          const { setDoc } = await import("firebase/firestore");
+          await setDoc(doc(db, "users", user.uid, "prefs", "notifications"), updated);
+        }
+      );
+      setNotifPrefs(updated);
+      showToast.success("Varselinnstillinger lagret");
+    } catch {
+      showToast.error("Kunne ikke lagre innstillinger");
+    } finally {
+      setNotifSaving(false);
+    }
+  }
+
+  async function handleToggle(key: keyof NotifPrefs, value: boolean) {
+    if (key === "pushEnabled" && value) {
+      const granted = await requestPushPermission();
+      if (!granted) {
+        showToast.error("Push-varsler ble avslått av nettleseren");
+        return;
+      }
+    }
+    const updated = { ...notifPrefs, [key]: value };
+    await saveNotifPrefs(updated);
+  }
 
   const hasPasswordProvider = firebaseUser?.providerData.some(
     (p) => p.providerId === "password"
@@ -442,6 +516,50 @@ export default function InnstillingerPage() {
           <p className="mt-2 text-xs text-muted-foreground">
             Valgt språk huskes mellom sesjoner. AI-innhold genereres på valgt språk.
           </p>
+        </CardContent>
+      </Card>
+
+      {/* Varsel-innstillinger */}
+      <Card className="max-w-2xl">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Bell className="h-4 w-4 text-primary" aria-hidden="true" />
+            <CardTitle>Varsler</CardTitle>
+          </div>
+          <CardDescription>
+            Velg hvilke varsler du ønsker å motta.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {([
+            { key: "inApp" as const, label: "In-app varsler", sub: "Varsler i klokke-ikonet øverst i appen" },
+            { key: "emailDeadlines" as const, label: "Søknadsfrister på e-post", sub: "Påminnelse 7 og 1 dag før frister" },
+            { key: "emailCareerSuggestions" as const, label: "Karriereforslag på e-post", sub: "Ukentlige karriereforslag basert på profilen din" },
+            { key: "emailCounselorContact" as const, label: "Rådgiverkontakt på e-post", sub: "Varsel når rådgiver sender deg en melding" },
+            { key: "pushEnabled" as const, label: "Push-varsler (PWA)", sub: "Varsler som pop-up når appen er lukket" },
+          ] as const).map(({ key, label, sub }) => (
+            <div key={key} className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
+              </div>
+              <button
+                role="switch"
+                aria-checked={notifPrefs[key]}
+                disabled={notifSaving}
+                onClick={() => handleToggle(key, !notifPrefs[key])}
+                className={`relative shrink-0 inline-flex h-5 w-9 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 ${
+                  notifPrefs[key] ? "bg-primary" : "bg-muted"
+                }`}
+              >
+                <span
+                  className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${
+                    notifPrefs[key] ? "translate-x-4" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          ))}
         </CardContent>
       </Card>
 

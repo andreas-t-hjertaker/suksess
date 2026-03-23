@@ -7,7 +7,7 @@ import { z } from "zod";
 import { success, fail, withAuth, withAdmin, withValidation, rateLimit, type RouteContext } from "./middleware";
 
 // Re-eksporter Firestore-triggered funksjoner (e-postvarsler)
-export { onParentalConsentCreated, onCounselorInvited } from "./notifications";
+export { onParentalConsentCreated, onCounselorInvited, onNotificationCreated } from "./notifications";
 
 // Re-eksporter Feide OIDC claims handler og user onCreate-trigger
 export { feideSetClaims, onUserCreated } from "./feide-claims";

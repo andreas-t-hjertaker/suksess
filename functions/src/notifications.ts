@@ -300,3 +300,83 @@ export const onCounselorInvited = onDocumentCreated(
     }
   }
 );
+
+// ---------------------------------------------------------------------------
+// Push-varsel ved ny in-app-notifikasjon (Issue #30)
+// ---------------------------------------------------------------------------
+
+/**
+ * Sender push-varsel til brukerens PWA når en ny notifikasjon opprettes
+ * i users/{userId}/notifications/{notifId}.
+ *
+ * Bruker Web Push-abonnementet lagret i users/{userId}/prefs/pushSubscription.
+ * Faller stille tilbake om abonnement ikke finnes.
+ */
+export const onNotificationCreated = onDocumentCreated(
+  { document: "users/{userId}/notifications/{notifId}", region: "europe-west1" },
+  async (event) => {
+    const userId = event.params.userId;
+    const data = event.data?.data() as {
+      title: string;
+      body: string;
+      link?: string;
+      type?: string;
+    } | undefined;
+
+    if (!data) return;
+
+    // Hent push-abonnement
+    const subDoc = await db
+      .collection("users")
+      .doc(userId)
+      .collection("prefs")
+      .doc("pushSubscription")
+      .get();
+
+    if (!subDoc.exists) return;
+
+    const { subscription } = subDoc.data() as {
+      subscription: {
+        endpoint: string;
+        keys: { auth: string; p256dh: string };
+      };
+    };
+
+    if (!subscription?.endpoint) return;
+
+    // Send push via Firebase Admin (via raw HTTP til Web Push-endepunkt)
+    // I produksjon: bruk web-push npm-pakke med VAPID-nøkler
+    // Her logger vi for lokal testing — full web-push krever VAPID_PRIVATE_KEY
+    const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+    if (!vapidPrivateKey) {
+      console.info(
+        `[push] VAPID_PRIVATE_KEY ikke konfigurert. Ville ha sendt push til ${userId}: ${data.title}`
+      );
+      return;
+    }
+
+    try {
+      // Dynamic import for å unngå bundlingsproblemer
+      const webpush = await import("web-push");
+      webpush.setVapidDetails(
+        `mailto:${process.env.SMTP_FROM ?? "noreply@suksess.no"}`,
+        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "",
+        vapidPrivateKey
+      );
+
+      await webpush.sendNotification(
+        subscription,
+        JSON.stringify({
+          title: data.title,
+          body: data.body,
+          url: data.link ?? "/dashboard",
+          tag: `suksess-${data.type ?? "system"}`,
+        })
+      );
+
+      console.info(`[push] Sendt push-varsel til ${userId}: ${data.title}`);
+    } catch (err) {
+      console.error(`[push] Feil ved sending av push til ${userId}:`, err);
+    }
+  }
+);
