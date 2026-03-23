@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useGrades } from "@/hooks/use-grades";
+import { useXp } from "@/hooks/use-xp";
 import {
   calculateGradePoints,
   simulateGradeChange,
@@ -51,6 +52,7 @@ const YEARS = Array.from({ length: 4 }, (_, i) => CURRENT_YEAR - i);
 
 export default function KaraktererPage() {
   const { grades, loading, addGrade, removeGrade } = useGrades();
+  const { earnXp } = useXp();
 
   // Legg til ny karakter
   const [newSubject, setNewSubject] = useState("");
@@ -120,6 +122,7 @@ export default function KaraktererPage() {
         year: newYear,
         programSubjectId: null,
       });
+      earnXp("grades_added");
       setNewSubject("");
       setNewFagkode("");
       setNewGrade(4);

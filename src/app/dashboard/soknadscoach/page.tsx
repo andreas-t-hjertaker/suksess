@@ -10,6 +10,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { useXp } from "@/hooks/use-xp";
 import { useGrades } from "@/hooks/use-grades";
 import { calculateGradePoints, STUDY_PROGRAMS, type StudyProgramEntry } from "@/lib/grades/calculator";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -323,6 +324,7 @@ function ProgramCard({
 export default function SoknadsCoachPage() {
   const { user } = useAuth();
   const { grades } = useGrades();
+  const { earnXp } = useXp();
   const gradePoints = useMemo(() => calculateGradePoints(grades), [grades]);
   const myPoints = gradePoints.totalPoints;
 
@@ -361,8 +363,12 @@ export default function SoknadsCoachPage() {
   const toggleFavorite = (key: string) => {
     setFavorites((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+        earnXp("study_program_saved");
+      }
       return next;
     });
   };
