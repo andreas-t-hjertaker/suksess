@@ -39,41 +39,43 @@ export function useStudiedata(): StudiedataState {
       return;
     }
 
-    loadStudiedata(firebaseUser.uid);
-  }, [firebaseUser]);
+    const uid = firebaseUser.uid;
 
-  async function loadStudiedata(uid: string) {
-    try {
-      // Hent brukerens RIASEC-profil
-      const profileSnap = await getDoc(doc(db, "profiles", uid));
-      const riasecCode = profileSnap.exists()
-        ? (profileSnap.data().riasec?.primaryCode as string | null)
-        : null;
+    async function loadStudiedata() {
+      try {
+        // Hent brukerens RIASEC-profil
+        const profileSnap = await getDoc(doc(db, "profiles", uid));
+        const riasecCode = profileSnap.exists()
+          ? (profileSnap.data().riasec?.primaryCode as string | null)
+          : null;
 
-      if (!riasecCode) {
-        setState({ programs: [], loading: false, error: null });
-        return;
+        if (!riasecCode) {
+          setState({ programs: [], loading: false, error: null });
+          return;
+        }
+
+        // Hent studieprogram fra Firestore (ingestet fra utdanning.no)
+        const primaryCode = riasecCode.charAt(0).toUpperCase();
+        const q = query(
+          collection(db, "studyPrograms"),
+          where("riasecCodes", "array-contains", primaryCode),
+          limit(20)
+        );
+        const snap = await getDocs(q);
+        const programs = snap.docs.map((d) => d.data() as StudieprogramSO);
+
+        setState({ programs, loading: false, error: null });
+      } catch (err) {
+        setState({
+          programs: [],
+          loading: false,
+          error: err instanceof Error ? err.message : "Feil ved henting av studiedata",
+        });
       }
-
-      // Hent studieprogram fra Firestore (ingestet fra utdanning.no)
-      const primaryCode = riasecCode.charAt(0).toUpperCase();
-      const q = query(
-        collection(db, "studyPrograms"),
-        where("riasecCodes", "array-contains", primaryCode),
-        limit(20)
-      );
-      const snap = await getDocs(q);
-      const programs = snap.docs.map((d) => d.data() as StudieprogramSO);
-
-      setState({ programs, loading: false, error: null });
-    } catch (err) {
-      setState({
-        programs: [],
-        loading: false,
-        error: err instanceof Error ? err.message : "Feil ved henting av studiedata",
-      });
     }
-  }
+
+    loadStudiedata();
+  }, [firebaseUser]);
 
   return state;
 }

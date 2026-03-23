@@ -11,7 +11,7 @@ import {
   checkRateLimit,
   SAFETY_SYSTEM_INSTRUCTIONS,
 } from "@/lib/ai/safety";
-import { retrieveRagContext, injectRagContext } from "@/lib/ai/rag-pipeline";
+import { retrieveRagContext } from "@/lib/ai/rag-pipeline";
 import {
   createConversation,
   saveConversationMessages,

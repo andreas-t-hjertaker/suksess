@@ -78,7 +78,7 @@ export function kmeans(
   k = Math.min(k, profiles.length);
 
   const points = profiles.map((p) => p.features);
-  let centroids = initCentroids(points, k);
+  const centroids = initCentroids(points, k);
 
   let assignments = new Array(profiles.length).fill(-1) as number[];
 
