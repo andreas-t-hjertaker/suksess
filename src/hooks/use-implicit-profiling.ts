@@ -30,15 +30,6 @@ type BehaviorSignals = {
   fastScrollCount: number;
 };
 
-const signals: BehaviorSignals = {
-  pagesVisited: new Set(),
-  totalClicks: 0,
-  avgTimeOnPage: 0,
-  visualPageVisits: 0,
-  analyticalPageVisits: 0,
-  fastScrollCount: 0,
-};
-
 const VISUAL_PAGES = ["/dashboard/karriere", "/dashboard/karrieregraf", "/dashboard/analyse", "/dashboard/veileder"];
 const ANALYTICAL_PAGES = ["/dashboard/karakterer", "/dashboard/dokumenter", "/dashboard/mine-data", "/dashboard/fremgang"];
 
@@ -51,15 +42,24 @@ export function useImplicitProfiling() {
   const { overrideConfig } = usePersonality();
   // Initialiser med 0, sett riktig tid i effect (unngår impure Date.now() under render)
   const pageEntryTime = useRef<number>(0);
+  // Skoped til komponent-instans for å unngå kryssbrukerkontaminering
+  const signalsRef = useRef<BehaviorSignals>({
+    pagesVisited: new Set(),
+    totalClicks: 0,
+    avgTimeOnPage: 0,
+    visualPageVisits: 0,
+    analyticalPageVisits: 0,
+    fastScrollCount: 0,
+  });
 
   function adjustUiFromSignals() {
-    const totalVisits = signals.visualPageVisits + signals.analyticalPageVisits;
+    const totalVisits = signalsRef.current.visualPageVisits + signalsRef.current.analyticalPageVisits;
     if (totalVisits < 3) return;
 
-    const visualRatio = signals.visualPageVisits / totalVisits;
-    const exploratoryNav = signals.pagesVisited.size > 5;
+    const visualRatio = signalsRef.current.visualPageVisits / totalVisits;
+    const exploratoryNav = signalsRef.current.pagesVisited.size > 5;
 
-    if (signals.fastScrollCount > 10) {
+    if (signalsRef.current.fastScrollCount > 10) {
       overrideConfig({ animationIntensity: "subtle" });
     }
     if (exploratoryNav) {
@@ -79,20 +79,20 @@ export function useImplicitProfiling() {
 
   // Spor sideskifte
   useEffect(() => {
-    signals.pagesVisited.add(pathname);
+    signalsRef.current.pagesVisited.add(pathname);
 
     if (VISUAL_PAGES.some((p) => pathname.startsWith(p))) {
-      signals.visualPageVisits++;
+      signalsRef.current.visualPageVisits++;
     } else if (ANALYTICAL_PAGES.some((p) => pathname.startsWith(p))) {
-      signals.analyticalPageVisits++;
+      signalsRef.current.analyticalPageVisits++;
     }
 
     // Registrer tid på forrige side
     const timeSpent = (Date.now() - pageEntryTime.current) / 1000;
-    if (signals.avgTimeOnPage === 0) {
-      signals.avgTimeOnPage = timeSpent;
+    if (signalsRef.current.avgTimeOnPage === 0) {
+      signalsRef.current.avgTimeOnPage = timeSpent;
     } else {
-      signals.avgTimeOnPage = (signals.avgTimeOnPage + timeSpent) / 2;
+      signalsRef.current.avgTimeOnPage = (signalsRef.current.avgTimeOnPage + timeSpent) / 2;
     }
     pageEntryTime.current = Date.now();
 
@@ -110,7 +110,7 @@ export function useImplicitProfiling() {
       const deltaT = now - lastTime;
       if (deltaT > 0 && deltaY / deltaT > 5) {
         // Hurtig scroll: > 5px/ms
-        signals.fastScrollCount++;
+        signalsRef.current.fastScrollCount++;
       }
       lastY = window.scrollY;
       lastTime = now;
@@ -121,7 +121,7 @@ export function useImplicitProfiling() {
   }, []);
 
   const trackClick = useCallback((_elementType: string) => {
-    signals.totalClicks++;
+    signalsRef.current.totalClicks++;
     // Logg implisitt preferanse uten å sende data eksternt
   }, []);
 

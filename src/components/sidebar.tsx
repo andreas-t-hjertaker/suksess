@@ -180,12 +180,10 @@ export function MobileBottomNav() {
     { href: "/dashboard/veileder", label: "Veileder", icon: Sparkles },
     { href: "/dashboard/karriere", label: "Karriere", icon: Compass },
     { href: "/dashboard/profil", label: "Profil", icon: User },
-    { href: "/dashboard/innstillinger", label: "Mer", icon: Settings },
+    isAdmin
+      ? { href: "/admin", label: "Admin", icon: Shield }
+      : { href: "/dashboard/innstillinger", label: "Mer", icon: Settings },
   ];
-
-  if (isAdmin) {
-    primaryItems[4] = { href: "/admin", label: "Admin", icon: Shield };
-  }
 
   return (
     <nav

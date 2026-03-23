@@ -86,7 +86,7 @@ export function useXp() {
   /** Lås opp en achievement */
   const unlockAchievement = useCallback(
     async (id: AchievementId) => {
-      if (!firebaseUser || xpDoc?.earnedAchievements.includes(id)) return;
+      if (!firebaseUser) return;
       const achievement = ACHIEVEMENTS.find((a) => a.id === id);
       if (!achievement) return;
 
@@ -94,6 +94,7 @@ export function useXp() {
       const current = (await getDoc(ref)).data() as XpDoc | undefined;
       const already = current?.earnedAchievements ?? [];
 
+      // Sjekk mot fersk Firestore-data for å unngå duplikater
       if (already.includes(id)) return;
 
       await setDoc(
@@ -106,7 +107,7 @@ export function useXp() {
         { merge: true }
       );
     },
-    [firebaseUser, xpDoc]
+    [firebaseUser]
   );
 
   /** Registrer daglig innlogging og streak */

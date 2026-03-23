@@ -36,6 +36,10 @@ export function useTenant(): TenantContext {
       setTenantId((result.claims.tenantId as string) ?? null);
       setRole((result.claims.role as TenantRole) ?? "student");
       setLoading(false);
+    }).catch(() => {
+      setTenantId(null);
+      setRole("student");
+      setLoading(false);
     });
   }, [firebaseUser]);
 

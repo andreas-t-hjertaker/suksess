@@ -9,6 +9,7 @@ import {
   type StudyProgramEntry,
 } from "@/lib/grades/calculator";
 import { Button } from "@/components/ui/button";
+import { showToast } from "@/lib/toast";
 import { Input } from "@/components/ui/input";
 import {
   Card,
@@ -122,6 +123,8 @@ export default function KaraktererPage() {
       setNewSubject("");
       setNewFagkode("");
       setNewGrade(4);
+    } catch {
+      showToast.error("Kunne ikke lagre karakter. Prøv igjen.");
     } finally {
       setAdding(false);
     }
