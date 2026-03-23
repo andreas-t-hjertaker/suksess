@@ -22,6 +22,7 @@ import { LevelUpOverlay } from "@/components/level-up-overlay";
 import { PageTransition } from "@/components/motion";
 import { CommandPalette } from "@/components/command-palette";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { ToastContainer } from "@/components/feedback";
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
@@ -128,6 +129,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         })}
       />
       <OnboardingStepper />
+      <ToastContainer />
     </div>
   );
 }
