@@ -61,22 +61,32 @@ export type SemanticSearchParams = {
  * Returnerer rangerte resultater med relevanscore.
  */
 export async function semanticSearch(
-  params: SemanticSearchParams
+  params: SemanticSearchParams,
+  idToken?: string
 ): Promise<SearchResult[]> {
   try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (idToken) headers["Authorization"] = `Bearer ${idToken}`;
+
     const response = await fetch(WEAVIATE_CONFIG.proxyUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(params),
+      headers,
+      body: JSON.stringify({
+        query: params.query,
+        className: params.className,
+        limit: params.limit ?? 10,
+        alpha: 0.75, // hybrid: 75 % vektor, 25 % BM25 (norsk-støtte)
+        filters: params.filters,
+      }),
     });
 
     if (!response.ok) {
-      console.warn(`Weaviate search failed: ${response.status}`);
+      console.warn(`Weaviate søkeproxy svarte ${response.status}`);
       return [];
     }
 
-    const data = await response.json() as { results?: SearchResult[] };
-    return data.results ?? [];
+    const data = await response.json() as { data?: { results?: SearchResult[] }; results?: SearchResult[] };
+    return data.results ?? data.data?.results ?? [];
   } catch {
     // Weaviate er ikke tilgjengelig — returner tomt (graceful degradation)
     return [];

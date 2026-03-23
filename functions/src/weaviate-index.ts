@@ -18,7 +18,8 @@ import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { defineSecret } from "firebase-functions/params";
-import { withAdmin } from "./middleware";
+import { withAdmin, withValidation, success, fail } from "./middleware";
+import { z } from "zod";
 
 const db = admin.firestore();
 
@@ -277,3 +278,118 @@ async function indexCareerPathsToWeaviate(
 
   return count;
 }
+
+// ---------------------------------------------------------------------------
+// Search Proxy — POST /search (Issue #65)
+// Skjuler Weaviate API-nøkkel, verifiserer auth, rate-limiter
+// ---------------------------------------------------------------------------
+
+const searchParamsSchema = z.object({
+  query: z.string().min(1).max(500),
+  className: z.enum(["StudyProgram", "CareerPath", "JobListing"]),
+  limit: z.number().int().min(1).max(50).optional().default(10),
+  alpha: z.number().min(0).max(1).optional().default(0.75), // hybrid: 0=keyword, 1=vector
+  filters: z.record(z.string()).optional(),
+});
+
+const RATE_LIMIT_MAX = 50; // søk per minutt per bruker
+
+async function checkSearchRateLimit(userId: string): Promise<boolean> {
+  const minuteKey = `search_rl_${userId}_${new Date().toISOString().slice(0, 16)}`;
+  const ref = db.collection("rateLimits").doc(minuteKey);
+
+  const snap = await ref.get();
+  const count = (snap.data()?.count ?? 0) as number;
+  if (count >= RATE_LIMIT_MAX) return false;
+
+  ref.set({ count: count + 1, userId, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true })
+    .catch(() => {});
+  return true;
+}
+
+/**
+ * POST /search — Weaviate hybrid-søk proxy (Issue #65)
+ *
+ * Skjuler Weaviate API-nøkkel, verifiserer Firebase auth,
+ * rate-limiter søk, logger responstid.
+ */
+export const searchProxy = onRequest(
+  {
+    region: "europe-west1",
+    cors: true,
+    invoker: "public",
+    secrets: [WEAVIATE_API_KEY, WEAVIATE_URL],
+    memory: "256MiB",
+    timeoutSeconds: 30,
+  },
+  async (req, res) => {
+    const handler = withValidation(searchParamsSchema, async ({ user, data }) => {
+      // Rate limiting
+      const allowed = await checkSearchRateLimit(user.uid);
+      if (!allowed) {
+        fail(res, "For mange søk. Prøv igjen om litt.", 429);
+        return;
+      }
+
+      const start = Date.now();
+      const apiKey = WEAVIATE_API_KEY.value();
+      const baseUrl = WEAVIATE_URL.value();
+      const { query, className, limit: lim, alpha, filters } = data;
+
+      // Hybrid-søk (vektor + BM25 for norsk-støtte)
+      const hybridQuery = {
+        query: `{
+          Get {
+            ${className}(
+              hybrid: {
+                query: ${JSON.stringify(query)},
+                alpha: ${alpha}
+              },
+              limit: ${lim}
+              ${filters ? `, where: { operator: And, operands: [${Object.entries(filters).map(([k, v]) => `{ path: ["${k}"], operator: Equal, valueString: "${v}" }`).join(", ")}] }` : ""}
+            ) {
+              _additional { id score distance }
+              name
+              description
+              institution
+              level
+            }
+          }
+        }`,
+      };
+
+      try {
+        const result = await weaviateRequest(
+          "/v1/graphql",
+          "POST",
+          hybridQuery,
+          apiKey,
+          baseUrl
+        ) as { data?: { Get?: Record<string, unknown[]> } };
+
+        const hits = result.data?.Get?.[className] ?? [];
+        const latencyMs = Date.now() - start;
+
+        // Log for observability (aldri brukerinnhold lagres)
+        db.collection("searchLogs").add({
+          userId: user.uid,
+          className,
+          resultCount: hits.length,
+          latencyMs,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        }).catch(() => {});
+
+        success(res, { results: hits, count: hits.length, latencyMs });
+      } catch (err) {
+        fail(res, err instanceof Error ? err.message : "Søk feilet", 500);
+      }
+    });
+
+    if (req.method !== "POST") {
+      fail(res, "Metode ikke tillatt", 405);
+      return;
+    }
+
+    await handler({ req, res });
+  }
+);
