@@ -7,6 +7,8 @@ import {
   collection,
   addDoc,
   updateDoc,
+  deleteDoc,
+  getDoc,
   doc,
   getDocs,
   orderBy,
@@ -55,7 +57,7 @@ export async function saveConversationMessages(
     role: m.role,
     content: m.content,
     timestamp: m.timestamp?.toISOString() ?? new Date().toISOString(),
-    sources: m.sources ?? [],
+    sources: (m as unknown as Record<string, unknown>).sources ?? [],
   }));
   await updateDoc(ref, {
     messages: serialized,
@@ -67,7 +69,7 @@ export async function saveConversationMessages(
 /** Hent siste samtaler for bruker */
 export async function getRecentConversations(
   userId: string,
-  maxCount = 10
+  maxCount = 30
 ): Promise<StoredConversation[]> {
   const q = query(
     collection(db, "users", userId, "conversations"),
@@ -85,4 +87,28 @@ export async function getRecentConversations(
       messageCount: data.messageCount ?? 0,
     };
   });
+}
+
+/** Last inn meldinger fra en eksisterende samtale */
+export async function loadConversation(
+  userId: string,
+  conversationId: string
+): Promise<{ title: string; messages: ChatMessage[] } | null> {
+  const snap = await getDoc(doc(db, "users", userId, "conversations", conversationId));
+  if (!snap.exists()) return null;
+  const data = snap.data();
+  const messages: ChatMessage[] = (data.messages ?? []).map((m: Record<string, unknown>) => ({
+    id: String(m.id ?? Math.random()),
+    role: m.role as ChatMessage["role"],
+    content: String(m.content ?? ""),
+    timestamp: m.timestamp ? new Date(m.timestamp as string) : new Date(),
+    // sources is optional in ChatMessage and may be absent
+    ...((m.sources != null) && { sources: m.sources }),
+  }));
+  return { title: data.title ?? "Samtale", messages };
+}
+
+/** Slett en samtale (GDPR rett til sletting) */
+export async function deleteConversationById(userId: string, conversationId: string): Promise<void> {
+  await deleteDoc(doc(db, "users", userId, "conversations", conversationId));
 }

@@ -7,6 +7,7 @@ import { buildSystemPrompt } from "../lib/system-prompt";
 import {
   createConversation,
   saveConversationMessages,
+  loadConversation,
 } from "../lib/conversation-store";
 import type { ChatMessage, ChatConfig, AssistantContext } from "../types";
 
@@ -14,13 +15,33 @@ type FirebaseChatSession = ReturnType<ReturnType<typeof getModel>["startChat"]>;
 
 export function useChatSession(
   context: AssistantContext,
-  config?: ChatConfig
+  config?: ChatConfig & { initialConversationId?: string }
 ) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const chatRef = useRef<FirebaseChatSession | null>(null);
   const contextRef = useRef(context);
-  const conversationIdRef = useRef<string | null>(null);
+  const conversationIdRef = useRef<string | null>(config?.initialConversationId ?? null);
+
+  // Last inn eksisterende samtale ved mount hvis initialConversationId er oppgitt
+  useEffect(() => {
+    const uid = context.user?.uid;
+    const convId = config?.initialConversationId;
+    if (!uid || !convId) return;
+
+    setIsLoadingHistory(true);
+    loadConversation(uid, convId)
+      .then((conv) => {
+        if (conv && conv.messages.length > 0) {
+          setMessages(conv.messages);
+          conversationIdRef.current = convId;
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoadingHistory(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config?.initialConversationId, context.user?.uid]);
 
   // Debounced Firestore-persistering etter hver melding
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -162,5 +183,5 @@ export function useChatSession(
     conversationIdRef.current = null;
   }, []);
 
-  return { messages, sendMessage, clearMessages, isStreaming };
+  return { messages, sendMessage, clearMessages, isStreaming, isLoadingHistory, conversationId: conversationIdRef };
 }

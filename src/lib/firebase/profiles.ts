@@ -6,9 +6,14 @@
 import {
   doc,
   getDoc,
+  getDocs,
   setDoc,
+  deleteDoc,
   updateDoc,
   collection,
+  query,
+  orderBy,
+  limit,
   serverTimestamp,
   onSnapshot,
   type Unsubscribe,
@@ -150,5 +155,39 @@ export async function saveConversation(
       updatedAt: serverTimestamp(),
     },
     { merge: true }
+  );
+}
+
+export async function getConversations(
+  userId: string,
+  maxResults = 30
+): Promise<(Conversation & { id: string })[]> {
+  const snap = await getDocs(
+    query(
+      collection(db, "users", userId, "conversations"),
+      orderBy("updatedAt", "desc"),
+      limit(maxResults)
+    )
+  );
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Conversation & { id: string }));
+}
+
+export async function deleteConversation(userId: string, convId: string): Promise<void> {
+  await deleteDoc(doc(db, "users", userId, "conversations", convId));
+}
+
+export function subscribeConversations(
+  userId: string,
+  callback: (conversations: (Conversation & { id: string })[]) => void
+): Unsubscribe {
+  return onSnapshot(
+    query(
+      collection(db, "users", userId, "conversations"),
+      orderBy("updatedAt", "desc"),
+      limit(30)
+    ),
+    (snap) => {
+      callback(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Conversation & { id: string })));
+    }
   );
 }
