@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { getModel } from "@/lib/firebase/ai";
 import { generateId } from "@/lib/utils";
 import { buildSystemPrompt } from "../lib/system-prompt";
+import {
+  createConversation,
+  saveConversationMessages,
+} from "../lib/conversation-store";
 import type { ChatMessage, ChatConfig, AssistantContext } from "../types";
 
 type FirebaseChatSession = ReturnType<ReturnType<typeof getModel>["startChat"]>;
@@ -16,6 +20,35 @@ export function useChatSession(
   const [isStreaming, setIsStreaming] = useState(false);
   const chatRef = useRef<FirebaseChatSession | null>(null);
   const contextRef = useRef(context);
+  const conversationIdRef = useRef<string | null>(null);
+
+  // Debounced Firestore-persistering etter hver melding
+  const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function schedulePersist(msgs: ChatMessage[]) {
+    const uid = context.user?.uid;
+    if (!uid) return;
+    if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+    persistTimerRef.current = setTimeout(async () => {
+      try {
+        if (!conversationIdRef.current) {
+          const firstUser = msgs.find((m) => m.role === "user");
+          if (!firstUser) return;
+          conversationIdRef.current = await createConversation(uid, firstUser.content);
+        }
+        await saveConversationMessages(uid, conversationIdRef.current, msgs);
+      } catch {
+        // Silently fail — logging er sekundært til brukeropplevelse
+      }
+    }, 1500);
+  }
+
+  // Rens timer ved avmontering
+  useEffect(() => {
+    return () => {
+      if (persistTimerRef.current) clearTimeout(persistTimerRef.current);
+    };
+  }, []);
 
   // Opprett ny chat-sesjon med gjeldende kontekst
   function createSession() {
@@ -92,12 +125,14 @@ export function useChatSession(
           }
         }
 
-        // Marker streaming som ferdig
-        setMessages((prev) =>
-          prev.map((m) =>
+        // Marker streaming som ferdig og persister til Firestore
+        setMessages((prev) => {
+          const updated = prev.map((m) =>
             m.id === assistantId ? { ...m, streaming: false } : m
-          )
-        );
+          );
+          schedulePersist(updated);
+          return updated;
+        });
       } catch (err) {
         // Ved feil, vis feilmelding som assistentens svar
         const errorMsg =
@@ -124,6 +159,7 @@ export function useChatSession(
   const clearMessages = useCallback(() => {
     setMessages([]);
     chatRef.current = null;
+    conversationIdRef.current = null;
   }, []);
 
   return { messages, sendMessage, clearMessages, isStreaming };
