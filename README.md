@@ -1,30 +1,27 @@
-# ketl cloud
+# Suksess
 
-SaaS-boilerplate med Next.js, Firebase og TypeScript — klar til bruk for nye prosjekter.
+AI-drevet karriere- og utdanningsveiledning for norske videregående elever.
 
 ## Funksjoner
 
-- **Autentisering** — Google, e-post/passord, e-postlenke (passwordless), og anonym via Firebase Auth
-- **Dashboard** — Admin-layout med sammenleggbar sidebar, topplinje og brukermeny
-- **Admin-panel** — Brukeradministrasjon, statistikk-oversikt og feature flags
-- **AI-assistent** — Popup chat-widget med streaming (Firebase AI Logic / Gemini)
-- **Stripe-betaling** — Checkout, kundeportal, webhooks for abonnement
-- **API-nøkler** — Utvikler-seksjon med opprett/slett/kopier API-nøkler
-- **Feature flags** — Firestore-basert system med sanntidslytting og admin-UI
+- **AI-veileder** — Personlig chat-assistent med streaming (Firebase AI Logic / Gemini)
+- **Karakterkalkulator** — Beregn snitt, simuler karakterer og se risikoanalyse
+- **Karriereveiledning** — Utforsk karrieremuligheter basert på interesser og styrker
+- **Karrieregraf** — Visualiser karriereveier og utdanningsløp
+- **CV-builder** — Bygg og eksporter CV tilpasset norsk arbeidsmarked
+- **Søknadscoach** — Hjelp til universitets- og høyskolesøknad (SO-poeng)
+- **Studier** — Planlegg og spor studieforløp
+- **Jobbmatch** — Finn relevante stillinger via NAV Arbeidsplassen
+- **Fremgang** — Gamification med XP, nivåer og achievements
+- **Analyse** — Innsikt i egen faglig utvikling
+- **Autentisering** — Google, e-post/passord og anonym via Firebase Auth
 - **Onboarding** — Flerstegs velkomstflyt for nye brukere
 - **Kontoinnstillinger** — Profil, avatar, passord, Google-kobling, slett konto
 - **Tema** — Lys/mørk/system med localStorage-persistering
-- **Datatabell** — Generisk komponent med sortering, søk og paginering
-- **Skjema** — React Hook Form + Zod-validering med gjenbrukbare komponenter
-- **Toast** — Varsler via Sonner (suksess, feil, info, lasting)
-- **Lasteindikatorer** — Skeleton-loading for sider og komponenter
-- **SEO** — Open Graph, robots.txt, sitemap.xml, JSON-LD
-- **PWA** — Web App Manifest for installerbar app
-- **Samtykke** — Cookie/analytics samtykkebanner med localStorage-persistering
-- **Web Vitals** — Ytelsesrapportering til Analytics
-- **API** — Cloud Functions med auth-middleware, Zod-validering og rate limiting
-- **Firestore** — CRUD, sanntidslyttere, paginering, batch-operasjoner
-- **Analytics** — Automatisk sidevisnings-sporing via Firebase Analytics
+- **PWA** — Installerbar app med offline-støtte
+- **Varsler** — Sanntidsvarsler via Firestore
+- **API-nøkler** — Utvikler-seksjon med opprett/slett/kopier
+- **Admin-panel** — Brukeradministrasjon, statistikk og feature flags
 - **Testing** — Vitest + Testing Library
 - **CI/CD** — GitHub Actions → Firebase deploy
 
@@ -32,8 +29,8 @@ SaaS-boilerplate med Next.js, Firebase og TypeScript — klar til bruk for nye p
 
 ```bash
 # 1. Klon repoet
-git clone https://github.com/andreas-t-hjertaker/sandbox.git
-cd sandbox
+git clone https://github.com/andreas-t-hjertaker/suksess.git
+cd suksess
 
 # 2. Konfigurer miljøvariabler
 cp .env.local.example .env.local
@@ -47,40 +44,20 @@ cd functions && npm install && cd ..
 npm run dev
 ```
 
-## Bruk som mal for nytt prosjekt
-
-1. **Opprett nytt repo** fra denne malen (bruk "Use this template" på GitHub)
-2. **Opprett Firebase-prosjekt** på [console.firebase.google.com](https://console.firebase.google.com)
-3. **Oppdater konfigurasjon:**
-   - `.env.local` — Firebase-nøkler fra prosjektet
-   - `.firebaserc` — Endre `default` til ditt prosjekt-ID
-4. **Aktiver Auth-metoder** i Firebase Console → Authentication → Sign-in method:
-   - E-post/passord + E-postlenke
-   - Google
-   - Anonym (valgfritt)
-5. **Aktiver Gemini** i Firebase Console → AI Logic (for AI-assistenten)
-6. **Sett opp Stripe:**
-   - Opprett konto på [stripe.com](https://stripe.com)
-   - Legg til `STRIPE_SECRET_KEY` og `STRIPE_WEBHOOK_SECRET` i Cloud Functions-miljø
-   - Legg til `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` i `.env.local`
-   - Opprett produkter/priser i Stripe Dashboard
-7. **Push til `main`** — GitHub Actions bygger og deployer automatisk
-
 ## Tech stack
 
 | Lag | Teknologi |
 |-----|-----------|
 | Frontend | Next.js 16, React 19, TypeScript |
-| Styling | Tailwind CSS v4, shadcn/ui v4 |
+| Styling | Tailwind CSS v4, shadcn/ui v4, Base UI |
 | Backend | Firebase Cloud Functions (Node.js 22) |
 | Database | Cloud Firestore (NoSQL, sanntidssynk) |
-| Autentisering | Firebase Auth (Google, e-post, passwordless, anonym) |
-| Betaling | Stripe (Checkout, kundeportal, webhooks) |
-| Lagring | Firebase Cloud Storage |
-| AI | Firebase AI Logic (Gemini 2.5 Flash) — chat-assistent med streaming |
+| Autentisering | Firebase Auth (Google, e-post, anonym) |
+| AI | Firebase AI Logic (Gemini 2.5 Flash) — streaming chat |
 | Analytics | Firebase Analytics + Web Vitals |
 | Hosting | Firebase Hosting (statisk eksport) |
 | Skjema | React Hook Form + Zod v4-validering |
+| Betaling | Stripe (Checkout, kundeportal, webhooks) |
 | Testing | Vitest, Testing Library |
 | CI/CD | GitHub Actions → Firebase |
 
@@ -89,103 +66,53 @@ npm run dev
 ```
 src/
 ├── app/
-│   ├── layout.tsx                 # Root layout (tema, auth, tooltips, toasts, samtykke)
+│   ├── layout.tsx                 # Root layout (tema, auth, toasts, samtykke)
 │   ├── page.tsx                   # Landingsside
-│   ├── loading.tsx                # Global lasteindikator
-│   ├── robots.ts                  # robots.txt
-│   ├── sitemap.ts                 # sitemap.xml
-│   ├── login/
-│   │   ├── layout.tsx             # Metadata for innlogging
-│   │   └── page.tsx               # Innlogging (Google, e-post, passwordless, anonym)
-│   ├── pricing/
-│   │   ├── layout.tsx             # Metadata for priser
-│   │   └── page.tsx               # Prisside med Stripe Checkout
+│   ├── login/page.tsx             # Innlogging
+│   ├── pricing/page.tsx           # Prisside med Stripe Checkout
 │   ├── dashboard/
-│   │   ├── layout.tsx             # Beskyttet layout med sidebar + AI-assistent + onboarding
-│   │   ├── page.tsx               # Dashboard-oversikt med tjenestestatus
-│   │   ├── loading.tsx            # Dashboard laste-skeleton
-│   │   ├── dokumenter/page.tsx    # Datatabell-eksempel
-│   │   ├── innstillinger/page.tsx # Profil, sikkerhet, avatar, slett konto
-│   │   ├── abonnement/page.tsx    # Stripe-abonnement og kundeportal
-│   │   └── utvikler/page.tsx      # API-nøkler (opprett/slett/kopier)
+│   │   ├── layout.tsx             # Beskyttet layout med sidebar + AI-assistent
+│   │   ├── page.tsx               # Dashboard-oversikt
+│   │   ├── karakterer/page.tsx    # Karakterkalkulator med risikoanalyse
+│   │   ├── karriere/page.tsx      # Karriereveiledning
+│   │   ├── karrieregraf/page.tsx  # Karriere- og utdanningsvisualiseringsgraf
+│   │   ├── cv/page.tsx            # CV-builder
+│   │   ├── soknadscoach/page.tsx  # Søknadscoach (SO-poeng og universitetsopptak)
+│   │   ├── studier/page.tsx       # Studieplanlegger
+│   │   ├── jobbmatch/page.tsx     # Jobbmatch via NAV Arbeidsplassen
+│   │   ├── fremgang/page.tsx      # XP, nivåer og achievements
+│   │   ├── analyse/page.tsx       # Faglig analyse og innsikt
+│   │   ├── veileder/page.tsx      # Dedikert AI-veileder-side
+│   │   ├── profil/page.tsx        # Brukerprofil
+│   │   ├── innstillinger/page.tsx # Konto- og sikkerhetsinnstillinger
+│   │   ├── abonnement/page.tsx    # Stripe-abonnement
+│   │   ├── mine-data/page.tsx     # Dataeksport og personvern
+│   │   └── utvikler/page.tsx      # API-nøkler
 │   └── admin/
-│       ├── layout.tsx             # Admin-beskyttet layout med egen sidebar
-│       ├── page.tsx               # Admin-oversikt med statistikk
-│       ├── brukere/page.tsx       # Brukeradministrasjon (roller, deaktiver, slett)
+│       ├── layout.tsx             # Admin-beskyttet layout
+│       ├── page.tsx               # Admin-oversikt
+│       ├── brukere/page.tsx       # Brukeradministrasjon
 │       └── feature-flags/page.tsx # Feature flag-administrasjon
 ├── components/
-│   ├── ui/                        # shadcn/ui komponenter
-│   │   ├── button, card, badge, separator, input, label
-│   │   ├── sheet, avatar, dropdown-menu, tooltip, skeleton
-│   │   ├── table, data-table      # Generisk datatabell med sortering/søk
-│   │   ├── form, textarea         # Skjema-primitiver
-│   │   ├── sonner                 # Toast-wrapper
-│   │   └── spinner                # Lasteindikator
-│   ├── auth-provider.tsx          # AuthContext-wrapper
-│   ├── theme-provider.tsx         # Tema-wrapper (lys/mørk/system)
-│   ├── theme-toggle.tsx           # Tema-bytte-knapp
-│   ├── sidebar.tsx                # Dashboard-sidebar (desktop + mobil, admin-lenke)
+│   ├── ui/                        # shadcn/ui + Base UI komponenter
+│   ├── sidebar.tsx                # Dashboard-sidebar (desktop + mobil)
 │   ├── protected-route.tsx        # Auth-vakt
-│   ├── analytics-provider.tsx     # Automatisk sidevisnings-sporing
-│   ├── consent-banner.tsx         # Cookie/analytics samtykkebanner
-│   ├── json-ld.tsx                # Strukturert data (JSON-LD)
+│   ├── notification-bell.tsx      # Varselklokke
 │   ├── onboarding-stepper.tsx     # Flerstegs velkomstflyt
-│   └── error-boundary.tsx         # Feilgrense med fallback-UI
+│   └── feature-gate.tsx           # Feature flag-gate
 ├── hooks/
 │   ├── use-auth.ts                # Auth context + hook
-│   ├── use-theme.ts               # Tema context + hook
-│   ├── use-admin.ts               # Admin-rollesjekk (custom claims)
+│   ├── use-xp.ts                  # Gamification (XP, nivåer, achievements)
+│   ├── use-tenant.ts              # Multi-tenant isolasjon
+│   ├── use-admin.ts               # Admin-rollesjekk
 │   ├── use-feature-flags.ts       # Feature flags med sanntidslytting
-│   ├── use-subscription.ts        # Stripe-abonnementsstatus
-│   └── use-api-keys.ts            # API-nøkkeladministrasjon
+│   └── use-implicit-profiling.ts  # Atferdsbasert UI-tilpasning
 ├── lib/
-│   ├── utils.ts                   # cn(), formatDate(), formatRelativeTime(), etc.
-│   ├── toast.ts                   # showToast.success/error/info/loading
-│   ├── api-client.ts              # HTTP-klient med auth-token og feilhåndtering
-│   ├── web-vitals.ts              # Core Web Vitals-rapportering
-│   ├── firebase/
-│   │   ├── config.ts              # Firebase-initialisering (env vars med fallback)
-│   │   ├── auth.ts                # Auth-hjelpere (Google, e-post, passwordless, anonym)
-│   │   ├── firestore.ts           # CRUD, sanntidslyttere, paginering, batch
-│   │   ├── storage.ts             # Opplasting med fremdrift
-│   │   ├── analytics.ts           # Event- og sidevisnings-sporing
-│   │   ├── ai.ts                  # Gemini (tekst, streaming, chat)
-│   │   └── index.ts               # Re-exports
-│   └── stripe/
-│       ├── config.ts              # Stripe-initialisering
-│       ├── pricing.ts             # Prisplaner og hjelpefunksjoner
-│       └── index.ts               # Re-exports
-├── modules/
-│   └── ai-assistant/              # AI-assistent modul (selvinneholdt)
-│       ├── index.ts               # Offentlig API (AiAssistant, useAiAssistant, typer)
-│       ├── types.ts               # ChatMessage, AssistantContext, ChatConfig
-│       ├── hooks/
-│       │   └── use-chat.ts        # Chat-sesjon med streaming via Firebase AI
-│       ├── components/
-│       │   ├── ai-assistant.tsx   # Hovedkomponent (FAB + popup-panel)
-│       │   ├── chat-bubble.tsx    # Meldingsboble (bruker/assistent, markdown)
-│       │   ├── chat-input.tsx     # Tekst-input med auto-vekst
-│       │   └── chat-messages.tsx  # Meldingsliste med auto-scroll
-│       └── lib/
-│           ├── context.ts         # Standard kontekst-bygger
-│           └── system-prompt.ts   # System-instruksjon for AI
-├── types/
-│   └── index.ts                   # ApiResponse, User, WithId, WithTimestamps, SubscriptionStatus, ApiKey, etc.
-└── __tests__/
-    └── utils.test.ts              # Enhetstester for utilities
-
-functions/
-├── src/
-│   ├── index.ts                   # Cloud Functions (health, admin, stripe, API-nøkler, konto)
-│   └── middleware.ts              # withAuth, withAdmin, withApiKeyOrAuth, withValidation, rateLimit
-├── package.json
-└── tsconfig.json
-
-firebase.json                      # Hosting, Functions, Firestore, Storage-konfig
-firestore.rules                    # Sikkerhetsregler for Firestore
-storage.rules                      # Sikkerhetsregler for Storage
-.github/workflows/
-└── firebase-deploy.yml            # CI/CD pipeline
+│   ├── gamification/xp.ts         # XP-verdier, nivåer og achievements
+│   ├── firebase/                  # Firebase-initialisering og hjelpere
+│   └── stripe/                    # Stripe-konfigurasjon
+└── modules/
+    └── ai-assistant/              # AI-assistent modul (selvinneholdt)
 ```
 
 ## Arkitektur
@@ -204,59 +131,14 @@ Bruker → Login-side → Firebase Auth → AuthProvider (context)
                               AdminProtectedRoute → Admin-panel
 ```
 
-`AuthProvider` lytter på `onAuthStateChanged` og deler brukertilstand via React context. `ProtectedRoute` omdirigerer til `/login` hvis bruker ikke er innlogget. `AdminProtectedRoute` sjekker i tillegg admin custom claims.
+### Gamification
 
-### Admin-panel
+Suksess bruker et XP-system for å motivere elever:
 
-```
-Admin → /admin → AdminProtectedRoute (sjekker admin custom claim)
-                      ↓
-              ┌───────────────────────────────┐
-              │ Oversikt    │ Brukere          │
-              │ (statistikk)│ (roller, søk)    │
-              │             │                  │
-              │ Feature     │                  │
-              │ Flags       │                  │
-              └───────────────────────────────┘
-```
-
-Admin-panelet har egen layout med separat navigasjon. Tilgang styres av Firebase custom claims (`admin: true`). Cloud Functions validerer admin-rolle server-side med `withAdmin` middleware.
-
-### Stripe-betaling
-
-```
-Bruker → Prisside → Stripe Checkout → Webhook → Firestore (abonnement)
-                                                       ↓
-                                               Dashboard → Abonnementsside
-                                                       ↓
-                                               Stripe Kundeportal
-```
-
-Stripe Checkout håndterer betaling. Webhooks oppdaterer abonnementsstatus i Firestore. Kundeportalen lar brukere administrere abonnement og betalingsmetoder.
-
-### Feature flags
-
-```
-Admin → /admin/feature-flags → Cloud Functions → Firestore (featureFlags)
-                                                       ↓
-                                           useFeatureFlags() → onSnapshot
-                                                       ↓
-                                              Komponent → isEnabled("key")
-```
-
-Feature flags lagres i Firestore `featureFlags`-collection. Frontend lytter i sanntid via `onSnapshot`. `isEnabled(key, userPlan?)` sjekker om flag er aktiv og plan-kompatibel.
-
-### API-nøkler
-
-```
-Utvikler → /dashboard/utvikler → Cloud Functions → Firestore (apiKeys)
-                                                         ↓
-                                               Ekstern klient → API med Bearer-token
-                                                         ↓
-                                               withApiKeyOrAuth → Firestore
-```
-
-Utviklere kan opprette API-nøkler for programmatisk tilgang. `withApiKeyOrAuth` middleware godtar enten Firebase ID-token eller API-nøkkel.
+- **XP-events**: daglig innlogging, fullføre profil, legge til karakterer, bruke AI-veileder, m.m.
+- **Nivåer**: beregnes fra total XP med progressiv kurve
+- **Achievements**: låses opp ved milepæler (streak, antall karakterer, etc.)
+- **Data lagres** i Firestore under `users/{uid}/gamification/xp`
 
 ### AI-assistent
 
@@ -268,77 +150,11 @@ Bruker → ChatInput → useChatSession → Firebase AI Logic (Gemini)
                     ChatMessages ← streaming chunks ← Gemini API
 ```
 
-AI-assistenten er en selvinneholdt modul under `src/modules/ai-assistant/`. Den bruker Firebase AI Logic direkte fra klienten — ingen API-ruter eller backend nødvendig.
+Kontekstbevisst system-prompt inkluderer brukerinfo, gjeldende side og Suksess-spesifikk kontekst.
 
-**Nøkkelfunksjoner:**
-- Streaming-svar med sanntidsoppdatering
-- Kontekstbevisst system-prompt (brukerinfo, gjeldende side, tilgjengelige tjenester)
-- Markdown-rendering av assistent-svar
-- Automatisk sesjon-gjenskapning ved kontekstendring (side/bruker)
-- FAB-knapp med popup chat-panel
+### Multi-tenant
 
-**Tilpasning:**
-
-```tsx
-import { AiAssistant } from "@/modules/ai-assistant";
-
-<AiAssistant
-  title="Min assistent"
-  welcomeMessage="Hei! Hvordan kan jeg hjelpe?"
-  position="bottom-right"
-  contextProvider={() => ({
-    appName: "Min app",
-    currentPath: window.location.pathname,
-    customContext: "Ekstra kontekst for AI-en",
-  })}
-/>
-```
-
-### Onboarding
-
-Ved første innlogging vises en flerstegs velkomstflyt:
-
-1. **Velkommen** — kort intro til appen
-2. **Sett opp profil** — navn og avatar
-3. **Utforsk funksjoner** — oversikt over nøkkelfunksjoner
-4. **Ferdig** — CTA til dashboard
-
-Status lagres i Firestore (`onboardingComplete: true`). Kan hoppes over med "Hopp over"-knapp.
-
-### API via Cloud Functions
-
-```
-Klient → fetch() med Bearer-token → Cloud Functions (europe-west1)
-                                         ↓
-                                   verifyIdToken() → Firestore
-```
-
-Beskyttede endepunkter validerer Firebase ID-tokens. Zod brukes for request-validering. Rate limiting beskytter mot misbruk.
-
-**API-ruter:**
-
-| Metode | Rute | Middleware | Beskrivelse |
-|--------|------|-----------|-------------|
-| GET | `/health` | — | Helsesjekk |
-| POST | `/notes` | withAuth | Opprett notat |
-| GET | `/notes` | withAuth | Hent notater |
-| POST | `/checkout/create-session` | withAuth | Opprett Stripe checkout |
-| POST | `/checkout/create-portal` | withAuth | Opprett Stripe kundeportal |
-| POST | `/stripe/webhook` | — | Stripe webhook-handler |
-| GET | `/api-keys` | withAuth | Hent brukers API-nøkler |
-| POST | `/api-keys` | withAuth | Opprett API-nøkkel |
-| DELETE | `/api-keys/:id` | withAuth | Slett API-nøkkel |
-| DELETE | `/account` | withAuth | Slett brukerdata |
-| GET | `/admin/stats` | withAdmin | Admin-statistikk |
-| GET | `/admin/users` | withAdmin | Liste brukere |
-| POST | `/admin/set-role` | withAdmin | Sett brukerrolle |
-| GET | `/admin/feature-flags` | — | Hent feature flags |
-| POST | `/admin/feature-flags` | withAdmin | Opprett feature flag |
-| PUT | `/admin/feature-flags/:id` | withAdmin | Oppdater feature flag |
-
-### CI/CD
-
-Push til `main` → GitHub Actions bygger frontend + functions → deployer functions først → deployer hosting.
+`useTenant` leser `tenantId` og `role` fra Firebase custom claims. Roller: `student`, `counselor`, `admin`, `superadmin`. Tilgangsstyring via `canAccess(resource)`.
 
 ## Skript
 
@@ -353,9 +169,9 @@ Push til `main` → GitHub Actions bygger frontend + functions → deployer func
 
 | Variabel | Beskrivelse |
 |----------|-------------|
-| `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase API-nøkkel (trygg å eksponere) |
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase API-nøkkel |
 | `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Auth-domene |
-| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Prosjekt-ID |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Prosjekt-ID (`suksess-842ed`) |
 | `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Storage-bøtte |
 | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | FCM sender-ID |
 | `NEXT_PUBLIC_FIREBASE_APP_ID` | App-ID |
@@ -370,3 +186,7 @@ Push til `main` → GitHub Actions bygger frontend + functions → deployer func
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook-signering |
 
 > **NB:** Firebase API-nøkler er prosjektidentifikatorer og er trygge å eksponere i klienten. Sikkerhet håndteres av Firebase Security Rules og Auth.
+
+## CI/CD
+
+Push til `main` → GitHub Actions bygger frontend + functions → deployer functions først → deployer hosting til Firebase (`suksess-842ed`).
