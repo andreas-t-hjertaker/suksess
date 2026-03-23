@@ -18,6 +18,7 @@ import { AiAssistant } from "@/modules/ai-assistant";
 import { NotificationBell } from "@/components/notification-bell";
 import { useImplicitProfiling } from "@/hooks/use-implicit-profiling";
 import { OnboardingStepper } from "@/components/onboarding-stepper";
+import { LevelUpOverlay } from "@/components/level-up-overlay";
 import { PageTransition } from "@/components/motion";
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
@@ -106,6 +107,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         </main>
       </div>
       <MobileBottomNav />
+      <LevelUpOverlay />
       <AiAssistant
         title="Suksess-assistent"
         welcomeMessage="Hei! Jeg er din AI-assistent for Suksess. Spør meg om karakterer, karrierevalg, utdanning og mer!"

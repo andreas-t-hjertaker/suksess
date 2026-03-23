@@ -21,6 +21,7 @@ import {
   XP_VALUES,
   type AchievementId,
 } from "@/lib/gamification/xp";
+import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
 // Typer
@@ -30,6 +31,7 @@ export type XpDoc = {
   totalXp: number;
   earnedAchievements: AchievementId[];
   streak: number;
+  streakShieldUsedAt: string | null;  // ISO-uke (yyyy-Www) når skjold sist ble brukt
   lastLoginDate: string | null;
   updatedAt: unknown;
 };
@@ -56,7 +58,7 @@ export function useXp() {
         if (snap.exists()) {
           setXpDoc(snap.data() as XpDoc);
         } else {
-          setXpDoc({ totalXp: 0, earnedAchievements: [], streak: 0, lastLoginDate: null, updatedAt: null });
+          setXpDoc({ totalXp: 0, earnedAchievements: [], streak: 0, streakShieldUsedAt: null, lastLoginDate: null, updatedAt: null });
         }
         setLoading(false);
       }
@@ -71,19 +73,12 @@ export function useXp() {
       if (!firebaseUser) return;
       const amount = XP_VALUES[event] * multiplier;
       const ref = doc(db, "users", firebaseUser.uid, "gamification", "xp");
-      await setDoc(
-        ref,
-        {
-          totalXp: increment(amount),
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true }
-      );
+      await setDoc(ref, { totalXp: increment(amount), updatedAt: serverTimestamp() }, { merge: true });
     },
     [firebaseUser]
   );
 
-  /** Lås opp en achievement */
+  /** Lås opp en achievement — viser badge-toast */
   const unlockAchievement = useCallback(
     async (id: AchievementId) => {
       if (!firebaseUser) return;
@@ -93,8 +88,6 @@ export function useXp() {
       const ref = doc(db, "users", firebaseUser.uid, "gamification", "xp");
       const current = (await getDoc(ref)).data() as XpDoc | undefined;
       const already = current?.earnedAchievements ?? [];
-
-      // Sjekk mot fersk Firestore-data for å unngå duplikater
       if (already.includes(id)) return;
 
       await setDoc(
@@ -106,6 +99,12 @@ export function useXp() {
         },
         { merge: true }
       );
+
+      // Badge-toast (Issue #68)
+      toast.success(`${achievement.icon} ${achievement.title}`, {
+        description: achievement.description + (achievement.xpReward > 0 ? ` +${achievement.xpReward} XP` : ""),
+        duration: 4000,
+      });
     },
     [firebaseUser]
   );
@@ -118,23 +117,38 @@ export function useXp() {
     const snap = await getDoc(ref);
     const data = snap.data() as XpDoc | undefined;
 
-    if (data?.lastLoginDate === today) return; // Allerede sjekket inn i dag
+    if (data?.lastLoginDate === today) return;
 
     const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
-    const newStreak = data?.lastLoginDate === yesterday ? (data.streak ?? 0) + 1 : 1;
+    let newStreak: number;
+
+    if (data?.lastLoginDate === yesterday) {
+      newStreak = (data.streak ?? 0) + 1;
+    } else if (data?.lastLoginDate) {
+      // Sjekk om streak-skjold kan redde (brukt én gang per uke)
+      const currentWeek = getIsoWeek(new Date());
+      const shieldUsed = data.streakShieldUsedAt;
+      if (!shieldUsed || shieldUsed !== currentWeek) {
+        // Frys én gang — behold streak
+        newStreak = data.streak ?? 1;
+        await setDoc(ref, { streakShieldUsedAt: currentWeek }, { merge: true });
+        toast.info("🛡️ Streak-skjold aktivert!", {
+          description: "Du mistet én dag, men skjoldet ditt reddet streaken din for denne uken.",
+          duration: 5000,
+        });
+      } else {
+        newStreak = 1; // Streak brutt
+      }
+    } else {
+      newStreak = 1;
+    }
 
     await setDoc(
       ref,
-      {
-        totalXp: increment(XP_VALUES.daily_login),
-        lastLoginDate: today,
-        streak: newStreak,
-        updatedAt: serverTimestamp(),
-      },
+      { totalXp: increment(XP_VALUES.daily_login), lastLoginDate: today, streak: newStreak, updatedAt: serverTimestamp() },
       { merge: true }
     );
 
-    // Streak achievements
     if (newStreak >= 30) await unlockAchievement("month_streak");
     else if (newStreak >= 7) await unlockAchievement("week_streak");
     else if (newStreak >= 3) await unlockAchievement("streak_starter");
@@ -150,10 +164,23 @@ export function useXp() {
     level,
     progress,
     streak: xpDoc?.streak ?? 0,
+    streakShieldUsedAt: xpDoc?.streakShieldUsedAt ?? null,
     earnedAchievements: xpDoc?.earnedAchievements ?? [],
     isUnlocked: (feature: string) => isFeatureUnlocked(feature, totalXp),
     earnXp,
     unlockAchievement,
     recordDailyLogin,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Hjelper: ISO-uke-streng (yyyy-Www) for streak-skjold
+// ---------------------------------------------------------------------------
+
+function getIsoWeek(date: Date): string {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
 }
