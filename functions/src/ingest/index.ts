@@ -23,8 +23,14 @@ import {
   fetchUtdanningNoPrograms, ingestStudyPrograms,
   fetchGrepUtdanningsprogram, ingestVgsPrograms,
   fetchUtdanningsbeskrivelser, ingestUtdanningsbeskrivelser,
+  fetchUtdanningYrker, ingestUtdanningYrker,
 } from "./utdanning-no";
-import { fetchAdmissionStats, ingestAdmissionStats } from "./dbh";
+import {
+  fetchAdmissionStats, ingestAdmissionStats,
+  fetchDBHStudyProgrammes, ingestDBHStudyProgrammes,
+  fetchDBHEnrollment, ingestDBHEnrollment,
+  fetchDBHDropout, ingestDBHDropout,
+} from "./dbh";
 import { fetchJobMarketData } from "./nav-arbeidsplassen";
 import { fetchFagvelger, ingestTradeCertificates, fetchLaerebedrifter, ingestLaerebedrifter, fetchGrepFagkoder, ingestFagkoder } from "./laerling";
 
@@ -32,6 +38,26 @@ import { fetchFagvelger, ingestTradeCertificates, fetchLaerebedrifter, ingestLae
 export { ingestNavStillingerScheduled } from "./nav-stillinger";
 
 const db = admin.firestore();
+
+// ─── _sync_state: spor siste vellykkede sync per kilde (Issue #11) ──────────
+
+async function setSyncState(source: string, count: number): Promise<void> {
+  await db.collection("_sync_state").doc(source).set({
+    source,
+    lastSyncAt: admin.firestore.FieldValue.serverTimestamp(),
+    lastCount: count,
+    status: "ok",
+  }, { merge: true });
+}
+
+async function setSyncError(source: string, error: string): Promise<void> {
+  await db.collection("_sync_state").doc(source).set({
+    source,
+    lastErrorAt: admin.firestore.FieldValue.serverTimestamp(),
+    lastError: error.slice(0, 500),
+    status: "error",
+  }, { merge: true });
+}
 
 // ---------------------------------------------------------------------------
 // Utdanning.no scheduler (daglig 03:00)
@@ -45,17 +71,30 @@ export const ingestUtdanningNoScheduled = onSchedule(
   },
   async () => {
     console.info("[ingest] Starter utdanning.no ingest...");
-    const programs = await fetchUtdanningNoPrograms();
-    const count = await ingestStudyPrograms(programs);
-    console.info(`[ingest] utdanning.no studievelgeren: ${count} programmer lagret`);
+    try {
+      const programs = await fetchUtdanningNoPrograms();
+      const count = await ingestStudyPrograms(programs);
+      console.info(`[ingest] utdanning.no studievelgeren: ${count} programmer lagret`);
+      await setSyncState("utdanning-no-studievelgeren", count);
 
-    const vgsPrograms = await fetchGrepUtdanningsprogram();
-    const vgsCount = await ingestVgsPrograms(vgsPrograms);
-    console.info(`[ingest] Grep VGS-program: ${vgsCount} poster lagret`);
+      const vgsPrograms = await fetchGrepUtdanningsprogram();
+      const vgsCount = await ingestVgsPrograms(vgsPrograms);
+      console.info(`[ingest] Grep VGS-program: ${vgsCount} poster lagret`);
+      await setSyncState("grep-vgs", vgsCount);
 
-    const beskrivelser = await fetchUtdanningsbeskrivelser();
-    const beskrivelserCount = await ingestUtdanningsbeskrivelser(beskrivelser);
-    console.info(`[ingest] Utdanningsbeskrivelser: ${beskrivelserCount} poster lagret`);
+      const beskrivelser = await fetchUtdanningsbeskrivelser();
+      const beskrivelserCount = await ingestUtdanningsbeskrivelser(beskrivelser);
+      console.info(`[ingest] Utdanningsbeskrivelser: ${beskrivelserCount} poster lagret`);
+      await setSyncState("utdanning-no-beskrivelser", beskrivelserCount);
+
+      const yrker = await fetchUtdanningYrker();
+      const yrkerCount = await ingestUtdanningYrker(yrker);
+      console.info(`[ingest] utdanning.no yrker/STYRK-08: ${yrkerCount} yrker lagret`);
+      await setSyncState("utdanning-no-yrker", yrkerCount);
+    } catch (err) {
+      await setSyncError("utdanning-no", String(err));
+      throw err;
+    }
   }
 );
 
@@ -71,9 +110,30 @@ export const ingestDBHScheduled = onSchedule(
   },
   async () => {
     console.info("[ingest] Starter DBH ingest...");
-    const stats = await fetchAdmissionStats();
-    const count = await ingestAdmissionStats(stats);
-    console.info(`[ingest] DBH: ${count} opptaksrekorder lagret`);
+    try {
+      const stats = await fetchAdmissionStats();
+      const count = await ingestAdmissionStats(stats);
+      console.info(`[ingest] DBH tabell 204 (opptakspoeng): ${count} rekorder`);
+      await setSyncState("dbh-204-admission", count);
+
+      const programmes = await fetchDBHStudyProgrammes();
+      const progCount = await ingestDBHStudyProgrammes(programmes);
+      console.info(`[ingest] DBH tabell 347 (studieprogram): ${progCount} rekorder`);
+      await setSyncState("dbh-347-programmes", progCount);
+
+      const enrollment = await fetchDBHEnrollment();
+      const enrollCount = await ingestDBHEnrollment(enrollment);
+      console.info(`[ingest] DBH tabell 123 (innskriving): ${enrollCount} rekorder`);
+      await setSyncState("dbh-123-enrollment", enrollCount);
+
+      const dropout = await fetchDBHDropout();
+      const dropoutCount = await ingestDBHDropout(dropout);
+      console.info(`[ingest] DBH tabell 704 (frafall): ${dropoutCount} rekorder`);
+      await setSyncState("dbh-704-dropout", dropoutCount);
+    } catch (err) {
+      await setSyncError("dbh", String(err));
+      throw err;
+    }
   }
 );
 
@@ -116,8 +176,18 @@ export const ingestSSBScheduled = onSchedule(
   },
   async () => {
     console.info("[ingest] Starter SSB yrkesstatistikk ingest...");
-    const count = await ingestSSBOccupationStats();
-    console.info(`[ingest] SSB: ${count} yrkesrekorder oppdatert`);
+    try {
+      const count = await ingestSSBOccupationStats();
+      console.info(`[ingest] SSB tabell 07984 (yrker): ${count} rekorder`);
+      await setSyncState("ssb-07984-occupations", count);
+
+      const salaryCount = await ingestSSBSalaryByEducation();
+      console.info(`[ingest] SSB tabell 11420 (lønn): ${salaryCount} rekorder`);
+      await setSyncState("ssb-11420-salary", salaryCount);
+    } catch (err) {
+      await setSyncError("ssb", String(err));
+      throw err;
+    }
   }
 );
 
@@ -188,6 +258,70 @@ async function ingestSSBOccupationStats(): Promise<number> {
     return count;
   } catch (err) {
     console.error("[ingest] SSB feil:", err);
+    return 0;
+  }
+}
+
+/**
+ * SSB Tabell 11420: Månedslønn etter utdanningsnivå (Issue #11)
+ * https://data.ssb.no/api/pxwebapi/v2/no/table/11420
+ */
+async function ingestSSBSalaryByEducation(): Promise<number> {
+  const SSB_SALARY_API = "https://data.ssb.no/api/v0/no/table/11420";
+  try {
+    const resp = await fetch(SSB_SALARY_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: [
+          { code: "Tid", selection: { filter: "top", values: ["1"] } },
+          { code: "Kjonn", selection: { filter: "item", values: ["0"] } }, // begge kjønn
+        ],
+        response: { format: "json-stat2" },
+      }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!resp.ok) { console.warn(`SSB 11420 svarte ${resp.status}`); return 0; }
+
+    const data = await resp.json() as {
+      dataset?: {
+        value?: number[];
+        dimension?: {
+          Utdanning?: { category?: { label?: Record<string, string> } };
+        };
+        updated?: string;
+      };
+    };
+
+    const labels = data.dataset?.dimension?.Utdanning?.category?.label ?? {};
+    const values = data.dataset?.value ?? [];
+    const entries = Object.entries(labels);
+    const year = data.dataset?.updated
+      ? new Date(data.dataset.updated).getFullYear()
+      : new Date().getFullYear();
+
+    const batch = db.batch();
+    let count = 0;
+    for (let i = 0; i < entries.length && i < values.length; i++) {
+      const [code, label] = entries[i];
+      const monthlyWage = values[i];
+      if (!monthlyWage) continue;
+      batch.set(db.collection("ssbSalary").doc(code), {
+        educationCode: code,
+        label,
+        monthlyWageNok: monthlyWage,
+        annualWageNok: monthlyWage * 12,
+        year,
+        source: "ssb-11420",
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+      count++;
+      if (count % 500 === 0) await batch.commit();
+    }
+    await batch.commit();
+    return count;
+  } catch (err) {
+    console.error("[ingest] SSB 11420 feil:", err);
     return 0;
   }
 }

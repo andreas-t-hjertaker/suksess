@@ -210,6 +210,65 @@ export async function ingestUtdanningsbeskrivelser(items: UtdanningsBeskrivelse[
   return written;
 }
 
+// ─── Yrker og STYRK-08 (Issue #11) ───────────────────────────────────────────
+
+type UtdanningYrke = {
+  id: string | number;
+  tittel?: string;
+  navn?: string;
+  beskrivelse?: string;
+  styrk08?: string;
+  riasecKoder?: string[];
+  utdanningsniva?: string;
+};
+
+/** Hent yrkesbeskrivelser fra utdanning.no (O*NET mapping + STYRK-08) */
+export async function fetchUtdanningYrker(): Promise<UtdanningYrke[]> {
+  try {
+    const resp = await fetch("https://api.utdanning.no/onet/yrker", {
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!resp.ok) {
+      // Fallback til jobbkompasset
+      const resp2 = await fetch("https://api.utdanning.no/jobbkompasset/v2/yrker", {
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!resp2.ok) return [];
+      const data2 = await resp2.json() as UtdanningYrke[];
+      return Array.isArray(data2) ? data2 : [];
+    }
+    const data = await resp.json() as UtdanningYrke[];
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error("[utdanning.no] Yrker feil:", err);
+    return [];
+  }
+}
+
+export async function ingestUtdanningYrker(yrker: UtdanningYrke[]): Promise<number> {
+  if (yrker.length === 0) return 0;
+  let written = 0;
+  for (let i = 0; i < yrker.length; i += BATCH_SIZE) {
+    const batch = db.batch();
+    for (const y of yrker.slice(i, i + BATCH_SIZE)) {
+      const id = String(y.id ?? "");
+      if (!id) continue;
+      batch.set(db.collection("occupations").doc(id), {
+        title: y.tittel ?? y.navn ?? "",
+        description: stripHtml(y.beskrivelse ?? ""),
+        styrk08Code: y.styrk08 ?? "",
+        riasecCodes: y.riasecKoder ?? [],
+        educationRequirement: y.utdanningsniva ?? "",
+        source: "utdanning.no",
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+      written++;
+    }
+    await batch.commit();
+  }
+  return written;
+}
+
 // ─── Hjelpefunksjoner ─────────────────────────────────────────────────────────
 
 function normalizeLevel(level: string): string {
