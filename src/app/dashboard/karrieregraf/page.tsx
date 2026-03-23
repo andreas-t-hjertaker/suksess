@@ -11,6 +11,7 @@ import { useXp } from "@/hooks/use-xp";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { getRiasecCode } from "@/lib/personality/scoring";
 import { CAREER_NODES, calcFitScore } from "@/lib/karriere/data";
+import { useKarrierePaths } from "@/hooks/use-karriere";
 import {
   Sheet,
   SheetContent,
@@ -179,6 +180,7 @@ function buildGraph(
 export default function KarriereGrafPage() {
   const { user } = useAuth();
   const { earnXp } = useXp();
+  const { careers: firestoreCareers } = useKarrierePaths();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [selectedCareer, setSelectedCareer] = useState<CareerNode | null>(null);
   const [zoom, setZoom] = useState(1);
@@ -196,16 +198,18 @@ export default function KarriereGrafPage() {
 
   const riasecCode = profile?.riasec ? getRiasecCode(profile.riasec) : null;
 
+  const allCareers = firestoreCareers.length > 0 ? firestoreCareers : CAREER_NODES;
+
   const filteredCareers = useMemo(() => {
-    if (!profile?.riasec) return CAREER_NODES;
-    const scored = CAREER_NODES.map((c) => ({
+    if (!profile?.riasec) return allCareers;
+    const scored = allCareers.map((c) => ({
       ...c,
       score: calcFitScore(c, profile.riasec),
     }));
     if (filter === "topp") return scored.filter((c) => c.score >= 70);
     if (filter === "god") return scored.filter((c) => c.score >= 40);
     return scored;
-  }, [profile, filter]);
+  }, [profile, filter, allCareers]);
 
   const { nodes, edges } = useMemo(
     () => buildGraph(filteredCareers, profile?.riasec ?? null),
@@ -441,7 +445,7 @@ export default function KarriereGrafPage() {
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">Videreutvikling</p>
                     <div className="flex flex-wrap gap-1.5">
                       {selectedCareer.advancesTo.map((id) => {
-                        const next = CAREER_NODES.find((c) => c.id === id);
+                        const next = allCareers.find((c) => c.id === id);
                         return next ? (
                           <Badge key={id} variant="secondary" className="text-xs cursor-pointer" onClick={() => selectCareer(next)}>
                             {next.title}
