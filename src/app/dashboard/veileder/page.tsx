@@ -15,6 +15,7 @@ import { useChatSession } from "@/modules/ai-assistant/hooks/use-chat";
 import { ChatMessages } from "@/modules/ai-assistant/components/chat-messages";
 import { ChatInput } from "@/modules/ai-assistant/components/chat-input";
 import type { UserProfile } from "@/types/domain";
+import { ConversationSidebar } from "@/modules/ai-assistant/components/conversation-sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Trash2, Bot, ChevronRight } from "lucide-react";
@@ -121,6 +122,7 @@ function VeilederPage() {
   const { earnXp } = useXp();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -149,7 +151,7 @@ function VeilederPage() {
 
   const { messages, sendMessage, clearMessages, isStreaming } = useChatSession(
     context,
-    { systemPrompt }
+    { systemPrompt, initialConversationId: activeConversationId ?? undefined }
   );
 
   const handleSend = useCallback((msg: string) => {
@@ -165,8 +167,28 @@ function VeilederPage() {
 
   const riasecCode = profile?.riasec ? getRiasecCode(profile.riasec) : null;
 
+  const handleNewConversation = useCallback(() => {
+    setActiveConversationId(null);
+    clearMessages();
+  }, [clearMessages]);
+
+  const handleSelectConversation = useCallback((id: string) => {
+    setActiveConversationId(id);
+  }, []);
+
   return (
-    <div className="flex flex-col -m-6 mb-[-5rem] md:mb-[-1.5rem] h-[calc(100vh-3.5rem)]">
+    <div className="flex -m-6 mb-[-5rem] md:mb-[-1.5rem] h-[calc(100vh-3.5rem)]">
+      {/* Samtalehistorikk-sidebar (Issue #63) */}
+      {user && (
+        <ConversationSidebar
+          userId={user.uid}
+          currentConversationId={activeConversationId}
+          onSelectConversation={handleSelectConversation}
+          onNewConversation={handleNewConversation}
+          className="shrink-0"
+        />
+      )}
+      <div className="flex flex-col flex-1 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3 shrink-0">
         <div className="flex items-center gap-2">
@@ -261,6 +283,7 @@ function VeilederPage() {
           placeholder="Spør om karrierevalg, studier, karakterer…"
         />
       </div>
+      </div> {/* end inner flex column */}
     </div>
   );
 }
