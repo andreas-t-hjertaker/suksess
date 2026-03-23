@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Markdown from "react-markdown";
 import { cn } from "@/lib/utils";
+import { AiBadge } from "@/components/ai-badge";
 import type { ChatMessage } from "../types";
 
 export function ChatBubble({ message }: { message: ChatMessage }) {
@@ -47,6 +48,10 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
           </>
         )}
       </div>
+      {/* EU AI Act art. 50: Tydelig AI-merking på alle AI-genererte svar */}
+      {!isUser && !message.streaming && message.content && (
+        <AiBadge className="self-start" />
+      )}
       {showTime && (
         <span className="px-1 text-[10px] text-muted-foreground">{time}</span>
       )}
