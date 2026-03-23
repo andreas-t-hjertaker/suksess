@@ -14,11 +14,18 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
     minute: "2-digit",
   });
 
+  const roleLabel = isUser ? "Du" : "AI-veileder";
+
   return (
     <div
       className={cn("flex flex-col gap-1", isUser ? "items-end" : "items-start")}
+      role="article"
+      aria-label={`${roleLabel}, ${time}`}
       onMouseEnter={() => setShowTime(true)}
       onMouseLeave={() => setShowTime(false)}
+      onFocus={() => setShowTime(true)}
+      onBlur={() => setShowTime(false)}
+      tabIndex={0}
     >
       <div
         className={cn(
@@ -38,17 +45,17 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
               </div>
             ) : null}
             {message.streaming && (
-              <span className="inline-flex items-center gap-1 pt-1">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-foreground/50" />
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-foreground/50 [animation-delay:150ms]" />
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-foreground/50 [animation-delay:300ms]" />
+              <span className="inline-flex items-center gap-1 pt-1" role="status" aria-label="Veileder skriver...">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-foreground/50" aria-hidden="true" />
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-foreground/50 [animation-delay:150ms]" aria-hidden="true" />
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-foreground/50 [animation-delay:300ms]" aria-hidden="true" />
               </span>
             )}
           </>
         )}
       </div>
       {showTime && (
-        <span className="px-1 text-[10px] text-muted-foreground">{time}</span>
+        <span className="px-1 text-[10px] text-muted-foreground" aria-hidden="true">{time}</span>
       )}
     </div>
   );

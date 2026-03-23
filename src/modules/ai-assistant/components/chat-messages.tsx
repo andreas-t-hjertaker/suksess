@@ -20,9 +20,9 @@ export function ChatMessages({ messages, welcomeMessage }: ChatMessagesProps) {
 
   if (messages.length === 0) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center" role="status">
         <div className="rounded-full bg-muted p-3">
-          <Bot className="h-6 w-6 text-muted-foreground" />
+          <Bot className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
         </div>
         <p className="text-sm text-muted-foreground">{welcomeMessage}</p>
       </div>
@@ -30,11 +30,16 @@ export function ChatMessages({ messages, welcomeMessage }: ChatMessagesProps) {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-3">
+    <div
+      className="flex flex-1 flex-col gap-3 overflow-y-auto p-3"
+      role="log"
+      aria-live="polite"
+      aria-label="AI-chat samtale"
+    >
       {messages.map((msg) => (
         <ChatBubble key={msg.id} message={msg} />
       ))}
-      <div ref={bottomRef} />
+      <div ref={bottomRef} aria-hidden="true" />
     </div>
   );
 }
