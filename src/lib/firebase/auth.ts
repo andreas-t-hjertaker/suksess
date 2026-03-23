@@ -3,7 +3,10 @@
 import {
   getAuth,
   GoogleAuthProvider,
+  OAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
@@ -23,11 +26,55 @@ export const auth = getAuth(app);
 
 const googleProvider = new GoogleAuthProvider();
 
+// ─── Feide OIDC ──────────────────────────────────────────
+// Feide er Norges nasjonale innloggingstjeneste for skoler og universiteter.
+// Firebase støtter Feide via OIDC-tilleggsleverandør.
+// FEIDE_OIDC_PROVIDER_ID konfigureres i Firebase Authentication console.
+
+const FEIDE_PROVIDER_ID =
+  process.env.NEXT_PUBLIC_FEIDE_PROVIDER_ID ?? "oidc.feide";
+
+function createFeideProvider() {
+  const provider = new OAuthProvider(FEIDE_PROVIDER_ID);
+  // Feide krever disse scope-ene for å hente skole-tilknytning
+  provider.addScope("openid");
+  provider.addScope("profile");
+  provider.addScope("email");
+  provider.addScope("userid-feide");
+  provider.addScope("groups-org");
+  // Be om org-tilknytning for multi-tenant
+  provider.setCustomParameters({
+    prompt: "select_account",
+  });
+  return provider;
+}
+
 // ─── Google ──────────────────────────────────────────────
 
 /** Logg inn med Google-popup */
 export async function signInWithGoogle() {
   return signInWithPopup(auth, googleProvider);
+}
+
+// ─── Feide OIDC ──────────────────────────────────────────
+
+/**
+ * Logg inn med Feide via OIDC-redirect.
+ * Bruk redirect (ikke popup) da Feide blokkerer popups.
+ * Etter redirect: kall `getFeideRedirectResult()` for å hente brukeren.
+ */
+export async function signInWithFeide() {
+  const provider = createFeideProvider();
+  return signInWithRedirect(auth, provider);
+}
+
+/**
+ * Hent resultat etter Feide-redirect.
+ * Kall ved oppstart av appen (f.eks. i AuthProvider).
+ * Returnerer null hvis ingen redirect er i gang.
+ */
+export async function getFeideRedirectResult() {
+  return getRedirectResult(auth);
 }
 
 // ─── E-post / passord ────────────────────────────────────

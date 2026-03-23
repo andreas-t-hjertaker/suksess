@@ -22,6 +22,7 @@ export default function LoginPage() {
     user,
     loading,
     signInGoogle,
+    signInFeide,
     signInEmail,
     signUpEmail,
     resetPassword,
@@ -111,6 +112,19 @@ export default function LoginPage() {
       router.replace("/dashboard");
     } catch {
       setError("Kunne ikke logge inn med Google.");
+      setSubmitting(false);
+    }
+  }
+
+  async function handleFeideSignIn() {
+    setError("");
+    setSubmitting(true);
+    try {
+      // Feide bruker redirect — siden laster på nytt etter innlogging
+      await signInFeide();
+      // Koden her nås ikke med redirect, men er med for klarhet
+    } catch {
+      setError("Kunne ikke starte Feide-innlogging.");
       setSubmitting(false);
     }
   }
@@ -231,6 +245,19 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-2">
+                {/* Feide — primær innlogging for norske skoler */}
+                <Button
+                  variant="default"
+                  className="w-full bg-[#1f4e79] hover:bg-[#1a3f63] text-white"
+                  onClick={handleFeideSignIn}
+                  disabled={submitting}
+                >
+                  <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
+                  </svg>
+                  Logg inn med Feide
+                </Button>
+
                 <Button
                   variant="outline"
                   className="w-full"
