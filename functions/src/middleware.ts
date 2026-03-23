@@ -180,6 +180,44 @@ export function withApiKeyOrAuth(handler: AuthHandler): PublicHandler {
 }
 
 // ============================================================
+// Tenant-middleware (#36)
+// ============================================================
+
+/** Kontekst med tenant-resolving */
+export type TenantContext = AuthenticatedContext & {
+  tenantId: string | null;
+};
+
+/** Handler med autentisering og resolved tenantId */
+type TenantHandler = (ctx: TenantContext) => Promise<void> | void;
+
+/**
+ * Wrapper som autentiserer og resolver tenantId fra Firebase custom claims.
+ * tenantId settes av Feide OIDC-callback ved innlogging (eduPersonOrgDN → tenantId).
+ * Superadmin-requests uten tenantId får null — kan se på tvers av tenanter.
+ */
+export function withTenant(handler: TenantHandler): PublicHandler {
+  return withAuth(async (ctx) => {
+    const tenantId = (ctx.user.tenantId as string | null) ?? null;
+    await handler({ ...ctx, tenantId });
+  });
+}
+
+/**
+ * Som withTenant, men krever at tenantId eksisterer.
+ * Returnerer 403 for brukere uten tenant-tilknytning.
+ */
+export function withRequiredTenant(handler: TenantHandler): PublicHandler {
+  return withTenant(async (ctx) => {
+    if (!ctx.tenantId && !ctx.user.admin) {
+      fail(ctx.res, "Ingen tenant-tilknytning — logg inn med Feide", 403);
+      return;
+    }
+    await handler(ctx);
+  });
+}
+
+// ============================================================
 // Rate limiting (in-memory)
 // ============================================================
 
