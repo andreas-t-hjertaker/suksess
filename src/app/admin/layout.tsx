@@ -43,6 +43,7 @@ const adminNavItems = [
   { href: "/admin/feature-flags", label: "Feature flags", icon: ToggleLeft },
   { href: "/admin/tenant", label: "Tenanter", icon: Building2 },
   { href: "/admin/lisenser", label: "Lisenser", icon: CreditCard },
+  { href: "/admin/arbeidsgivere", label: "Arbeidsgivere", icon: Building2 },
 ];
 
 function AdminNavLinks({ onClick }: { onClick?: () => void }) {
