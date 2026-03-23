@@ -113,6 +113,11 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
         allow read: if isCounselorOrAdmin();
       }
+
+      // Studier (subcollection) — emner og eksamenssjekkliste
+      match /studier/{docId} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
     // ---------------------------------------------------------------------------
