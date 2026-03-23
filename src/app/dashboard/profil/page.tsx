@@ -28,6 +28,8 @@ import { cn } from "@/lib/utils";
 import { showToast } from "@/lib/toast";
 import type { UserProfile } from "@/types/domain";
 import Link from "next/link";
+import { ShareableProfileCard } from "@/components/shareable-profile-card";
+import { useXp } from "@/hooks/use-xp";
 
 // ---------------------------------------------------------------------------
 // Statiske beskrivelser
@@ -263,6 +265,7 @@ function ScoreBar({
 
 export default function ProfilPage() {
   const { firebaseUser, user } = useAuth();
+  const { totalXp, level } = useXp();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -346,13 +349,13 @@ export default function ProfilPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
-            {copied ? (
-              <><Check className="h-4 w-4 text-green-500" />Kopiert!</>
-            ) : (
-              <><Share2 className="h-4 w-4" />Del profil</>
-            )}
-          </Button>
+          <ShareableProfileCard
+            profile={profile}
+            displayName={user?.displayName}
+            totalXp={totalXp}
+            level={level?.label}
+            photoURL={user?.photoURL}
+          />
         </div>
       </div>
 
