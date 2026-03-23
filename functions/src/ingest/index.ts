@@ -26,6 +26,7 @@ import {
 } from "./utdanning-no";
 import { fetchAdmissionStats, ingestAdmissionStats } from "./dbh";
 import { fetchJobMarketData } from "./nav-arbeidsplassen";
+import { fetchFagvelger, ingestTradeCertificates, fetchLaerebedrifter, ingestLaerebedrifter, fetchGrepFagkoder, ingestFagkoder } from "./laerling";
 
 // Re-eksporter NAV stillinger (allerede definert i nav-stillinger.ts)
 export { ingestNavStillingerScheduled } from "./nav-stillinger";
@@ -73,6 +74,33 @@ export const ingestDBHScheduled = onSchedule(
     const stats = await fetchAdmissionStats();
     const count = await ingestAdmissionStats(stats);
     console.info(`[ingest] DBH: ${count} opptaksrekorder lagret`);
+  }
+);
+
+// ---------------------------------------------------------------------------
+// Lærling-scheduler (daglig 04:30) — Issue #62
+// ---------------------------------------------------------------------------
+
+export const ingestLaerlingScheduled = onSchedule(
+  {
+    schedule: "30 2 * * *", // 04:30 Oslo
+    timeZone: "Europe/Oslo",
+    region: "europe-west1",
+  },
+  async () => {
+    console.info("[ingest] Starter lærlingdata-ingest...");
+
+    const fagvelger = await fetchFagvelger();
+    const fagvelgerCount = await ingestTradeCertificates(fagvelger);
+    console.info(`[ingest] Fagvelger/fagbrev: ${fagvelgerCount} poster`);
+
+    const bedrifter = await fetchLaerebedrifter();
+    const bedrifterCount = await ingestLaerebedrifter(bedrifter);
+    console.info(`[ingest] Lærebedrifter: ${bedrifterCount} poster`);
+
+    const fagkoder = await fetchGrepFagkoder();
+    const fagkoderCount = await ingestFagkoder(fagkoder);
+    console.info(`[ingest] Grep fagkoder: ${fagkoderCount} poster`);
   }
 );
 
