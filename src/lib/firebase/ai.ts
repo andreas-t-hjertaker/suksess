@@ -1,6 +1,7 @@
 "use client";
 
 import { getAI, getGenerativeModel, VertexAIBackend } from "firebase/ai";
+import type { SafetySetting } from "firebase/ai";
 import { app } from "./config";
 
 /**
@@ -15,11 +16,23 @@ import { app } from "./config";
 const ai = getAI(app, { backend: new VertexAIBackend() });
 
 /**
+ * Safety settings — KRITISK for mindreårige (Issue #57)
+ * BLOCK_LOW_AND_ABOVE på alle 4 kategorier.
+ */
+const SAFETY_SETTINGS: SafetySetting[] = [
+  { category: "HARM_CATEGORY_HARASSMENT",        threshold: "BLOCK_LOW_AND_ABOVE" },
+  { category: "HARM_CATEGORY_HATE_SPEECH",       threshold: "BLOCK_LOW_AND_ABOVE" },
+  { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_LOW_AND_ABOVE" },
+  { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_LOW_AND_ABOVE" },
+];
+
+/**
  * Hent en Gemini-modell for generativ AI.
  * Standard: gemini-2.5-flash — rask, billig og stabil.
+ * Safety settings er alltid aktivert for mindreårige.
  */
 export function getModel(modelName = "gemini-2.5-flash") {
-  return getGenerativeModel(ai, { model: modelName });
+  return getGenerativeModel(ai, { model: modelName, safetySettings: SAFETY_SETTINGS });
 }
 
 /**
