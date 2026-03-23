@@ -386,5 +386,83 @@ service cloud.firestore {
       allow update: if isOwner(userId) || isAuthenticated();
       allow delete: if isAdmin();
     }
+
+    // ---------------------------------------------------------------------------
+    // tokenBudgets/{monthKey} — LLM-kostnadsbudsjett per bruker (Issue #34)
+    // ---------------------------------------------------------------------------
+
+    match /tokenBudgets/{monthKey} {
+      // Brukere kan lese sitt eget budsjett (monthKey inneholder userId)
+      allow read: if isAuthenticated() &&
+        monthKey.matches("budget_" + request.auth.uid + "_.*");
+      // Kun Cloud Functions skriver (via admin SDK — ingen klientskriving)
+      allow write: if false;
+    }
+
+    // ---------------------------------------------------------------------------
+    // _sync_state/{source} — synkroniseringstilstand for ingest-jobber
+    // ---------------------------------------------------------------------------
+
+    match /_sync_state/{source} {
+      allow read: if isAdmin();
+      allow write: if false; // kun Cloud Functions
+    }
+
+    // ---------------------------------------------------------------------------
+    // Ingest-data collections — kun lesbar for innloggede brukere
+    // jobListings, tradeCertificates, apprenticeships, occupations,
+    // ssbSalary, dbhEnrollment, dbhDropout, dbhStudyProgrammes
+    // ---------------------------------------------------------------------------
+
+    match /jobListings/{doc} {
+      allow read: if isAuthenticated();
+      allow write: if false; // kun Cloud Functions
+    }
+
+    match /tradeCertificates/{doc} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /apprenticeships/{doc} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /occupations/{doc} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /ssbSalary/{doc} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /dbhEnrollment/{doc} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /dbhDropout/{doc} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /dbhStudyProgrammes/{doc} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /admissionHistory/{doc} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // vgsFagkoder — Grep fagkoder (åpent for innloggede)
+    match /vgsFagkoder/{doc} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
   }
 }
