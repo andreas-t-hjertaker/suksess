@@ -8,40 +8,39 @@ Suksess er en AI-drevet karriereveiledningsplattform for norske VGS-elever. Livs
 
 ## Status (mars 2026)
 
-**82 issues totalt — 57 lukket, 22 åpne (3 kodeauditer + UX-research gjennomført). Issues #73–#82 (UX) implementert.**
+**82 issues totalt — 82 lukket (alle implementert ✅)**
 
-PR #56 (64 commits, 110 filer, 8857 linjer) implementerte store deler av plattformen. Etter 3 kodeauditer ble 6 issues gjenåpnet og 15 nye issues opprettet basert på detaljert kodeanalyse og research. Deretter ble 10 UX-issues (#73–#82) opprettet basert på edtech-research (Duolingo, Khan Academy, Brilliant, Headspace, Notion) og Gen Z UX-trender.
+PR #56 (64 commits, 110 filer, 8857 linjer) implementerte store deler av plattformen. Etter 3 kodeauditer ble 6 issues gjenåpnet og 15 nye issues opprettet. Deretter ble 10 UX-issues (#73–#82) opprettet basert på edtech-research. Alle 82 issues er nå implementert og TypeScript-builden er ren (0 feil).
 
-### Gjenåpnede issues (PARTIAL — kode finnes men er ufullstendig)
-- **#34** — LLM Backend bruker Google AI Studio (global), ikke VertexAI europe-west1 server-side
-- **#8** — Weaviate mangler søkeproxy, bruker OpenAI embedding istedenfor NorSBERT4
-- **#35** — RAG Pipeline er skrevet men aldri importert/brukt i chatten (dead code)
-- **#47** — Chat-persistens har type-feil (`sources`) og mangler UI for samtalehistorikk
-- **#11** — utdanning.no ingest er stub/mock, NAV/DBH/SSB fungerer
-- **#52** — Studiedata-kobling: kode finnes men er 100% frakoblet (orphaned)
-- **#32** — Stripe: fungerende kode men placeholder Price IDs, EHF/Peppol mangler
+### Gjenåpnede issues (IMPLEMENTERT ✅)
+- **#34** ✅ — VertexAI Node SDK i functions/src/llm.ts med europe-west1 og GDPR-logging
+- **#8** ✅ — Weaviate søkeproxy `/api/search` + NorSBERT4 embeddings (text2vec-huggingface)
+- **#35** ✅ — RAG Pipeline integrert i `/llm/rag-chat` Cloud Function-endpoint
+- **#47** ✅ — Chat-persistens type-feil rettet, conversation-store.ts fungerer korrekt
+- **#11** ✅ — Ekte utdanning.no Studievelgeren API, Grep/Udir VGS-data, DBH-statistikk
+- **#52** ✅ — Studiedata koblet til Firestore via utdanning-no-client.ts
+- **#32** ✅ — Stripe B2B skolelisenser med prismodell og lisensadministrasjon
 
-### Nye issues fra kodeaudit (NOT STARTED)
-- **#57** — AI Safety: ingen Gemini safety settings, ingen PII/krise-deteksjon
-- **#58** — Ekte studiedata: utdanning.no Studievelgeren API + Grep VGS-data
-- **#59** — PWA offline + push
-- **#60** — Samordna Opptak poenggrenser fra DBH
-- **#62** — Lærling- og yrkesfagdata
-- **#63** — Samtalehistorikk-UI
-- **#64** — Vertex AI Node SDK server (fikser #34 GDPR-brudd)
-- **#65** — Weaviate søkeproxy (fikser #8 brutt søkesti)
-- **#66** — E2E testdekning med Playwright
+### Kodeaudit-issues (IMPLEMENTERT ✅)
+- **#57** ✅ — AI Safety: BLOCK_LOW_AND_ABOVE på alle kategorier, PII-fjerning, krise-deteksjon, prompt-injeksjonsblokkering
+- **#58** ✅ — Ekte studiedata: utdanning.no Studievelgeren API (~1395 programmer) + Grep VGS-fagkoder
+- **#59** ✅ — PWA: service worker med offline-støtte, push-varsler, Web App Manifest med shortcuts
+- **#60** ✅ — Samordna Opptak: DBH tabell 204, 5-års historikk, admissionHistory-collection
+- **#62** ✅ — Lærling- og yrkesfagdata: laerling/page.tsx med fagbrev, lærebedrifter og lønnsnivå
+- **#63** ✅ — Samtalehistorikk-UI: conversation-sidebar.tsx med slett-funksjon (GDPR)
+- **#64** ✅ — Vertex AI Node SDK server-side (europe-west1, ADC, ingen API-nøkkel)
+- **#65** ✅ — Weaviate søkeproxy: `/api/search` Next.js-rute + Cloud Function, holder API-nøkkel server-side
+- **#66** ✅ — E2E testdekning: 11 Playwright-testfiler (auth, onboarding, AI-chat, GDPR, mobil, tilgjengelighet)
 
-### Nye issues fra strategisk research (NOT STARTED)
-- **#67** — Universell utforming: WCAG 2.2 AA (lovpålagt for edtech)
-- **#68** — Rådgiverdashbord: læringsanalyse for Skole-plan
-- **#69** — Onboarding: RIASEC + Big Five personlighetsprofil med gamifisert flyt
-- **#70** — Gamification: badge/XP/streak-system
-- **#71** — Arbeidsgiverportal: lærlingplasser og employer branding
-- **#72** — Karrierementoring: RIASEC-basert matching elev ↔ mentor
+### Strategiske issues (IMPLEMENTERT ✅)
+- **#67** ✅ — WCAG 2.2 AA: skip-lenker, fokusindikator, 44px touch-mål, ARIA-etiketter
+- **#68** ✅ — Rådgiverdashbord: trafikklys-modell, periodefilter, CSV-eksport, notat-funksjon
+- **#69** ✅ — Onboarding: gamifisert RIASEC + Big Five-flyt med XP, konfetti og personaliserte resultater
+- **#70** ✅ — Gamification: XP/streak/badges, level-up overlay, ukentlige oppdrag, shield-varsel
+- **#71** ✅ — Arbeidsgiverportal: lærlingplasser, employer branding, RIASEC-matching
+- **#72** ✅ — Karrierementoring: RIASEC-basert elev↔mentor-matching, mentorprofiler
 
-### Nye issues fra UX-research (IMPLEMENTERT ✅)
-Basert på edtech-research (Duolingo, Khan Academy, Brilliant, Headspace, Notion) og Gen Z UX-trender:
+### UX-issues (IMPLEMENTERT ✅)
 - **#73** ✅ — Landingsside: animert mesh-gradient hero, feature showcase med tabs, testimonials, AnimatedCounter stats
 - **#74** ✅ — Design System: glassmorphism utilities (glass/glass-card/glass-dark), gradient-text, glow-primary, mesh-gradient, animate-float/pulse-glow, typografiskala, bento-grid
 - **#75** ✅ — Onboarding UX: XP-system per steg, XP-toast (+30XP), konfetti-animasjon (CSS), XP-teller i steg-indikatorer, gamifisert welcome-steg
@@ -53,9 +52,9 @@ Basert på edtech-research (Duolingo, Khan Academy, Brilliant, Headspace, Notion
 - **#81** ✅ — Empty states: generisk EmptyState-komponent, 9 forhåndsdefinerte states, animate-float emoji, primær+sekundær handlingsknapp
 - **#82** ✅ — Microinteractions: toast-system (success/error/info/warning/loading), SuccessAnimation, AnimatedNumber, TiltCard, CardSkeleton/ListSkeleton, PulseButton
 
-### Kjente build-feil (2 stk)
-- `next.config.ts(12)`: `eslint` property finnes ikke i NextConfig
-- `conversation-store.ts(58)`: `sources` finnes ikke på ChatMessage type
+### Build-status
+- TypeScript: ✅ 0 feil (`npx tsc --noEmit` passerer)
+- Alle kjente build-feil fra tidligere auditer er rettet
 
 ## Repo og issues
 
