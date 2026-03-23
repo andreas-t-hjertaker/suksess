@@ -11,6 +11,7 @@ import {
   checkRateLimit,
   SAFETY_SYSTEM_INSTRUCTIONS,
 } from "@/lib/ai/safety";
+import { retrieveRagContext, injectRagContext } from "@/lib/ai/rag-pipeline";
 import {
   createConversation,
   saveConversationMessages,
@@ -145,9 +146,20 @@ export function useChatSession(
       setIsStreaming(true);
 
       try {
+        // RAG: Hent kontekst fra Weaviate (graceful degradation)
+        let messageToSend = sanitized;
+        try {
+          const ragContext = await retrieveRagContext(sanitized);
+          if (ragContext.contextBlock) {
+            messageToSend = `${ragContext.contextBlock}\n\n---\nBrukerspørsmål: ${sanitized}`;
+          }
+        } catch {
+          // RAG-feil skal ikke stoppe chat — graceful degradation
+        }
+
         const session = getSession();
         const result = await session.sendMessageStream(
-          sanitized
+          messageToSend
         );
 
         let fullText = "";
