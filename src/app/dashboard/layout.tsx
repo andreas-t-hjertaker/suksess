@@ -11,7 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut } from "lucide-react";
+import { LogOut, HelpCircle } from "lucide-react";
+import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AiAssistant } from "@/modules/ai-assistant";
 import { NotificationBell } from "@/components/notification-bell";
@@ -35,6 +36,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden">
+      {/* WCAG 2.4.1 / 2.4.12: Skip-lenke — første fokuserbare element */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[9999] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:shadow-lg"
+      >
+        Hopp til innhold
+      </a>
+
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Topplinje */}
@@ -51,6 +60,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               {user?.displayName || user?.email}
             </span>
             <NotificationBell />
+            {/* WCAG 3.2.6 Consistent Help — hjelpelenke konsistent i header */}
+            <Link
+              href="/dashboard/veileder"
+              aria-label="Hjelp — åpne AI-veileder"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            >
+              <HelpCircle className="h-4 w-4" aria-hidden="true" />
+            </Link>
             <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger

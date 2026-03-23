@@ -158,19 +158,51 @@
 }
 
 /* ---------------------------------------------------------------------------
- * Tilgjengelighet — fokus-stiler (WCAG 2.4.7, nivå AA)
+ * Tilgjengelighet — fokus-stiler (WCAG 2.4.7 / 2.4.11 / 2.4.12, nivå AA)
  * ------------------------------------------------------------------------- */
 
-/* Tydelig fokusrektangel for alle interaktive elementer */
+/*
+ * WCAG 2.4.11 Focus Appearance (2.2 AA):
+ * Fokusindikator skal ha minimum 2px perimeter og minst 3:1 kontrastforhold
+ * mot bakgrunnen. outline-offset: 3px gir 3px mellomrom → den synlige
+ * rammen er 3px bred, oppfyller minimumskrav.
+ */
 :focus-visible {
-  outline: 2px solid hsl(var(--ring));
-  outline-offset: 2px;
+  outline: 3px solid var(--color-ring, oklch(0.52 0.2 265));
+  outline-offset: 3px;
   border-radius: 2px;
 }
 
 /* Fjern fokusring for mus-klikk (kun tastatur) */
 :focus:not(:focus-visible) {
   outline: none;
+}
+
+/*
+ * WCAG 2.4.12 Focus Not Obscured (2.2 AA):
+ * Fokusert element skal ikke være helt skjult bak sticky/fixed elementer.
+ * scroll-margin-top tilsvarer topplinjens høyde (56px = h-14).
+ */
+:focus-visible {
+  scroll-margin-top: 64px;
+  scroll-margin-bottom: 80px; /* Mobil-bottomnav (h-16) */
+}
+
+/*
+ * WCAG 2.5.8 Target Size Minimum (2.2 AA):
+ * Alle klikkbare elementer skal ha minimum 24×24 CSS-piksler.
+ * Setter min-height/min-width som fallback; spesifikke komponenter
+ * kan overstyre dette med eksplisitte dimensjoner.
+ */
+button,
+[role="button"],
+a,
+input[type="checkbox"],
+input[type="radio"],
+select,
+summary {
+  min-height: 24px;
+  min-width: 24px;
 }
 
 /* Screen-reader-only utility */
