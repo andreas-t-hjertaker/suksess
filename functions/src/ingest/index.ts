@@ -20,7 +20,7 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onRequest } from "firebase-functions/v2/https";
 import { withAdmin } from "../middleware";
 import { fetchUtdanningNoPrograms, ingestStudyPrograms, ingestYrker, ingestStyrk08, ingestVgsPrograms } from "./utdanning-no";
-import { fetchAdmissionStats, ingestAdmissionStats } from "./dbh";
+import { fetchAdmissionStats, ingestAdmissionStats, fetchHistoricalAdmissionPoints, ingestHistoricalAdmissionPoints } from "./dbh";
 import { fetchJobMarketData } from "./nav-arbeidsplassen";
 
 // Re-eksporter NAV stillinger (allerede definert i nav-stillinger.ts)
@@ -71,9 +71,18 @@ export const ingestDBHScheduled = onSchedule(
   },
   async () => {
     console.info("[ingest] Starter DBH ingest...");
-    const stats = await fetchAdmissionStats();
-    const count = await ingestAdmissionStats(stats);
-    console.info(`[ingest] DBH: ${count} opptaksrekorder lagret`);
+
+    const [stats, historicalPoints] = await Promise.all([
+      fetchAdmissionStats(),
+      fetchHistoricalAdmissionPoints(),
+    ]);
+
+    const [count, historicalCount] = await Promise.all([
+      ingestAdmissionStats(stats),
+      ingestHistoricalAdmissionPoints(historicalPoints),
+    ]);
+
+    console.info(`[ingest] DBH: ${count} opptaksrekorder, ${historicalCount} historiske poenggrenser lagret`);
   }
 );
 
