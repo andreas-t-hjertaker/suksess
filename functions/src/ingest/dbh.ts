@@ -51,6 +51,87 @@ export async function fetchAdmissionStats(): Promise<
   }
 }
 
+/**
+ * Hent historiske poenggrenser (siste 5 år) fra DBH (Issue #60).
+ * Bruker tabell 571 — gjennomsnittlige opptakspoeng per studieprogram.
+ */
+export async function fetchHistoricalAdmissionPoints(): Promise<
+  { institutionCode: string; programCode: string; programName: string; year: number; pointsFirst: number; pointsOrdinary: number }[]
+> {
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 5 }, (_, i) => String(currentYear - 1 - i));
+
+  try {
+    const response = await fetch(DBH_BASE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tabell_id: 571,
+        api_versjon: 1,
+        statuslinje: "J",
+        kodetabell: "",
+        variabler: [
+          "Institusjonskode", "Studieprogramkode", "Studieprogramnavn",
+          "Årstall", "Poenggrense førstevalgkvote", "Poenggrense ordinær kvote",
+        ],
+        gruppering: ["Institusjonskode", "Studieprogramkode", "Årstall"],
+        filter: [
+          { variabel: "Årstall", selection: { filter: "item", values: years } },
+        ],
+      }),
+      signal: AbortSignal.timeout(60_000),
+    });
+
+    if (!response.ok) {
+      console.warn(`DBH tabell 571 svarte ${response.status}`);
+      return [];
+    }
+
+    const raw = await response.json() as Record<string, unknown>[];
+    return raw.map((row) => ({
+      institutionCode: String(row["Institusjonskode"] ?? ""),
+      programCode: String(row["Studieprogramkode"] ?? ""),
+      programName: String(row["Studieprogramnavn"] ?? ""),
+      year: Number(row["Årstall"] ?? 0),
+      pointsFirst: Number(row["Poenggrense førstevalgkvote"] ?? 0),
+      pointsOrdinary: Number(row["Poenggrense ordinær kvote"] ?? 0),
+    }));
+  } catch (err) {
+    console.error("Feil ved henting av historiske poenggrenser:", err);
+    return [];
+  }
+}
+
+/** Lagre historiske poenggrenser til Firestore */
+export async function ingestHistoricalAdmissionPoints(
+  data: { institutionCode: string; programCode: string; programName: string; year: number; pointsFirst: number; pointsOrdinary: number }[]
+): Promise<number> {
+  if (data.length === 0) return 0;
+
+  const BATCH_SIZE = 400;
+  let written = 0;
+
+  for (let i = 0; i < data.length; i += BATCH_SIZE) {
+    const batch = db.batch();
+    const chunk = data.slice(i, i + BATCH_SIZE);
+
+    for (const d of chunk) {
+      const docId = `${d.institutionCode}_${d.programCode}_${d.year}`;
+      const ref = db.collection("admissionHistory").doc(docId);
+      batch.set(ref, {
+        ...d,
+        source: "dbh-571",
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+      written++;
+    }
+
+    await batch.commit();
+  }
+
+  return written;
+}
+
 /** Lagre opptakspoeng til Firestore */
 export async function ingestAdmissionStats(
   stats: { nusCode: string; year: number; points: number; quota: string }[]

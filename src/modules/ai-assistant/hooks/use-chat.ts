@@ -5,8 +5,17 @@ import { getModel } from "@/lib/firebase/ai";
 import { generateId } from "@/lib/utils";
 import { buildSystemPrompt } from "../lib/system-prompt";
 import {
+  detectCrisis,
+  detectAndRemovePii,
+  detectInjection,
+  checkRateLimit,
+  SAFETY_SYSTEM_INSTRUCTIONS,
+} from "@/lib/ai/safety";
+import { retrieveRagContext, injectRagContext } from "@/lib/ai/rag-pipeline";
+import {
   createConversation,
   saveConversationMessages,
+  getConversationMessages,
 } from "../lib/conversation-store";
 import type { ChatMessage, ChatConfig, AssistantContext } from "../types";
 
@@ -54,7 +63,7 @@ export function useChatSession(
   function createSession() {
     const systemPrompt = config?.systemPrompt
       ? config.systemPrompt
-      : buildSystemPrompt(context, undefined);
+      : buildSystemPrompt(context, SAFETY_SYSTEM_INSTRUCTIONS);
 
     const model = getModel(config?.modelName);
     const session = model.startChat({
@@ -84,6 +93,40 @@ export function useChatSession(
     async (text: string) => {
       if (!text.trim() || isStreaming) return;
 
+      // Safety: Rate limiting
+      const rateCheck = checkRateLimit();
+      if (!rateCheck.allowed) {
+        setMessages((prev: ChatMessage[]) => [
+          ...prev,
+          { id: generateId(), role: "assistant" as const, content: rateCheck.message!, timestamp: new Date() },
+        ]);
+        return;
+      }
+
+      // Safety: Krisedeteksjon — bypass LLM
+      const crisis = detectCrisis(text.trim());
+      if (crisis.isCrisis) {
+        setMessages((prev: ChatMessage[]) => [
+          ...prev,
+          { id: generateId(), role: "user" as const, content: text.trim(), timestamp: new Date() },
+          { id: generateId(), role: "assistant" as const, content: crisis.response!, timestamp: new Date() },
+        ]);
+        return;
+      }
+
+      // Safety: Prompt-injeksjonsdeteksjon
+      if (detectInjection(text.trim())) {
+        setMessages((prev: ChatMessage[]) => [
+          ...prev,
+          { id: generateId(), role: "user" as const, content: text.trim(), timestamp: new Date() },
+          { id: generateId(), role: "assistant" as const, content: "Jeg kan kun hjelpe med karriere- og utdanningsspørsmål. Hva lurer du på?", timestamp: new Date() },
+        ]);
+        return;
+      }
+
+      // Safety: PII-filtrering — fjern personnummer, telefon, e-post
+      const { sanitized } = detectAndRemovePii(text.trim());
+
       const userMsg: ChatMessage = {
         id: generateId(),
         role: "user",
@@ -104,9 +147,20 @@ export function useChatSession(
       setIsStreaming(true);
 
       try {
+        // RAG: Hent kontekst fra Weaviate (graceful degradation)
+        let messageToSend = sanitized;
+        try {
+          const ragContext = await retrieveRagContext(sanitized);
+          if (ragContext.contextBlock) {
+            messageToSend = `${ragContext.contextBlock}\n\n---\nBrukerspørsmål: ${sanitized}`;
+          }
+        } catch {
+          // RAG-feil skal ikke stoppe chat — graceful degradation
+        }
+
         const session = getSession();
         const result = await session.sendMessageStream(
-          text.trim()
+          messageToSend
         );
 
         let fullText = "";
@@ -162,5 +216,21 @@ export function useChatSession(
     conversationIdRef.current = null;
   }, []);
 
-  return { messages, sendMessage, clearMessages, isStreaming };
+  const loadConversation = useCallback(
+    async (conversationId: string) => {
+      const uid = context.user?.uid;
+      if (!uid) return;
+      try {
+        const restored = await getConversationMessages(uid, conversationId);
+        setMessages(restored);
+        conversationIdRef.current = conversationId;
+        chatRef.current = null; // Ny sesjon med ny kontekst
+      } catch {
+        // Silently fail
+      }
+    },
+    [context.user?.uid]
+  );
+
+  return { messages, sendMessage, clearMessages, loadConversation, isStreaming, conversationId: conversationIdRef.current };
 }

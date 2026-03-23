@@ -19,9 +19,10 @@ import * as admin from "firebase-admin";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onRequest } from "firebase-functions/v2/https";
 import { withAdmin } from "../middleware";
-import { fetchUtdanningNoPrograms, ingestStudyPrograms } from "./utdanning-no";
-import { fetchAdmissionStats, ingestAdmissionStats } from "./dbh";
+import { fetchUtdanningNoPrograms, ingestStudyPrograms, ingestYrker, ingestStyrk08, ingestVgsPrograms, ingestStudievelgeren, ingestGrepFagkoder } from "./utdanning-no";
+import { fetchAdmissionStats, ingestAdmissionStats, fetchHistoricalAdmissionPoints, ingestHistoricalAdmissionPoints } from "./dbh";
 import { fetchJobMarketData } from "./nav-arbeidsplassen";
+import { ingestAllYrkesfag } from "./yrkesfag";
 
 // Re-eksporter NAV stillinger (allerede definert i nav-stillinger.ts)
 export { ingestNavStillingerScheduled } from "./nav-stillinger";
@@ -40,9 +41,29 @@ export const ingestUtdanningNoScheduled = onSchedule(
   },
   async () => {
     console.info("[ingest] Starter utdanning.no ingest...");
+
+    // Hent yrker, STYRK-08 og VGS-program parallelt
+    const [yrkerCount, styrkCount, vgsCount] = await Promise.all([
+      ingestYrker(),
+      ingestStyrk08(),
+      ingestVgsPrograms(),
+    ]);
+
+    // Studievelgeren + Grep (Issue #58)
+    const [studievelgerenCount, grepCount] = await Promise.all([
+      ingestStudievelgeren(),
+      ingestGrepFagkoder(),
+    ]);
+
+    // Legacy: studieprogrammer
     const programs = await fetchUtdanningNoPrograms();
-    const count = await ingestStudyPrograms(programs);
-    console.info(`[ingest] utdanning.no: ${count} programmer lagret`);
+    const studyCount = await ingestStudyPrograms(programs);
+
+    console.info(
+      `[ingest] utdanning.no: ${yrkerCount} yrker, ${styrkCount} STYRK-08, ` +
+      `${vgsCount} VGS-program, ${studyCount} studieprogrammer, ` +
+      `${studievelgerenCount} studievelgeren, ${grepCount} grep-fagkoder lagret`
+    );
   }
 );
 
@@ -58,9 +79,37 @@ export const ingestDBHScheduled = onSchedule(
   },
   async () => {
     console.info("[ingest] Starter DBH ingest...");
-    const stats = await fetchAdmissionStats();
-    const count = await ingestAdmissionStats(stats);
-    console.info(`[ingest] DBH: ${count} opptaksrekorder lagret`);
+
+    const [stats, historicalPoints] = await Promise.all([
+      fetchAdmissionStats(),
+      fetchHistoricalAdmissionPoints(),
+    ]);
+
+    const [count, historicalCount] = await Promise.all([
+      ingestAdmissionStats(stats),
+      ingestHistoricalAdmissionPoints(historicalPoints),
+    ]);
+
+    console.info(`[ingest] DBH: ${count} opptaksrekorder, ${historicalCount} historiske poenggrenser lagret`);
+  }
+);
+
+// ---------------------------------------------------------------------------
+// Yrkesfag scheduler (ukentlig onsdag 05:00) — Issue #62
+// ---------------------------------------------------------------------------
+
+export const ingestYrkesfagScheduled = onSchedule(
+  {
+    schedule: "0 3 * * 3", // Onsdag 05:00 Oslo
+    timeZone: "Europe/Oslo",
+    region: "europe-west1",
+  },
+  async () => {
+    console.info("[ingest] Starter yrkesfag ingest...");
+    const result = await ingestAllYrkesfag();
+    console.info(
+      `[ingest] Yrkesfag: ${result.larefag} lærefag, ${result.bedrifter} bedrifter, ${result.lonn} lønnsdata lagret`
+    );
   }
 );
 

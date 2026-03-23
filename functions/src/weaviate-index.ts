@@ -42,7 +42,7 @@ async function weaviateRequest(
     method,
     headers: {
       "Content-Type": "application/json",
-      "X-OpenAI-Api-Key": process.env.OPENAI_API_KEY ?? "",
+      // Bruker Weaviate-native embedding (text2vec-weaviate) — ingen OpenAI-nøkkel nødvendig
       Authorization: `Bearer ${apiKey ?? ""}`,
     },
     body: body ? JSON.stringify(body) : undefined,
@@ -65,9 +65,9 @@ const WEAVIATE_SCHEMA = {
     {
       class: "StudyProgram",
       description: "Studieprogram ved norske universiteter og høgskoler",
-      vectorizer: "text2vec-openai",
+      vectorizer: "text2vec-weaviate",
       moduleConfig: {
-        "text2vec-openai": { model: "text-embedding-3-small", dimensions: 1536 },
+        "text2vec-weaviate": { model: "Snowflake/snowflake-arctic-embed-m-v2.0" },
       },
       properties: [
         { name: "firestoreId", dataType: ["text"], skipVectorization: true },
@@ -85,9 +85,9 @@ const WEAVIATE_SCHEMA = {
     {
       class: "CareerPath",
       description: "Karriereveier og yrkesbeskrivelser",
-      vectorizer: "text2vec-openai",
+      vectorizer: "text2vec-weaviate",
       moduleConfig: {
-        "text2vec-openai": { model: "text-embedding-3-small", dimensions: 1536 },
+        "text2vec-weaviate": { model: "Snowflake/snowflake-arctic-embed-m-v2.0" },
       },
       properties: [
         { name: "firestoreId", dataType: ["text"], skipVectorization: true },
@@ -102,9 +102,9 @@ const WEAVIATE_SCHEMA = {
     {
       class: "KnowledgeArticle",
       description: "Kunnskapsartikler om studier, søknad og karriere",
-      vectorizer: "text2vec-openai",
+      vectorizer: "text2vec-weaviate",
       moduleConfig: {
-        "text2vec-openai": { model: "text-embedding-3-small", dimensions: 1536 },
+        "text2vec-weaviate": { model: "Snowflake/snowflake-arctic-embed-m-v2.0" },
       },
       properties: [
         { name: "firestoreId", dataType: ["text"], skipVectorization: true },
@@ -196,6 +196,100 @@ export const weaviateIndexScheduled = onSchedule(
     });
   }
 );
+
+// ---------------------------------------------------------------------------
+// Søkeproxy — frontend → Cloud Function → Weaviate (Issue #65)
+// ---------------------------------------------------------------------------
+
+/**
+ * POST /weaviate-search
+ * Proxy for semantisk søk i Weaviate. Auth-beskyttet.
+ *
+ * Body: { query: string, className: string, limit?: number }
+ * Returns: { results: SearchResult[] }
+ */
+export const weaviateSearch = onRequest(
+  {
+    region: "europe-west1",
+    cors: true,
+    invoker: "public",
+    secrets: [WEAVIATE_API_KEY, WEAVIATE_URL],
+  },
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).json({ error: "Kun POST" });
+      return;
+    }
+
+    const { query, className, limit = 5 } = req.body as {
+      query?: string;
+      className?: string;
+      limit?: number;
+    };
+
+    if (!query || !className) {
+      res.status(400).json({ error: "query og className er påkrevd" });
+      return;
+    }
+
+    const validClasses = ["StudyProgram", "CareerPath", "KnowledgeArticle", "ConversationMemory"];
+    if (!validClasses.includes(className)) {
+      res.status(400).json({ error: `Ugyldig className. Tillatte: ${validClasses.join(", ")}` });
+      return;
+    }
+
+    const apiKey = WEAVIATE_API_KEY.value();
+    const baseUrl = WEAVIATE_URL.value();
+
+    try {
+      // GraphQL nearText-søk via Weaviate REST API
+      const graphqlQuery = {
+        query: `{
+          Get {
+            ${className}(
+              nearText: { concepts: [${JSON.stringify(query)}] }
+              limit: ${Math.min(limit, 20)}
+            ) {
+              _additional { id distance }
+              ${getClassProperties(className)}
+            }
+          }
+        }`,
+      };
+
+      const data = await weaviateRequest("/v1/graphql", "POST", graphqlQuery, apiKey, baseUrl) as {
+        data?: { Get?: Record<string, Array<Record<string, unknown>>> };
+      };
+
+      const rawResults = data.data?.Get?.[className] ?? [];
+      const results = rawResults.map((r) => {
+        const additional = r._additional as { id?: string; distance?: number } | undefined;
+        const { _additional, ...payload } = r;
+        return {
+          id: additional?.id ?? "",
+          score: 1 - (additional?.distance ?? 0),
+          payload,
+          className,
+        };
+      });
+
+      res.status(200).json({ results });
+    } catch (err) {
+      console.error("[weaviate-search] Feil:", err);
+      res.status(500).json({ error: "Søk feilet", results: [] });
+    }
+  }
+);
+
+function getClassProperties(className: string): string {
+  const props: Record<string, string> = {
+    StudyProgram: "name institution description nusCode level requiredGpa riasecCodes url",
+    CareerPath: "title description sector demand medianSalaryNok riasecCodes",
+    KnowledgeArticle: "title body source url lastUpdated",
+    ConversationMemory: "question answer timestamp",
+  };
+  return props[className] ?? "";
+}
 
 // ---------------------------------------------------------------------------
 // Indekserings-hjelpefunksjoner

@@ -1,6 +1,6 @@
 "use client";
 
-import { getAI, getGenerativeModel, VertexAIBackend } from "firebase/ai";
+import { getAI, getGenerativeModel, VertexAIBackend, HarmCategory, HarmBlockThreshold } from "firebase/ai";
 import { app } from "./config";
 
 /**
@@ -15,11 +15,23 @@ import { app } from "./config";
 const ai = getAI(app, { backend: new VertexAIBackend() });
 
 /**
+ * Safety settings — BLOCK_LOW_AND_ABOVE på alle kategorier.
+ * Strengeste nivå for mindreårige brukere (16–19 år). (Issue #57)
+ */
+const safetySettings = [
+  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE },
+  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE },
+  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE },
+  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE },
+];
+
+/**
  * Hent en Gemini-modell for generativ AI.
  * Standard: gemini-2.5-flash — rask, billig og stabil.
+ * Inkluderer safety settings for mindreårige. (Issue #57)
  */
 export function getModel(modelName = "gemini-2.5-flash") {
-  return getGenerativeModel(ai, { model: modelName });
+  return getGenerativeModel(ai, { model: modelName, safetySettings });
 }
 
 /**
