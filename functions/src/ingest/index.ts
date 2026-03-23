@@ -19,7 +19,7 @@ import * as admin from "firebase-admin";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onRequest } from "firebase-functions/v2/https";
 import { withAdmin } from "../middleware";
-import { fetchUtdanningNoPrograms, ingestStudyPrograms } from "./utdanning-no";
+import { fetchUtdanningNoPrograms, ingestStudyPrograms, ingestYrker, ingestStyrk08, ingestVgsPrograms } from "./utdanning-no";
 import { fetchAdmissionStats, ingestAdmissionStats } from "./dbh";
 import { fetchJobMarketData } from "./nav-arbeidsplassen";
 
@@ -40,9 +40,22 @@ export const ingestUtdanningNoScheduled = onSchedule(
   },
   async () => {
     console.info("[ingest] Starter utdanning.no ingest...");
+
+    // Hent yrker, STYRK-08 og VGS-program parallelt
+    const [yrkerCount, styrkCount, vgsCount] = await Promise.all([
+      ingestYrker(),
+      ingestStyrk08(),
+      ingestVgsPrograms(),
+    ]);
+
+    // Legacy: studieprogrammer
     const programs = await fetchUtdanningNoPrograms();
-    const count = await ingestStudyPrograms(programs);
-    console.info(`[ingest] utdanning.no: ${count} programmer lagret`);
+    const studyCount = await ingestStudyPrograms(programs);
+
+    console.info(
+      `[ingest] utdanning.no: ${yrkerCount} yrker, ${styrkCount} STYRK-08, ` +
+      `${vgsCount} VGS-program, ${studyCount} studieprogrammer lagret`
+    );
   }
 );
 

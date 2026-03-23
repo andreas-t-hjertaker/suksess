@@ -1,15 +1,21 @@
 /**
- * Data-ingest: utdanning.no studieprogrammer
+ * Data-ingest: utdanning.no (Issue #11)
  *
- * Henter studieprogramdata fra utdanning.no sitt REST API og
- * lagrer til Firestore studyPrograms-collection.
+ * Henter data fra utdanning.no sitt interne REST API:
+ * - /jobbkompasset/v2/yrker — Yrkesbeskrivelser med karrierekompass-data
+ * - /kategorisystemer/styrk08 — STYRK-08 yrkesklassifisering
+ * - /legacy-lopet/utdanningsprogram — VGS utdanningsprogram
  *
- * Kjøres som Cloud Scheduler-jobb (daglig, kl 03:00 UTC).
+ * NB: Internt API — ikke versjonert. Bruker ukentlig snapshot-strategi
+ * med graceful degradation ved API-endringer.
  */
 
 import * as admin from "firebase-admin";
 
 const db = admin.firestore();
+
+const UTDANNING_NO_BASE = "https://api.utdanning.no";
+const FETCH_TIMEOUT = 30_000;
 
 type UtdanningNoProgram = {
   id: string;
@@ -21,68 +27,113 @@ type UtdanningNoProgram = {
   url?: string;
 };
 
-/**
- * Hent alle studieprogrammer fra utdanning.no API.
- * Returnerer normalisert liste klar for Firestore.
- */
-export async function fetchUtdanningNoPrograms(): Promise<UtdanningNoProgram[]> {
-  // NB: utdanning.no har ikke et offentlig API — i produksjon bruk scraping
-  // eller samarbeidsavtale. Her bruker vi et stub som returnerer mock-data.
-  const UTDANNING_NO_BASE = process.env.UTDANNING_NO_API ?? "https://api.utdanning.no";
+type Yrke = {
+  uno_id: string;
+  tittel: string;
+  beskrivelse?: string;
+  styrk08?: string[];
+  utdanningsniva?: string;
+  interesser?: string[];
+};
 
+type Styrk08 = {
+  styrk08: string;
+  tittel_norsk: string;
+};
+
+type VgsProgram = {
+  programomrade_kode: string;
+  tittel: string;
+  utdanningsprogram_tittel?: string;
+  trinn?: string;
+};
+
+// ─── Hent yrker fra Jobbkompasset ────────────────────────────────────────────
+
+async function fetchYrker(): Promise<Yrke[]> {
   try {
-    const response = await fetch(`${UTDANNING_NO_BASE}/v1/studieprogrammer?limit=500`, {
-      headers: {
-        "Accept": "application/json",
-        "X-Api-Key": process.env.UTDANNING_NO_API_KEY ?? "",
-      },
-      signal: AbortSignal.timeout(30_000),
+    const resp = await fetch(`${UTDANNING_NO_BASE}/jobbkompasset/v2/yrker`, {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT),
     });
-
-    if (!response.ok) {
-      console.warn(`utdanning.no API svarte ${response.status} — hopper over`);
+    if (!resp.ok) {
+      console.warn(`[utdanning.no] /jobbkompasset/v2/yrker svarte ${resp.status}`);
       return [];
     }
-
-    const data = await response.json() as { results?: UtdanningNoProgram[] };
-    return data.results ?? [];
+    const data = await resp.json();
+    return Array.isArray(data) ? data : (data as { results?: Yrke[] }).results ?? [];
   } catch (err) {
-    console.error("Feil ved henting fra utdanning.no:", err);
+    console.error("[utdanning.no] Feil ved henting av yrker:", err);
     return [];
   }
 }
 
-/**
- * Skriv programmer til Firestore i batch.
- */
-export async function ingestStudyPrograms(
-  programs: UtdanningNoProgram[]
-): Promise<number> {
-  if (programs.length === 0) return 0;
+// ─── Hent STYRK-08 klassifisering ────────────────────────────────────────────
 
-  const BATCH_SIZE = 400; // Firestore maks 500 per batch
+async function fetchStyrk08(): Promise<Styrk08[]> {
+  try {
+    const resp = await fetch(`${UTDANNING_NO_BASE}/kategorisystemer/styrk08`, {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT),
+    });
+    if (!resp.ok) {
+      console.warn(`[utdanning.no] /kategorisystemer/styrk08 svarte ${resp.status}`);
+      return [];
+    }
+    const data = await resp.json();
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error("[utdanning.no] Feil ved henting av STYRK-08:", err);
+    return [];
+  }
+}
+
+// ─── Hent VGS utdanningsprogram ──────────────────────────────────────────────
+
+async function fetchVgsProgram(): Promise<VgsProgram[]> {
+  try {
+    const resp = await fetch(`${UTDANNING_NO_BASE}/legacy-lopet/utdanningsprogram`, {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT),
+    });
+    if (!resp.ok) {
+      console.warn(`[utdanning.no] /legacy-lopet/utdanningsprogram svarte ${resp.status}`);
+      return [];
+    }
+    const data = await resp.json();
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error("[utdanning.no] Feil ved henting av VGS-program:", err);
+    return [];
+  }
+}
+
+// ─── Ingest-funksjoner ───────────────────────────────────────────────────────
+
+export async function ingestYrker(): Promise<number> {
+  const yrker = await fetchYrker();
+  if (yrker.length === 0) return 0;
+
+  const BATCH_SIZE = 400;
   let written = 0;
 
-  for (let i = 0; i < programs.length; i += BATCH_SIZE) {
+  for (let i = 0; i < yrker.length; i += BATCH_SIZE) {
     const batch = db.batch();
-    const chunk = programs.slice(i, i + BATCH_SIZE);
+    const chunk = yrker.slice(i, i + BATCH_SIZE);
 
-    for (const p of chunk) {
-      const ref = db.collection("studyPrograms").doc(p.id);
-      batch.set(
-        ref,
-        {
-          name: p.name,
-          institution: p.institution,
-          nusCode: p.nusCode ?? null,
-          level: normalizeLevel(p.level ?? ""),
-          description: p.description ?? "",
-          url: p.url ?? null,
-          source: "utdanning.no",
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
+    for (const y of chunk) {
+      const docId = y.uno_id || `yrke_${written}`;
+      const ref = db.collection("occupations").doc(docId);
+      batch.set(ref, {
+        unoId: y.uno_id,
+        title: y.tittel,
+        description: y.beskrivelse ?? "",
+        styrk08Codes: y.styrk08 ?? [],
+        educationLevel: y.utdanningsniva ?? null,
+        interests: y.interesser ?? [],
+        source: "utdanning.no/jobbkompasset",
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
       written++;
     }
 
@@ -92,14 +143,111 @@ export async function ingestStudyPrograms(
   return written;
 }
 
-function normalizeLevel(level: string): string {
-  const map: Record<string, string> = {
-    "bachelor": "bachelor",
-    "master": "master",
-    "phd": "phd",
-    "doktorgrad": "phd",
-    "fagskole": "vocational",
-    "vgs": "vgs",
-  };
-  return map[level.toLowerCase()] ?? "bachelor";
+export async function ingestStyrk08(): Promise<number> {
+  const codes = await fetchStyrk08();
+  if (codes.length === 0) return 0;
+
+  const BATCH_SIZE = 400;
+  let written = 0;
+
+  for (let i = 0; i < codes.length; i += BATCH_SIZE) {
+    const batch = db.batch();
+    const chunk = codes.slice(i, i + BATCH_SIZE);
+
+    for (const c of chunk) {
+      const ref = db.collection("styrk08").doc(c.styrk08);
+      batch.set(ref, {
+        code: c.styrk08,
+        title: c.tittel_norsk,
+        source: "utdanning.no/styrk08",
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+      written++;
+    }
+
+    await batch.commit();
+  }
+
+  return written;
+}
+
+export async function ingestVgsPrograms(): Promise<number> {
+  const programs = await fetchVgsProgram();
+  if (programs.length === 0) return 0;
+
+  const BATCH_SIZE = 400;
+  let written = 0;
+
+  for (let i = 0; i < programs.length; i += BATCH_SIZE) {
+    const batch = db.batch();
+    const chunk = programs.slice(i, i + BATCH_SIZE);
+
+    for (const p of chunk) {
+      const docId = p.programomrade_kode || `vgs_${written}`;
+      const ref = db.collection("vgsPrograms").doc(docId);
+      batch.set(ref, {
+        code: p.programomrade_kode,
+        title: p.tittel,
+        programTitle: p.utdanningsprogram_tittel ?? null,
+        level: p.trinn ?? null,
+        source: "utdanning.no/vgs",
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+      written++;
+    }
+
+    await batch.commit();
+  }
+
+  return written;
+}
+
+// ─── Legacy-eksporter (bakoverkompatibilitet med index.ts) ───────────────────
+
+/**
+ * @deprecated Bruk ingestYrker() + ingestStyrk08() + ingestVgsPrograms() direkte.
+ * Beholdt for bakoverkompatibilitet med ingest/index.ts.
+ */
+export async function fetchUtdanningNoPrograms(): Promise<UtdanningNoProgram[]> {
+  const yrker = await fetchYrker();
+  return yrker.map((y) => ({
+    id: y.uno_id,
+    name: y.tittel,
+    institution: "utdanning.no",
+    description: y.beskrivelse,
+    level: y.utdanningsniva,
+  }));
+}
+
+export async function ingestStudyPrograms(
+  programs: UtdanningNoProgram[]
+): Promise<number> {
+  if (programs.length === 0) return 0;
+
+  const BATCH_SIZE = 400;
+  let written = 0;
+
+  for (let i = 0; i < programs.length; i += BATCH_SIZE) {
+    const batch = db.batch();
+    const chunk = programs.slice(i, i + BATCH_SIZE);
+
+    for (const p of chunk) {
+      const ref = db.collection("studyPrograms").doc(p.id);
+      batch.set(ref, {
+        name: p.name,
+        institution: p.institution,
+        nusCode: p.nusCode ?? null,
+        level: p.level ?? "bachelor",
+        description: p.description ?? "",
+        url: p.url ?? null,
+        source: "utdanning.no",
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+      written++;
+    }
+
+    await batch.commit();
+  }
+
+  return written;
 }
