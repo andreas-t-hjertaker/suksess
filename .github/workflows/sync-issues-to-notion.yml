@@ -1,0 +1,70 @@
+name: Sync GitHub Issues to Notion
+
+on:
+  issues:
+    types: [opened, edited, closed, reopened, labeled, unlabeled, assigned]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync issue to Notion
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const NOTION_API_TOKEN = process.env.NOTION_API_TOKEN;
+            const NOTION_DATABASE_ID = process.env.NOTION_DATABASE_ID;
+
+            const headers = {
+              'Authorization': `Bearer ${NOTION_API_TOKEN}`,
+              'Content-Type': 'application/json',
+              'Notion-Version': '2022-06-28'
+            };
+
+            const priorityMap = {
+              'critical': 'Critical', 'priority:critical': 'Critical',
+              'high': 'High', 'priority:high': 'High',
+              'medium': 'Medium', 'priority:medium': 'Medium',
+              'low': 'Low', 'priority:low': 'Low'
+            };
+
+            const statusMap = { 'open': 'Todo', 'closed': 'Ferdig' };
+            const labels = issue.labels.map(l => l.name.toLowerCase());
+            let prioritet = null;
+            for (const label of labels) {
+              if (priorityMap[label]) { prioritet = priorityMap[label]; break; }
+            }
+
+            const status = statusMap[issue.state] || 'Backlog';
+
+            const searchRes = await fetch(`https://api.notion.com/v1/databases/${NOTION_DATABASE_ID}/query`, {
+              method: 'POST', headers,
+              body: JSON.stringify({ filter: { property: 'GitHub Issue', url: { equals: issue.html_url } } })
+            });
+            const searchData = await searchRes.json();
+            const existing = searchData.results?.[0];
+
+            const properties = {
+              'Oppgave': { title: [{ text: { content: issue.title } }] },
+              'GitHub Issue': { url: issue.html_url },
+              'Status': { select: { name: status } },
+              ...(prioritet && { 'Prioritet': { select: { name: prioritet } } }),
+              'Akseptansekriterier': { rich_text: [{ text: { content: issue.body?.slice(0, 2000) || '' } }] }
+            };
+
+            if (existing) {
+              await fetch(`https://api.notion.com/v1/pages/${existing.id}`, {
+                method: 'PATCH', headers, body: JSON.stringify({ properties })
+              });
+              console.log(`Updated Notion page for issue #${issue.number}`);
+            } else {
+              await fetch('https://api.notion.com/v1/pages', {
+                method: 'POST', headers,
+                body: JSON.stringify({ parent: { database_id: NOTION_DATABASE_ID }, properties })
+              });
+              console.log(`Created Notion page for issue #${issue.number}`);
+            }
+        env:
+          NOTION_API_TOKEN: ${{ secrets.NOTION_API_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}

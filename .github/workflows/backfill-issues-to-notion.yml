@@ -1,0 +1,88 @@
+name: Backfill Existing Issues to Notion (kjør én gang)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Backfill all open issues to Notion
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const NOTION_API_TOKEN = process.env.NOTION_API_TOKEN;
+            const NOTION_DATABASE_ID = process.env.NOTION_DATABASE_ID;
+
+            const headers = {
+              'Authorization': `Bearer ${NOTION_API_TOKEN}`,
+              'Content-Type': 'application/json',
+              'Notion-Version': '2022-06-28'
+            };
+
+            const priorityMap = {
+              'critical': 'Critical', 'priority:critical': 'Critical',
+              'high': 'High', 'priority:high': 'High',
+              'medium': 'Medium', 'priority:medium': 'Medium',
+              'low': 'Low', 'priority:low': 'Low'
+            };
+
+            let page = 1;
+            let allIssues = [];
+            while (true) {
+              const res = await github.rest.issues.listForRepo({
+                owner: context.repo.owner, repo: context.repo.repo,
+                state: 'open', per_page: 100, page
+              });
+              const issues = res.data.filter(i => !i.pull_request);
+              allIssues = allIssues.concat(issues);
+              if (res.data.length < 100) break;
+              page++;
+            }
+
+            console.log(`Found ${allIssues.length} open issues to sync`);
+
+            for (const issue of allIssues) {
+              const searchRes = await fetch(`https://api.notion.com/v1/databases/${NOTION_DATABASE_ID}/query`, {
+                method: 'POST', headers,
+                body: JSON.stringify({ filter: { property: 'GitHub Issue', url: { equals: issue.html_url } } })
+              });
+              const searchData = await searchRes.json();
+              if (searchData.results?.length > 0) {
+                console.log(`Skipping #${issue.number} (already in Notion)`);
+                continue;
+              }
+
+              const labels = issue.labels.map(l => l.name.toLowerCase());
+              let prioritet = null;
+              for (const label of labels) {
+                if (priorityMap[label]) { prioritet = priorityMap[label]; break; }
+              }
+
+              const properties = {
+                'Oppgave': { title: [{ text: { content: issue.title } }] },
+                'GitHub Issue': { url: issue.html_url },
+                'Status': { select: { name: 'Todo' } },
+                ...(prioritet && { 'Prioritet': { select: { name: prioritet } } }),
+                'Akseptansekriterier': { rich_text: [{ text: { content: (issue.body || '').slice(0, 2000) } }] }
+              };
+
+              const createRes = await fetch('https://api.notion.com/v1/pages', {
+                method: 'POST', headers,
+                body: JSON.stringify({ parent: { database_id: NOTION_DATABASE_ID }, properties })
+              });
+
+              if (createRes.ok) {
+                console.log(`✓ Created Notion page for issue #${issue.number}: ${issue.title}`);
+              } else {
+                const err = await createRes.json();
+                console.error(`✗ Failed #${issue.number}:`, JSON.stringify(err));
+              }
+
+              await new Promise(r => setTimeout(r, 400));
+            }
+
+            console.log('Backfill complete!');
+        env:
+          NOTION_API_TOKEN: ${{ secrets.NOTION_API_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
