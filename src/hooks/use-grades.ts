@@ -9,6 +9,7 @@ import {
   doc,
   deleteDoc,
   setDoc,
+  updateDoc,
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
@@ -35,10 +36,19 @@ export function useGrades() {
     );
 
     const unsub = onSnapshot(q, (snap) => {
-      setGrades(
-        snap.docs.map((d) => ({ id: d.id, ...(d.data() as Grade) }))
-      );
+      const newGrades = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Grade) }));
+      setGrades(newGrades);
       setLoading(false);
+
+      // Denormaliser karaktersnitt til user-dokument for admin-statistikk
+      const graded = newGrades.filter((g) => typeof g.grade === "number");
+      const avg = graded.length > 0
+        ? Math.round((graded.reduce((s, g) => s + g.grade, 0) / graded.length) * 100) / 100
+        : 0;
+      updateDoc(doc(db, "users", firebaseUser.uid), {
+        gradeAverage: avg,
+        updatedAt: serverTimestamp(),
+      }).catch(() => {}); // Stilhetsfeil — ikke kritisk
     });
 
     return unsub;
