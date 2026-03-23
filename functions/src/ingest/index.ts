@@ -19,7 +19,11 @@ import * as admin from "firebase-admin";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onRequest } from "firebase-functions/v2/https";
 import { withAdmin } from "../middleware";
-import { fetchUtdanningNoPrograms, ingestStudyPrograms } from "./utdanning-no";
+import {
+  fetchUtdanningNoPrograms, ingestStudyPrograms,
+  fetchGrepUtdanningsprogram, ingestVgsPrograms,
+  fetchUtdanningsbeskrivelser, ingestUtdanningsbeskrivelser,
+} from "./utdanning-no";
 import { fetchAdmissionStats, ingestAdmissionStats } from "./dbh";
 import { fetchJobMarketData } from "./nav-arbeidsplassen";
 
@@ -42,7 +46,15 @@ export const ingestUtdanningNoScheduled = onSchedule(
     console.info("[ingest] Starter utdanning.no ingest...");
     const programs = await fetchUtdanningNoPrograms();
     const count = await ingestStudyPrograms(programs);
-    console.info(`[ingest] utdanning.no: ${count} programmer lagret`);
+    console.info(`[ingest] utdanning.no studievelgeren: ${count} programmer lagret`);
+
+    const vgsPrograms = await fetchGrepUtdanningsprogram();
+    const vgsCount = await ingestVgsPrograms(vgsPrograms);
+    console.info(`[ingest] Grep VGS-program: ${vgsCount} poster lagret`);
+
+    const beskrivelser = await fetchUtdanningsbeskrivelser();
+    const beskrivelserCount = await ingestUtdanningsbeskrivelser(beskrivelser);
+    console.info(`[ingest] Utdanningsbeskrivelser: ${beskrivelserCount} poster lagret`);
   }
 );
 

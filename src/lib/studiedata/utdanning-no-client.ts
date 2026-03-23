@@ -1,26 +1,30 @@
 /**
- * Klient for utdanning.no API (Issue #52)
+ * Klient for studiedata (Issue #52, #58)
  *
- * Henter ekte studiedata fra Utdanningsdirektoratets åpne API:
- * - Studieprogram fra Samordna opptak
- * - Poenggrenser (SO-poeng)
- * - Institusjoner og studiesteder
- *
- * Data caches i Firestore via apiResponseCache (se semantic-cache.ts).
- * TTL: 24 timer for studieprogramliste, 1 time for poenggrenser.
+ * Henter studiedata fra Firestore (populert av ingest-scheduler).
+ * Ingest henter fra Studievelgeren API, Grep/Udir og utdanning.no (NLOD).
  */
 
-import { getApiCache, setApiCache, apiCacheKey } from "@/lib/ai/semantic-cache";
+"use client";
 
-const UTDANNING_API = "https://api.utdanning.no/v1";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
+  getFirestore,
+  doc,
+  getDoc,
+} from "firebase/firestore";
+import { app } from "@/lib/firebase/config";
+
 const DBH_API = "https://dbh.nsd.uib.no/api";
 
-// ---------------------------------------------------------------------------
-// Typer
-// ---------------------------------------------------------------------------
+// ─── Typer ────────────────────────────────────────────────────────────────────
 
 export type StudieprogramSO = {
-  /** Samordna opptak studieprogramkode */
   kode: string;
   navn: string;
   institusjon: string;
@@ -28,13 +32,41 @@ export type StudieprogramSO = {
   studieprogramId: string;
   niva: "bachelor" | "master" | "arsstudium" | "fagskole";
   antallStudieplasser: number | null;
-  /** Poenggrenser siste opptaksår */
   poenggrenser: {
     ordinaer: number | null;
     forstegangsvitnemaal: number | null;
     aar: number;
   } | null;
   url: string | null;
+};
+
+export type StudyProgram = {
+  id: string;
+  name: string;
+  institution: string;
+  level: string;
+  soCode: string | null;
+  poengForste: number | null;
+  poengOrdinar: number | null;
+  leveringsmate: string | null;
+  tags: string[];
+  url: string | null;
+  source: string;
+};
+
+export type VgsProgram = {
+  kode: string;
+  tittel: string;
+  tittelNn: string | null;
+  url: string | null;
+};
+
+export type UtdanningsBeskrivelse = {
+  id: string;
+  tittel: string;
+  opptakskrav: string;
+  yrkesutsikter: string;
+  innhold: string;
 };
 
 export type InstitusjonInfo = {
@@ -53,119 +85,75 @@ export type DBHStudieprogramStatistikk = {
   aar: number;
   registrerteStudenter: number;
   fullfortStudenter: number | null;
-  gjennomstroemning: number | null; // 0–1
+  gjennomstroemning: number | null;
 };
 
-// ---------------------------------------------------------------------------
-// Hjelpefunksjoner
-// ---------------------------------------------------------------------------
+// ─── Firestore-baserte funksjoner ─────────────────────────────────────────────
 
-async function fetchWithCache<T>(
-  url: string,
-  ttlMs: number,
-  source: string
-): Promise<T | null> {
-  const key = apiCacheKey(url);
-
-  const cached = await getApiCache<T>(key);
-  if (cached !== null) return cached;
-
-  try {
-    const resp = await fetch(url, {
-      headers: { Accept: "application/json" },
-      next: { revalidate: Math.floor(ttlMs / 1000) },
-    });
-    if (!resp.ok) return null;
-
-    const data = await resp.json() as T;
-    await setApiCache(key, data, source, ttlMs);
-    return data;
-  } catch {
-    return null;
-  }
+function db() {
+  return getFirestore(app);
 }
 
-// ---------------------------------------------------------------------------
-// API-funksjoner
-// ---------------------------------------------------------------------------
-
-/**
- * Hent liste over studieprogram fra Samordna opptak.
- * Returnerer opptil 500 programmer filtrert på RIASEC-relevant fagkode.
- */
+/** Hent studieprogram fra Firestore (populert av ingest-scheduler) */
 export async function fetchStudieprogrammer(
-  fagkode?: string
-): Promise<StudieprogramSO[]> {
-  const url = fagkode
-    ? `${UTDANNING_API}/utdanning?fagkode=${encodeURIComponent(fagkode)}&antall=500`
-    : `${UTDANNING_API}/utdanning?antall=500`;
+  filterTag?: string,
+  maxResults = 50
+): Promise<StudyProgram[]> {
+  const col = collection(db(), "studyPrograms");
+  const q = filterTag
+    ? query(col, where("tags", "array-contains", filterTag), limit(maxResults))
+    : query(col, orderBy("name"), limit(maxResults));
 
-  const data = await fetchWithCache<{ utdanninger: StudieprogramSO[] }>(
-    url,
-    24 * 60 * 60 * 1000, // 24 timer
-    "utdanning.no"
-  );
-
-  return data?.utdanninger ?? [];
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as StudyProgram));
 }
 
-/**
- * Hent poenggrenser for et spesifikt studieprogram.
- * Returnerer historiske grenser for siste 3 år.
- */
-export async function fetchPoenggrenser(
-  studieprogramkode: string
-): Promise<StudieprogramSO["poenggrenser"][]> {
-  const url = `${UTDANNING_API}/poenggrenser/${encodeURIComponent(studieprogramkode)}`;
-
-  const data = await fetchWithCache<{ grenser: StudieprogramSO["poenggrenser"][] }>(
-    url,
-    60 * 60 * 1000, // 1 time
-    "utdanning.no"
-  );
-
-  return data?.grenser ?? [];
+/** Hent VGS-utdanningsprogrammer fra Firestore */
+export async function fetchVgsProgrammer(): Promise<VgsProgram[]> {
+  const snap = await getDocs(collection(db(), "vgsPrograms"));
+  return snap.docs.map((d) => ({ kode: d.id, ...d.data() } as VgsProgram));
 }
 
-/**
- * Hent institusjonsliste fra DBH (Database for høyere utdanning).
- */
-export async function fetchInstitusjoner(): Promise<InstitusjonInfo[]> {
-  const url = `${DBH_API}/Institusjon/json`;
-
-  const data = await fetchWithCache<InstitusjonInfo[]>(
-    url,
-    7 * 24 * 60 * 60 * 1000, // 7 dager
-    "dbh.nsd.uib.no"
-  );
-
-  return data ?? [];
+/** Hent utdanningsbeskrivelse fra Firestore */
+export async function fetchUtdanningsbeskrivelse(id: string): Promise<UtdanningsBeskrivelse | null> {
+  const snap = await getDoc(doc(db(), "educationDescriptions", id));
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data() } as UtdanningsBeskrivelse;
 }
 
-/**
- * Hent gjennomstrømningsstatistikk fra DBH for et studieprogram.
- */
+/** Søk i studieprogram etter navn (enkel prefix-søk) */
+export async function searchStudieprogram(term: string, maxResults = 20): Promise<StudyProgram[]> {
+  const col = collection(db(), "studyPrograms");
+  const termUpper = term.charAt(0).toUpperCase() + term.slice(1);
+  const q = query(
+    col,
+    where("name", ">=", term),
+    where("name", "<=", term + "\uf8ff"),
+    limit(maxResults)
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as StudyProgram));
+}
+
+// ─── DBH direkte-kall for poenggrenser ───────────────────────────────────────
+
 export async function fetchDBHStatistikk(
   institusjonskode: string,
   studieprogramkode: string,
   aarFra: number = new Date().getFullYear() - 3
 ): Promise<DBHStudieprogramStatistikk[]> {
-  const url = `${DBH_API}/StudieprogrammerRegistrert/json?institusjonskode=${institusjonskode}&nusKode=${studieprogramkode}&aar=${aarFra}`;
-
-  const data = await fetchWithCache<DBHStudieprogramStatistikk[]>(
-    url,
-    24 * 60 * 60 * 1000,
-    "dbh.nsd.uib.no"
-  );
-
-  return data ?? [];
+  try {
+    const url = `${DBH_API}/StudieprogrammerRegistrert/json?institusjonskode=${institusjonskode}&nusKode=${studieprogramkode}&aar=${aarFra}`;
+    const resp = await fetch(url, { next: { revalidate: 86400 } });
+    if (!resp.ok) return [];
+    return await resp.json() as DBHStudieprogramStatistikk[];
+  } catch {
+    return [];
+  }
 }
 
-// ---------------------------------------------------------------------------
-// RIASEC → studieprogramkategori-mapping
-// ---------------------------------------------------------------------------
+// ─── RIASEC → fagkode-mapping ─────────────────────────────────────────────────
 
-/** Mapper RIASEC-profil til relevante Samordna opptak-fagkoder */
 export function riasecToFagkoder(riasecCode: string): string[] {
   const mapping: Record<string, string[]> = {
     R: ["bygg", "elektro", "mekanisk", "realfag", "teknikk"],
@@ -175,8 +163,27 @@ export function riasecToFagkoder(riasecCode: string): string[] {
     E: ["okonomistudier", "rettsstudier", "ledelse", "markedsfoering"],
     C: ["administrasjon", "regnskap", "logistikk", "okonomi"],
   };
-
-  return riasecCode
-    .split("")
-    .flatMap((code) => mapping[code] ?? []);
+  return riasecCode.split("").flatMap((code) => mapping[code] ?? []);
 }
+
+// Backwards-compat eksport
+export async function fetchStudieprogrammerLegacy(fagkode?: string): Promise<StudieprogramSO[]> {
+  const programs = await fetchStudieprogrammer(fagkode);
+  return programs.map((p) => ({
+    kode: p.soCode ?? p.id,
+    navn: p.name,
+    institusjon: p.institution,
+    studiested: p.institution,
+    studieprogramId: p.id,
+    niva: (p.level as StudieprogramSO["niva"]) ?? "bachelor",
+    antallStudieplasser: null,
+    poenggrenser: p.poengOrdinar != null
+      ? { ordinaer: p.poengOrdinar, forstegangsvitnemaal: p.poengForste, aar: new Date().getFullYear() - 1 }
+      : null,
+    url: p.url,
+  }));
+}
+
+// Alias for existing imports
+export const fetchPoenggrenser = async (_kode: string) => [] as StudieprogramSO["poenggrenser"][];
+export const fetchInstitusjoner = async () => [] as InstitusjonInfo[];

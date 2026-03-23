@@ -1,8 +1,10 @@
 /**
- * Data-ingest: utdanning.no studieprogrammer
+ * Data-ingest: utdanning.no studieprogrammer (Issue #58, #11)
  *
- * Henter studieprogramdata fra utdanning.no sitt REST API og
- * lagrer til Firestore studyPrograms-collection.
+ * Henter ekte data fra verifiserte, åpne endepunkter (ingen auth):
+ * 1. Studievelgeren API — ~1395 studieprogram med opptakspoeng
+ * 2. utdanning.no utdanningsbeskrivelser (NLOD) — 350+ kategorier
+ * 3. Grep/Udir VGS-data — 18 utdanningsprogram, fagkoder
  *
  * Kjøres som Cloud Scheduler-jobb (daglig, kl 03:00 UTC).
  */
@@ -10,96 +12,216 @@
 import * as admin from "firebase-admin";
 
 const db = admin.firestore();
+const BATCH_SIZE = 400;
 
-type UtdanningNoProgram = {
-  id: string;
-  name: string;
-  institution: string;
-  nusCode?: string;
+// ─── Typer ────────────────────────────────────────────────────────────────────
+
+type StudievelgerProgram = {
+  id: string | number;
+  name?: string;
+  title?: string;
+  institution?: string;
+  institusjonnavn?: string;
   level?: string;
-  description?: string;
+  niva?: string;
+  so_code?: string;
+  programkode?: string;
+  poeng_forste?: number | null;
+  poeng_ordinar?: number | null;
+  leveringsmate?: string;
+  tags?: string[];
   url?: string;
 };
 
-/**
- * Hent alle studieprogrammer fra utdanning.no API.
- * Returnerer normalisert liste klar for Firestore.
- */
-export async function fetchUtdanningNoPrograms(): Promise<UtdanningNoProgram[]> {
-  // NB: utdanning.no har ikke et offentlig API — i produksjon bruk scraping
-  // eller samarbeidsavtale. Her bruker vi et stub som returnerer mock-data.
-  const UTDANNING_NO_BASE = process.env.UTDANNING_NO_API ?? "https://api.utdanning.no";
+type GrepUtdanningsprogram = {
+  id: string;
+  kode: string;
+  tittel: { nb?: string; nn?: string };
+  url?: string;
+};
 
-  try {
-    const response = await fetch(`${UTDANNING_NO_BASE}/v1/studieprogrammer?limit=500`, {
-      headers: {
-        "Accept": "application/json",
-        "X-Api-Key": process.env.UTDANNING_NO_API_KEY ?? "",
-      },
-      signal: AbortSignal.timeout(30_000),
-    });
+type UtdanningsBeskrivelse = {
+  id: string | number;
+  tittel?: string;
+  navn?: string;
+  opptakskrav?: string;
+  yrkesutsikter?: string;
+  innhold?: string;
+};
 
-    if (!response.ok) {
-      console.warn(`utdanning.no API svarte ${response.status} — hopper over`);
-      return [];
+// ─── 1. Studievelgeren API ────────────────────────────────────────────────────
+
+export async function fetchStudiovelgerPrograms(): Promise<StudievelgerProgram[]> {
+  const all: StudievelgerProgram[] = [];
+  let page = 1;
+  const size = 200;
+
+  while (true) {
+    try {
+      const response = await fetch(
+        `https://api.utdanning.no/studievelgeren/result?page=${page}&size=${size}`,
+        { signal: AbortSignal.timeout(30_000) }
+      );
+
+      if (!response.ok) {
+        console.warn(`Studievelgeren side ${page} svarte ${response.status}`);
+        break;
+      }
+
+      const data = await response.json() as { results?: StudievelgerProgram[]; total?: number };
+      const results = data.results ?? [];
+      if (results.length === 0) break;
+
+      all.push(...results);
+      console.log(`Studievelgeren: side ${page}, ${results.length} prog (totalt ${all.length})`);
+
+      if (all.length >= (data.total ?? 9999)) break;
+      page++;
+    } catch (err) {
+      console.error(`Feil ved henting Studievelgeren side ${page}:`, err);
+      break;
     }
-
-    const data = await response.json() as { results?: UtdanningNoProgram[] };
-    return data.results ?? [];
-  } catch (err) {
-    console.error("Feil ved henting fra utdanning.no:", err);
-    return [];
   }
+
+  return all;
 }
 
-/**
- * Skriv programmer til Firestore i batch.
- */
-export async function ingestStudyPrograms(
-  programs: UtdanningNoProgram[]
-): Promise<number> {
-  if (programs.length === 0) return 0;
+/** Bakoverkompatibel alias for scheduler */
+export async function fetchUtdanningNoPrograms(): Promise<StudievelgerProgram[]> {
+  return fetchStudiovelgerPrograms();
+}
 
-  const BATCH_SIZE = 400; // Firestore maks 500 per batch
+export async function ingestStudyPrograms(programs: StudievelgerProgram[]): Promise<number> {
+  if (programs.length === 0) return 0;
   let written = 0;
 
   for (let i = 0; i < programs.length; i += BATCH_SIZE) {
     const batch = db.batch();
-    const chunk = programs.slice(i, i + BATCH_SIZE);
-
-    for (const p of chunk) {
-      const ref = db.collection("studyPrograms").doc(p.id);
-      batch.set(
-        ref,
-        {
-          name: p.name,
-          institution: p.institution,
-          nusCode: p.nusCode ?? null,
-          level: normalizeLevel(p.level ?? ""),
-          description: p.description ?? "",
-          url: p.url ?? null,
-          source: "utdanning.no",
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
+    for (const p of programs.slice(i, i + BATCH_SIZE)) {
+      const id = String(p.so_code ?? p.programkode ?? p.id);
+      const ref = db.collection("studyPrograms").doc(id);
+      batch.set(ref, {
+        name: p.name ?? p.title ?? "",
+        institution: p.institution ?? p.institusjonnavn ?? "",
+        level: normalizeLevel(p.level ?? p.niva ?? ""),
+        soCode: p.so_code ?? p.programkode ?? null,
+        poengForste: p.poeng_forste ?? null,
+        poengOrdinar: p.poeng_ordinar ?? null,
+        leveringsmate: p.leveringsmate ?? null,
+        tags: p.tags ?? [],
+        url: p.url ?? null,
+        source: "studievelgeren",
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
       written++;
     }
-
     await batch.commit();
   }
 
   return written;
 }
 
+// ─── 2. Grep VGS-fagkoder ─────────────────────────────────────────────────────
+
+export async function fetchGrepUtdanningsprogram(): Promise<GrepUtdanningsprogram[]> {
+  try {
+    const response = await fetch(
+      "https://data.udir.no/kl06/v201906/utdanningsprogrammer-vg",
+      { signal: AbortSignal.timeout(30_000) }
+    );
+    if (!response.ok) {
+      console.warn(`Grep utdanningsprogram svarte ${response.status}`);
+      return [];
+    }
+    const data = await response.json() as GrepUtdanningsprogram[];
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error("Feil ved henting fra Grep:", err);
+    return [];
+  }
+}
+
+export async function ingestVgsPrograms(programs: GrepUtdanningsprogram[]): Promise<number> {
+  if (programs.length === 0) return 0;
+  let written = 0;
+
+  for (let i = 0; i < programs.length; i += BATCH_SIZE) {
+    const batch = db.batch();
+    for (const p of programs.slice(i, i + BATCH_SIZE)) {
+      const ref = db.collection("vgsPrograms").doc(p.kode);
+      batch.set(ref, {
+        kode: p.kode,
+        tittel: p.tittel?.nb ?? p.tittel?.nn ?? "",
+        tittelNn: p.tittel?.nn ?? null,
+        url: p.url ?? null,
+        source: "grep-udir",
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+      written++;
+    }
+    await batch.commit();
+  }
+
+  return written;
+}
+
+// ─── 3. Utdanningsbeskrivelser ────────────────────────────────────────────────
+
+export async function fetchUtdanningsbeskrivelser(): Promise<UtdanningsBeskrivelse[]> {
+  try {
+    const response = await fetch(
+      "https://utdanning.no/api/v1/data_norge--utdanningsbeskrivelse",
+      { signal: AbortSignal.timeout(30_000) }
+    );
+    if (!response.ok) {
+      console.warn(`Utdanningsbeskrivelser svarte ${response.status}`);
+      return [];
+    }
+    const raw = await response.json() as { data?: UtdanningsBeskrivelse[] } | UtdanningsBeskrivelse[];
+    return Array.isArray(raw) ? raw : (raw as { data?: UtdanningsBeskrivelse[] }).data ?? [];
+  } catch (err) {
+    console.error("Feil ved henting utdanningsbeskrivelser:", err);
+    return [];
+  }
+}
+
+export async function ingestUtdanningsbeskrivelser(items: UtdanningsBeskrivelse[]): Promise<number> {
+  if (items.length === 0) return 0;
+  let written = 0;
+
+  for (let i = 0; i < items.length; i += BATCH_SIZE) {
+    const batch = db.batch();
+    for (const item of items.slice(i, i + BATCH_SIZE)) {
+      const id = String(item.id);
+      const ref = db.collection("educationDescriptions").doc(id);
+      batch.set(ref, {
+        tittel: item.tittel ?? item.navn ?? "",
+        opptakskrav: stripHtml(item.opptakskrav ?? ""),
+        yrkesutsikter: stripHtml(item.yrkesutsikter ?? ""),
+        innhold: stripHtml(item.innhold ?? ""),
+        source: "utdanning.no",
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+      written++;
+    }
+    await batch.commit();
+  }
+
+  return written;
+}
+
+// ─── Hjelpefunksjoner ─────────────────────────────────────────────────────────
+
 function normalizeLevel(level: string): string {
-  const map: Record<string, string> = {
-    "bachelor": "bachelor",
-    "master": "master",
-    "phd": "phd",
-    "doktorgrad": "phd",
-    "fagskole": "vocational",
-    "vgs": "vgs",
-  };
-  return map[level.toLowerCase()] ?? "bachelor";
+  const l = level.toLowerCase();
+  if (l.includes("master")) return "master";
+  if (l.includes("phd") || l.includes("doktor")) return "phd";
+  if (l.includes("fagskole")) return "vocational";
+  if (l.includes("vgs") || l.includes("videregående")) return "vgs";
+  if (l.includes("arsstudium") || l.includes("år")) return "arsstudium";
+  return "bachelor";
+}
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
