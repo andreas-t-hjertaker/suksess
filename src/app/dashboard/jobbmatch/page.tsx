@@ -4,9 +4,11 @@
  * Jobbmatch-side — AI-drevet jobbmatching og søknadsbrev-generator (issue #15)
  */
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase/firestore";
 import { getRiasecCode } from "@/lib/personality/scoring";
 import { useChatSession } from "@/modules/ai-assistant/hooks/use-chat";
 import { FeatureGate } from "@/components/feature-gate";
@@ -327,11 +329,31 @@ function JobMatchPage() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const favoritesLoaded = useRef(false);
 
   useEffect(() => {
     if (!user) return;
     return subscribeToUserProfile(user.uid, setProfile);
   }, [user]);
+
+  // Last favoritter fra Firestore
+  useEffect(() => {
+    if (!user) return;
+    const ref = doc(db, "users", user.uid, "jobbmatch", "favorites");
+    getDoc(ref).then((snap) => {
+      if (snap.exists()) {
+        setFavorites(new Set((snap.data().ids as string[]) ?? []));
+      }
+      favoritesLoaded.current = true;
+    });
+  }, [user]);
+
+  // Lagre favoritter til Firestore
+  useEffect(() => {
+    if (!favoritesLoaded.current || !user) return;
+    const ref = doc(db, "users", user.uid, "jobbmatch", "favorites");
+    setDoc(ref, { ids: [...favorites], updatedAt: serverTimestamp() });
+  }, [favorites, user]);
 
   const riasecCode = profile?.riasec ? getRiasecCode(profile.riasec) : "IRS";
 

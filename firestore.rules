@@ -123,6 +123,11 @@ service cloud.firestore {
       match /cv/{docId} {
         allow read, write: if isOwner(userId);
       }
+
+      // Jobbmatch-favoritter (subcollection)
+      match /jobbmatch/{docId} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
     // ---------------------------------------------------------------------------
