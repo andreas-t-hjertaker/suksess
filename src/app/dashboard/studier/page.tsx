@@ -13,6 +13,7 @@ import { db } from "@/lib/firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { LanekassenWidget } from "@/components/lanekassen-widget";
 import {
   Card,
   CardContent,
@@ -260,6 +261,9 @@ export default function StudierPage() {
         </div>
         <Progress value={Math.min(100, (totalCredits / targetCredits) * 100)} className="h-2" />
       </div>
+
+      {/* Lånekassen-widget (Issue #59) */}
+      <LanekassenWidget />
 
       {/* Tabs */}
       <div className="flex gap-2 border-b">

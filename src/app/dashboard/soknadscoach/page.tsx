@@ -15,6 +15,7 @@ import { useGrades } from "@/hooks/use-grades";
 import { calculateGradePoints, type StudyProgramEntry } from "@/lib/grades/calculator";
 import { useStudyPrograms } from "@/hooks/use-study-programs";
 import { PoenggrenseTrend } from "@/components/poenggrense-trend";
+import { LanekassenWidget } from "@/components/lanekassen-widget";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { Card, CardContent } from "@/components/ui/card";
@@ -468,6 +469,9 @@ export default function SoknadsCoachPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Lånekassen-widget (Issue #59) — finansieringsestimater */}
+      <LanekassenWidget />
 
       {/* Tabs */}
       <div className="flex gap-2 border-b">
