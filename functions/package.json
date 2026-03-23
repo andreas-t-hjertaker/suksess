@@ -16,10 +16,12 @@
     "@google-cloud/vertexai": "^1.10.2",
     "firebase-admin": "^13.7.0",
     "firebase-functions": "^7.2.0",
+    "nodemailer": "^6.10.1",
     "stripe": "^20.4.1",
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@types/nodemailer": "^7.0.11",
     "@vitest/coverage-v8": "^3.0.0",
     "firebase-functions-test": "^3.4.0",
     "typescript": "^5.7.0",

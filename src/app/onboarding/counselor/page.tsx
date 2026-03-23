@@ -13,7 +13,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,8 +103,27 @@ export default function CounselorOnboardingPage() {
         updatedAt: serverTimestamp(),
       }, { merge: true });
 
-      // TODO: Send invitasjons-e-poster via Cloud Function
-      // if (inviteEmails.trim()) { ... }
+      // Opprett invitasjoner i Firestore — Cloud Function sender e-post automatisk
+      if (inviteEmails.trim()) {
+        const emailList = inviteEmails
+          .split(/[,\n]/)
+          .map((e) => e.trim())
+          .filter((e) => e.includes("@"));
+        // Generer et enkelt invite-token
+        const tokenBase = `${uid}-${Date.now()}`;
+        for (const email of emailList) {
+          await addDoc(collection(db, "counselorInvites"), {
+            inviterName: firebaseUser.displayName || dpaSignerName || "Rådgiver",
+            inviterEmail: firebaseUser.email,
+            schoolName,
+            inviteeEmail: email,
+            token: btoa(tokenBase + "-" + email).replace(/[^a-zA-Z0-9]/g, "").slice(0, 32),
+            tenantId,
+            createdAt: serverTimestamp(),
+            accepted: false,
+          });
+        }
+      }
 
       router.push("/admin");
     } finally {
