@@ -135,11 +135,10 @@ export const WEAVIATE_SCHEMA = {
     {
       class: WEAVIATE_CLASSES.STUDY_PROGRAM,
       description: "Studieprogram ved norske universiteter og høgskoler",
-      vectorizer: "text2vec-openai",
+      vectorizer: "text2vec-weaviate",
       moduleConfig: {
-        "text2vec-openai": {
-          model: "text-embedding-3-small",
-          dimensions: 1536,
+        "text2vec-weaviate": {
+          model: "Snowflake/snowflake-arctic-embed-m-v2.0",
         },
       },
       properties: [
@@ -156,7 +155,7 @@ export const WEAVIATE_SCHEMA = {
     {
       class: WEAVIATE_CLASSES.CAREER_PATH,
       description: "Karriereveier og yrkesbeskrivelser",
-      vectorizer: "text2vec-openai",
+      vectorizer: "text2vec-weaviate",
       properties: [
         { name: "title", dataType: ["text"], description: "Yrkestittel" },
         { name: "description", dataType: ["text"], description: "Yrkbeskrivelse" },
@@ -168,7 +167,7 @@ export const WEAVIATE_SCHEMA = {
     {
       class: WEAVIATE_CLASSES.KNOWLEDGE_ARTICLE,
       description: "Kunnskapsartikler om studier, søknad og karriere",
-      vectorizer: "text2vec-openai",
+      vectorizer: "text2vec-weaviate",
       properties: [
         { name: "title", dataType: ["text"] },
         { name: "body", dataType: ["text"] },
@@ -180,7 +179,7 @@ export const WEAVIATE_SCHEMA = {
     {
       class: WEAVIATE_CLASSES.CONVERSATION_MEMORY,
       description: "Anonymiserte samtale-minner for RAG",
-      vectorizer: "text2vec-openai",
+      vectorizer: "text2vec-weaviate",
       properties: [
         { name: "userId", dataType: ["text"] },
         { name: "question", dataType: ["text"] },
