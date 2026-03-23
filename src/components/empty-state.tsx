@@ -90,7 +90,7 @@ export function EmptyState({
             secondaryAction.href ? (
               <Link href={secondaryAction.href}>
                 <Button variant="outline" size={size === "sm" ? "sm" : "default"}>
-                  {secondaryAction.secondaryAction?.label ?? secondaryAction.label}
+                  {secondaryAction.label}
                 </Button>
               </Link>
             ) : (

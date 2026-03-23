@@ -69,7 +69,7 @@ function ProfileCardVisual({
   totalXp,
   level,
   innerRef,
-}: ShareableCardProps & { innerRef: React.RefObject<HTMLDivElement> }) {
+}: ShareableCardProps & { innerRef: React.RefObject<HTMLDivElement | null> }) {
   const riasecCode = profile.riasec
     ? Object.entries(profile.riasec)
         .sort(([, a], [, b]) => b - a)
@@ -238,7 +238,7 @@ function ProfileCardVisual({
 export function ShareableProfileCard(props: ShareableCardProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
 
   const handleCopyLink = useCallback(async () => {
     try {

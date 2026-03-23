@@ -21,4 +21,5 @@ export type ChatConfig = {
   placeholder?: string;
   title?: string;
   position?: "bottom-right" | "bottom-left";
+  suggestions?: string[];
 };

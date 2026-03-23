@@ -345,7 +345,7 @@ export default function LandingPage() {
               {stats.map((s) => (
                 <div key={s.label} className="space-y-0.5">
                   <p className="text-2xl font-extrabold sm:text-3xl">
-                    <AnimatedCounter from={0} to={s.value} />{s.suffix}
+                    <AnimatedCounter value={s.value} />{s.suffix}
                   </p>
                   <p className="text-xs text-muted-foreground sm:text-sm">{s.label}</p>
                 </div>
