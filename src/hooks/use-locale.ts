@@ -13,7 +13,7 @@ const LOCALE_KEY = "suksess-locale";
 function getStoredLocale(): Locale {
   if (typeof window === "undefined") return "nb";
   const stored = localStorage.getItem(LOCALE_KEY);
-  if (stored === "nb" || stored === "nn") return stored;
+  if (stored === "nb" || stored === "nn" || stored === "se") return stored;
   // Sjekk nettleserens språk
   const lang = navigator.language.toLowerCase();
   if (lang.startsWith("nn")) return "nn";
