@@ -116,6 +116,61 @@ const WEAVIATE_SCHEMA = {
         { name: "lastUpdated", dataType: ["date"], skipVectorization: true },
       ],
     },
+    {
+      class: "Occupation",
+      description: "Yrkesbeskrivelser fra STYRK-08 og utdanning.no",
+      vectorizer: "text2vec-openai",
+      moduleConfig: {
+        "text2vec-openai": { model: "text-embedding-3-small", dimensions: 1536 },
+      },
+      properties: [
+        { name: "firestoreId", dataType: ["text"], skipVectorization: true },
+        { name: "title", dataType: ["text"] },
+        { name: "description", dataType: ["text"] },
+        { name: "styrk08Code", dataType: ["text"], skipVectorization: true },
+        { name: "riasecCodes", dataType: ["text[]"], skipVectorization: true },
+        { name: "educationRequirement", dataType: ["text"], skipVectorization: true },
+        { name: "sector", dataType: ["text"], skipVectorization: true },
+        { name: "medianSalaryNok", dataType: ["number"], skipVectorization: true },
+      ],
+    },
+    {
+      class: "JobListing",
+      description: "Aktive stillingsannonser fra NAV Arbeidsplassen",
+      vectorizer: "text2vec-openai",
+      moduleConfig: {
+        "text2vec-openai": { model: "text-embedding-3-small", dimensions: 1536 },
+      },
+      properties: [
+        { name: "navId", dataType: ["text"], skipVectorization: true },
+        { name: "title", dataType: ["text"] },
+        { name: "description", dataType: ["text"] },
+        { name: "employer", dataType: ["text"], skipVectorization: true },
+        { name: "municipality", dataType: ["text"], skipVectorization: true },
+        { name: "occupationCode", dataType: ["text"], skipVectorization: true },
+        { name: "applicationDeadline", dataType: ["date"], skipVectorization: true },
+        { name: "url", dataType: ["text"], skipVectorization: true },
+        { name: "publishedAt", dataType: ["date"], skipVectorization: true },
+      ],
+    },
+    {
+      // ConversationMemory bruker multi-tenancy for GDPR-isolasjon per skole
+      class: "ConversationMemory",
+      description: "Bruker-chat-historikk for langsiktig AI-minne (per tenant)",
+      vectorizer: "text2vec-openai",
+      moduleConfig: {
+        "text2vec-openai": { model: "text-embedding-3-small", dimensions: 1536 },
+      },
+      multiTenancyConfig: { enabled: true },
+      properties: [
+        { name: "userId", dataType: ["text"], skipVectorization: true },
+        { name: "tenantId", dataType: ["text"], skipVectorization: true },
+        { name: "message", dataType: ["text"] },
+        { name: "role", dataType: ["text"], skipVectorization: true },
+        { name: "conversationId", dataType: ["text"], skipVectorization: true },
+        { name: "createdAt", dataType: ["date"], skipVectorization: true },
+      ],
+    },
   ],
 };
 
@@ -186,14 +241,16 @@ export const weaviateIndexScheduled = onSchedule(
     const apiKey = WEAVIATE_API_KEY.value();
     const baseUrl = WEAVIATE_URL.value();
 
-    const [studyCount, careerCount] = await Promise.allSettled([
+    const [studyCount, careerCount, jobCount] = await Promise.allSettled([
       indexStudyProgramsToWeaviate(apiKey, baseUrl),
       indexCareerPathsToWeaviate(apiKey, baseUrl),
+      indexJobListingsToWeaviate(apiKey, baseUrl),
     ]);
 
     console.info("Weaviate indeksering fullført:", {
       studyPrograms: studyCount.status === "fulfilled" ? studyCount.value : "feilet",
       careerPaths: careerCount.status === "fulfilled" ? careerCount.value : "feilet",
+      jobListings: jobCount.status === "fulfilled" ? jobCount.value : "feilet",
     });
   }
 );
@@ -279,6 +336,49 @@ async function indexCareerPathsToWeaviate(
   return count;
 }
 
+async function indexJobListingsToWeaviate(
+  apiKey: string,
+  baseUrl: string
+): Promise<number> {
+  const snap = await db.collection("navJobs").limit(500).get();
+  let count = 0;
+
+  for (const doc of snap.docs) {
+    const data = doc.data();
+    try {
+      await weaviateRequest(
+        "/v1/objects",
+        "POST",
+        {
+          class: "JobListing",
+          properties: {
+            navId: data.id ?? doc.id,
+            title: data.title ?? "",
+            description: data.description ?? "",
+            employer: data.employer ?? "",
+            municipality: data.municipality ?? "",
+            occupationCode: data.occupationCode ?? "",
+            applicationDeadline: data.applicationDeadline
+              ? new Date(data.applicationDeadline).toISOString()
+              : new Date().toISOString(),
+            url: data.url ?? "",
+            publishedAt: data.publishedAt
+              ? new Date(data.publishedAt).toISOString()
+              : new Date().toISOString(),
+          },
+        },
+        apiKey,
+        baseUrl
+      );
+      count++;
+    } catch (err) {
+      console.warn(`Feil ved indeksering av jobb ${doc.id}:`, err);
+    }
+  }
+
+  return count;
+}
+
 // ---------------------------------------------------------------------------
 // Search Proxy — POST /search (Issue #65)
 // Skjuler Weaviate API-nøkkel, verifiserer auth, rate-limiter
@@ -286,7 +386,7 @@ async function indexCareerPathsToWeaviate(
 
 const searchParamsSchema = z.object({
   query: z.string().min(1).max(500),
-  className: z.enum(["StudyProgram", "CareerPath", "JobListing"]),
+  className: z.enum(["StudyProgram", "CareerPath", "JobListing", "Occupation", "KnowledgeArticle"]),
   limit: z.number().int().min(1).max(50).optional().default(10),
   alpha: z.number().min(0).max(1).optional().default(0.75), // hybrid: 0=keyword, 1=vector
   filters: z.record(z.string()).optional(),
