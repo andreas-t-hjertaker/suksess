@@ -5,17 +5,19 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Bot, X, Trash2 } from "lucide-react";
+import { Bot, X, Trash2, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getDefaultContext } from "../lib/context";
 import { useChatSession } from "../hooks/use-chat";
 import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
+import { ConversationHistory } from "./conversation-history";
 import type { ChatConfig } from "../types";
 
 export function AiAssistant(config?: ChatConfig) {
   const [open, setOpen] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const { user } = useAuth();
   const pathname = usePathname();
 
@@ -26,7 +28,7 @@ export function AiAssistant(config?: ChatConfig) {
     return getDefaultContext(user, pathname);
   }, [user, pathname, config]);
 
-  const { messages, sendMessage, clearMessages, isStreaming } =
+  const { messages, sendMessage, clearMessages, loadConversation, isStreaming, conversationId } =
     useChatSession(context, config);
 
   const title = config?.title || "AI-assistent";
@@ -70,6 +72,16 @@ export function AiAssistant(config?: ChatConfig) {
               <span className="text-sm font-medium">{title}</span>
             </div>
             <div className="flex items-center gap-1">
+              {user && (
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => setShowHistory(!showHistory)}
+                  title="Samtalehistorikk"
+                >
+                  <History className="h-3.5 w-3.5" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon-xs"
@@ -89,6 +101,19 @@ export function AiAssistant(config?: ChatConfig) {
               </Button>
             </div>
           </div>
+
+          {/* Samtalehistorikk-panel */}
+          {showHistory && user && (
+            <div className="absolute inset-0 top-[49px] z-10 bg-background">
+              <ConversationHistory
+                userId={user.uid}
+                activeConversationId={conversationId}
+                onSelect={(id) => loadConversation(id)}
+                onNewChat={handleClear}
+                onClose={() => setShowHistory(false)}
+              />
+            </div>
+          )}
 
           {/* Meldinger */}
           <ChatMessages messages={messages} welcomeMessage={welcomeMessage} />

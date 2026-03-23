@@ -7,7 +7,9 @@ import {
   collection,
   addDoc,
   updateDoc,
+  deleteDoc,
   doc,
+  getDoc,
   getDocs,
   orderBy,
   query,
@@ -61,6 +63,39 @@ export async function saveConversationMessages(
     messageCount: messages.length,
     lastMessageAt: serverTimestamp(),
   });
+}
+
+/** Hent meldinger for en spesifikk samtale */
+export async function getConversationMessages(
+  userId: string,
+  conversationId: string
+): Promise<ChatMessage[]> {
+  const ref = doc(db, "users", userId, "conversations", conversationId);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return [];
+
+  const data = snap.data();
+  const messages = (data.messages ?? []) as Array<{
+    role: "user" | "assistant";
+    content: string;
+    timestamp?: string;
+  }>;
+
+  return messages.map((m, i) => ({
+    id: `restored_${i}`,
+    role: m.role,
+    content: m.content,
+    timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
+  }));
+}
+
+/** Slett en samtale (GDPR rett til sletting) */
+export async function deleteConversation(
+  userId: string,
+  conversationId: string
+): Promise<void> {
+  const ref = doc(db, "users", userId, "conversations", conversationId);
+  await deleteDoc(ref);
 }
 
 /** Hent siste samtaler for bruker */

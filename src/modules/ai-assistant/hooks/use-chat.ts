@@ -15,6 +15,7 @@ import { retrieveRagContext, injectRagContext } from "@/lib/ai/rag-pipeline";
 import {
   createConversation,
   saveConversationMessages,
+  getConversationMessages,
 } from "../lib/conversation-store";
 import type { ChatMessage, ChatConfig, AssistantContext } from "../types";
 
@@ -215,5 +216,21 @@ export function useChatSession(
     conversationIdRef.current = null;
   }, []);
 
-  return { messages, sendMessage, clearMessages, isStreaming };
+  const loadConversation = useCallback(
+    async (conversationId: string) => {
+      const uid = context.user?.uid;
+      if (!uid) return;
+      try {
+        const restored = await getConversationMessages(uid, conversationId);
+        setMessages(restored);
+        conversationIdRef.current = conversationId;
+        chatRef.current = null; // Ny sesjon med ny kontekst
+      } catch {
+        // Silently fail
+      }
+    },
+    [context.user?.uid]
+  );
+
+  return { messages, sendMessage, clearMessages, loadConversation, isStreaming, conversationId: conversationIdRef.current };
 }
