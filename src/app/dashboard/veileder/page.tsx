@@ -5,8 +5,9 @@
  * basert på brukerens Big Five, RIASEC og styrker.
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { useXp } from "@/hooks/use-xp";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { getRiasecCode } from "@/lib/personality/scoring";
 import { FeatureGate } from "@/components/feature-gate";
@@ -117,6 +118,7 @@ const SUGGESTED_WITH_PROFILE = (riasecCode: string) => [
 
 function VeilederPage() {
   const { user } = useAuth();
+  const { earnXp } = useXp();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
@@ -149,6 +151,11 @@ function VeilederPage() {
     context,
     { systemPrompt }
   );
+
+  const handleSend = useCallback((msg: string) => {
+    earnXp("ai_chat");
+    sendMessage(msg);
+  }, [earnXp, sendMessage]);
 
   const suggestions = useMemo(() => {
     if (!profile?.riasec) return SUGGESTED_BASE;
@@ -223,7 +230,7 @@ function VeilederPage() {
               {suggestions.map((q) => (
                 <button
                   key={q}
-                  onClick={() => sendMessage(q)}
+                  onClick={() => handleSend(q)}
                   disabled={isStreaming}
                   className={cn(
                     "w-full rounded-xl border bg-card px-4 py-3 text-left text-sm transition-all",
@@ -249,7 +256,7 @@ function VeilederPage() {
       {/* Input */}
       <div className="shrink-0">
         <ChatInput
-          onSend={sendMessage}
+          onSend={handleSend}
           disabled={isStreaming}
           placeholder="Spør om karrierevalg, studier, karakterer…"
         />

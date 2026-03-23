@@ -25,6 +25,7 @@ import {
   Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { showToast } from "@/lib/toast";
 import type { UserProfile } from "@/types/domain";
 import Link from "next/link";
 
@@ -284,8 +285,9 @@ export default function ProfilPage() {
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+      showToast.success("Profillenke kopiert!");
     } catch {
-      // fallback
+      showToast.error("Kunne ikke kopiere lenke");
     }
   }
 

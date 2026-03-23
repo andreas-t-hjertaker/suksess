@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   collection,
   getDocs,
+  getDoc,
   deleteDoc,
   doc,
   query,
@@ -34,6 +35,7 @@ import {
   Brain,
   GraduationCap,
   MessageCircle,
+  BookOpen,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -50,9 +52,7 @@ async function exportUserData(userId: string) {
   };
 
   // Subcollections
-  const subcols = ["grades", "testResults", "conversations"];
-
-  const { getDoc } = await import("firebase/firestore");
+  const subcols = ["grades", "testResults", "conversations", "notifications", "gamification", "studier", "jobbmatch", "soknadscoach"];
 
   for (const [key, path] of Object.entries(paths)) {
     const snap = await getDoc(doc(db, path));
@@ -68,7 +68,10 @@ async function exportUserData(userId: string) {
 }
 
 async function deleteAllUserData(userId: string) {
-  const subcols = ["grades", "testResults", "conversations", "apiKeys/keys"];
+  const subcols = [
+    "grades", "testResults", "conversations", "apiKeys/keys",
+    "notifications", "gamification", "studier", "jobbmatch", "soknadscoach", "cv",
+  ];
 
   for (const sub of subcols) {
     const parts = sub.split("/");
@@ -122,6 +125,24 @@ const DATA_LAYERS = [
     title: "Samtalehistorikk",
     desc: "AI-veileder chat-historikk",
     collection: "conversations (subcollection)",
+  },
+  {
+    icon: BookOpen,
+    title: "Studiemestring",
+    desc: "Registrerte emner og eksamenssjekkliste",
+    collection: "studier (subcollection)",
+  },
+  {
+    icon: FileJson,
+    title: "CV-utkast",
+    desc: "Lagret CV-innhold og personlige opplysninger",
+    collection: "cv (subcollection)",
+  },
+  {
+    icon: Database,
+    title: "Søknadscoach og jobbmatch",
+    desc: "Favorittmarkerte studieprogram og stillinger",
+    collection: "soknadscoach/jobbmatch (subcollections)",
   },
 ];
 

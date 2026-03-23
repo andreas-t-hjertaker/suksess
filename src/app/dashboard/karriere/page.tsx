@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
+import { useXp } from "@/hooks/use-xp";
 import { FeatureGate } from "@/components/feature-gate";
 import type { UserProfile, RiasecScores } from "@/types/domain";
 import {
@@ -23,7 +24,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -343,6 +343,7 @@ function KarrierePage() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const { earnXp } = useXp();
 
   const [search, setSearch] = useState("");
   const [sectorFilter, setSectorFilter] = useState<string>("alle");
@@ -434,7 +435,7 @@ function KarrierePage() {
                 return (
                   <button
                     key={career.id}
-                    onClick={() => setSelectedCareer(career)}
+                    onClick={() => { setSelectedCareer(career); earnXp("career_path_viewed"); }}
                     className={cn(
                       "rounded-xl border p-3 text-left transition-all hover:shadow-md hover:-translate-y-0.5",
                       fitScoreBg(score)
@@ -587,7 +588,7 @@ function KarrierePage() {
               key={career.id}
               career={career}
               riasec={riasec}
-              onClick={() => setSelectedCareer(career)}
+              onClick={() => { setSelectedCareer(career); earnXp("career_path_viewed"); }}
             />
           ))}
         </div>

@@ -1,10 +1,18 @@
 "use client";
 
-import { getAI, getGenerativeModel, GoogleAIBackend } from "firebase/ai";
+import { getAI, getGenerativeModel, VertexAIBackend } from "firebase/ai";
 import { app } from "./config";
 
-// Initialiser Firebase AI Logic med Google AI backend
-const ai = getAI(app, { backend: new GoogleAIBackend() });
+/**
+ * Initialiser Firebase AI Logic med Vertex AI backend i europe-west1.
+ *
+ * VertexAIBackend er påkrevd for GDPR-compliance — alle AI-kall
+ * prosesseres i EU og data forlater ikke EØS. (Issue #50)
+ *
+ * Forutsetning: Vertex AI API må være aktivert i Firebase-prosjektet
+ * og prosjektet må ha "Pay as you go"-fakturering.
+ */
+const ai = getAI(app, { backend: new VertexAIBackend() });
 
 /**
  * Hent en Gemini-modell for generativ AI.

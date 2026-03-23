@@ -12,6 +12,8 @@ import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { useGrades } from "@/hooks/use-grades";
 import { calculateGradePoints } from "@/lib/grades/calculator";
 import { getRiasecCode } from "@/lib/personality/scoring";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase/firestore";
 import type { UserProfile } from "@/types/domain";
 import {
   Card,
@@ -22,22 +24,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import {
   Download,
   User,
   GraduationCap,
   Star,
   Briefcase,
-  Globe,
-  Phone,
-  Mail,
-  Lock,
   Pencil,
   Eye,
   RotateCcw,
   Info,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
+import { getModel } from "@/lib/firebase/ai";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -258,24 +258,47 @@ function CvPage() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [tab, setTab] = useState<"edit" | "preview">("edit");
+  const [cvLoading, setCvLoading] = useState(true);
+  const initialLoad = useRef(true);
 
   const [cv, setCv] = useState<CvData>({
     ...DEFAULT_CV,
     name: user?.displayName ?? "",
     email: user?.email ?? "",
   });
+  const [generatingSummary, setGeneratingSummary] = useState(false);
 
-  // Oppdater navn/e-post fra auth
+  // Last CV-utkast fra Firestore
   useEffect(() => {
-    if (user && !cv.name) {
-      setCv((prev) => ({
-        ...prev,
-        name: user.displayName ?? prev.name,
-        email: user.email ?? prev.email,
-      }));
+    if (!user) {
+      setCvLoading(false);
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const ref = doc(db, "users", user.uid, "cv", "draft");
+    getDoc(ref).then((snap) => {
+      if (snap.exists()) {
+        setCv(snap.data() as CvData);
+      } else {
+        setCv((prev) => ({
+          ...prev,
+          name: user.displayName ?? prev.name,
+          email: user.email ?? prev.email,
+        }));
+      }
+      setCvLoading(false);
+      initialLoad.current = false;
+    }).catch(() => {
+      setCvLoading(false);
+      initialLoad.current = false;
+    });
   }, [user]);
+
+  // Lagre CV til Firestore ved endringer
+  useEffect(() => {
+    if (initialLoad.current || !user || cvLoading) return;
+    const ref = doc(db, "users", user.uid, "cv", "draft");
+    setDoc(ref, { ...cv, updatedAt: serverTimestamp() }, { merge: true });
+  }, [cv, user, cvLoading]);
 
   useEffect(() => {
     if (!user) return;
@@ -302,6 +325,31 @@ function CvPage() {
       name: user?.displayName ?? "",
       email: user?.email ?? "",
     });
+  }
+
+  async function generateAiSummary() {
+    if (generatingSummary) return;
+    setGeneratingSummary(true);
+    try {
+      const parts: string[] = [
+        `Skriv et profesjonelt personlig sammendrag (3–5 setninger, norsk bokmål) til en CV for en videregåendeskole-elev.`,
+        cv.name ? `Navn: ${cv.name}` : "",
+        riasecCode ? `Interesseprofil (RIASEC): ${riasecCode}` : "",
+        topStrengths.length > 0 ? `Styrker: ${topStrengths.map(s => STRENGTH_LABELS[s] ?? s).join(", ")}` : "",
+        profile?.interests?.length ? `Interesseområder: ${profile.interests.join(", ")}` : "",
+        gradePoints.average > 0 ? `Karaktersnitt: ${gradePoints.average.toFixed(2)}` : "",
+        `Fokus: ambisjoner, styrker og hva kandidaten søker. Ikke bruk klisjeer. Skriv i første person.`,
+      ].filter(Boolean);
+
+      const model = getModel();
+      const result = await model.generateContent(parts.join("\n"));
+      const text = result.response.text().trim();
+      set("summary", text);
+    } catch {
+      // Silently fail — bruker kan skrive manuelt
+    } finally {
+      setGeneratingSummary(false);
+    }
   }
 
   return (
@@ -421,7 +469,7 @@ function CvPage() {
                 Personlig sammendrag
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-2">
               <Textarea
                 value={cv.summary}
                 onChange={(e) => set("summary", e.target.value)}
@@ -429,9 +477,25 @@ function CvPage() {
                 rows={5}
                 className="resize-none"
               />
-              <p className="text-xs text-muted-foreground mt-1.5">
-                {cv.summary.length}/500 tegn
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  {cv.summary.length}/500 tegn
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={generateAiSummary}
+                  disabled={generatingSummary}
+                  className="gap-1.5 text-xs h-7"
+                >
+                  {generatingSummary ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3 w-3" />
+                  )}
+                  {generatingSummary ? "Genererer…" : "Generer med AI"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
 

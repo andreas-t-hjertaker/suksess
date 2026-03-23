@@ -4,9 +4,11 @@
  * Jobbmatch-side — AI-drevet jobbmatching og søknadsbrev-generator (issue #15)
  */
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase/firestore";
 import { getRiasecCode } from "@/lib/personality/scoring";
 import { useChatSession } from "@/modules/ai-assistant/hooks/use-chat";
 import { FeatureGate } from "@/components/feature-gate";
@@ -15,10 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Briefcase,
   Search,
-  MapPin,
-  Clock,
   Star,
   StarOff,
   Sparkles,
@@ -308,12 +307,10 @@ function JobCard({
               <Sparkles className="h-3.5 w-3.5" />
               Generer søknadsbrev
             </Button>
-            <a href="https://arbeidsplassen.nav.no" target="_blank" rel="noopener noreferrer">
-              <Button size="sm" variant="outline" className="gap-1.5">
+            <Button size="sm" variant="outline" className="gap-1.5" render={<a href="https://arbeidsplassen.nav.no" target="_blank" rel="noopener noreferrer" />}>
                 <ExternalLink className="h-3.5 w-3.5" />
                 Se på NAV
-              </Button>
-            </a>
+            </Button>
           </div>
         </div>
       )}
@@ -331,13 +328,34 @@ function JobMatchPage() {
   const [search, setSearch] = useState("");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
-  const [generatedLetter, setGeneratedLetter] = useState<string | null>(null);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const favoritesLoaded = useRef(false);
 
   useEffect(() => {
     if (!user) return;
     return subscribeToUserProfile(user.uid, setProfile);
   }, [user]);
+
+  // Last favoritter fra Firestore
+  useEffect(() => {
+    if (!user) return;
+    const ref = doc(db, "users", user.uid, "jobbmatch", "favorites");
+    getDoc(ref).then((snap) => {
+      if (snap.exists()) {
+        setFavorites(new Set((snap.data().ids as string[]) ?? []));
+      }
+      favoritesLoaded.current = true;
+    }).catch(() => {
+      favoritesLoaded.current = true;
+    });
+  }, [user]);
+
+  // Lagre favoritter til Firestore
+  useEffect(() => {
+    if (!favoritesLoaded.current || !user) return;
+    const ref = doc(db, "users", user.uid, "jobbmatch", "favorites");
+    setDoc(ref, { ids: [...favorites], updatedAt: serverTimestamp() });
+  }, [favorites, user]);
 
   const riasecCode = profile?.riasec ? getRiasecCode(profile.riasec) : "IRS";
 
@@ -352,11 +370,12 @@ function JobMatchPage() {
 
   const systemPrompt = useMemo(() => {
     const name = user?.displayName ?? "eleven";
+    const strengths = profile?.strengths?.join(", ") ?? "";
     return `Du er en norsk karriererådgiver som hjelper ${name} med å skrive søknadsbrev.
-Profil: RIASEC-kode ${riasecCode}${profile?.strengths?.length ? `, styrker: ${profile.strengths.join(", ")}` : ""}.
+Profil: RIASEC-kode ${riasecCode}${strengths ? `, styrker: ${strengths}` : ""}.
 Skriv alltid på norsk. Skriv profesjonelle, personlige søknadsbrev på 3–4 avsnitt.
 Tilpass brevet til stilling og bedrift. Fremhev relevante styrker og motivasjon.`;
-  }, [user?.displayName, riasecCode, profile?.strengths]);
+  }, [user, riasecCode, profile]);
 
   const { sendMessage, messages, isStreaming } = useChatSession(context, { systemPrompt });
 
@@ -382,7 +401,6 @@ Tilpass brevet til stilling og bedrift. Fremhev relevante styrker og motivasjon.
 
   async function handleGenerateLetter(job: Job) {
     setSelectedJob(job);
-    setGeneratedLetter(null);
     setGenerating(true);
     const prompt = `Skriv et søknadsbrev for stilling som "${job.title}" hos ${job.company} i ${job.location}.
 Krav: ${job.requirements.join("; ")}.

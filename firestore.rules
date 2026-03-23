@@ -22,13 +22,13 @@ service cloud.firestore {
         request.auth.token.get("role", "") in ["admin", "superadmin"];
     }
 
-    /** Har brukeren superadmin-rolle? */
+    /** Har brukeren superadmin-rolle (Suksess AS intern)? */
     function isSuperAdmin() {
       return isAuthenticated() &&
         request.auth.token.get("role", "") == "superadmin";
     }
 
-    /** Henter tenantId fra brukerens custom claim */
+    /** Henter tenantId fra brukerens custom claim (satt av Feide OIDC) */
     function userTenantId() {
       return request.auth.token.get("tenantId", null);
     }
@@ -38,63 +38,202 @@ service cloud.firestore {
       return isAuthenticated() && userTenantId() == tenantId;
     }
 
+    /**
+     * Er brukeren rådgiver (counselor) i samme tenant?
+     * Rådgivere har rolle "counselor" + matching tenantId claim.
+     */
+    function isCounselorInTenant(tenantId) {
+      return isAuthenticated() &&
+        request.auth.token.get("role", "") in ["counselor", "admin", "superadmin"] &&
+        (userTenantId() == tenantId || isSuperAdmin());
+    }
+
     /** Er brukeren rådgiver eller admin? */
     function isCounselorOrAdmin() {
       return isAuthenticated() &&
         request.auth.token.get("role", "") in ["counselor", "admin", "superadmin"];
     }
 
+    /** Henter brukerens rolle */
+    function userRole() {
+      return request.auth.token.get("role", "student");
+    }
+
+    /**
+     * Multi-tenant isolasjon: rådgiver kan kun lese elever i sin tenant.
+     * Brukes for å sikre at counselor bare ser sin skoles data.
+     */
+    function canCounselorReadUser(userId) {
+      // Hent mål-brukerens tenantId fra Firestore (resource.data)
+      return isCounselorOrAdmin() &&
+        (isSuperAdmin() ||
+         resource.data.get("tenantId", null) == userTenantId());
+    }
+
     // ---------------------------------------------------------------------------
-    // users/{userId}
+    // users/{userId} — elevprofil og stamdata
     // ---------------------------------------------------------------------------
 
     match /users/{userId} {
-      allow read: if isOwner(userId) || isCounselorOrAdmin();
+      // Elever leser/skriver egne data
+      // Rådgivere leser kun brukere i sin tenant (multi-tenant isolasjon)
+      allow read: if isOwner(userId) || canCounselorReadUser(userId);
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || isAdmin();
+      allow update: if isOwner(userId) ||
+        (isCounselorOrAdmin() && resource.data.get("tenantId", null) == userTenantId());
       allow delete: if isSuperAdmin();
 
-      // Personlighetsprofil (subcollection)
+      // Personlighetsprofil (subcollection) — sensitiv data
       match /personalityProfile/{docId} {
-        allow read, write: if isOwner(userId);
-        allow read: if isCounselorOrAdmin();
+        allow read: if isOwner(userId) ||
+          (isCounselorOrAdmin() && get(/databases/$(database)/documents/users/$(userId)).data.get("tenantId", null) == userTenantId());
+        allow write: if isOwner(userId);
       }
 
       // Testresultater (subcollection)
       match /testResults/{resultId} {
-        allow read, write: if isOwner(userId);
-        allow read: if isCounselorOrAdmin();
+        allow read: if isOwner(userId) ||
+          (isCounselorOrAdmin() && get(/databases/$(database)/documents/users/$(userId)).data.get("tenantId", null) == userTenantId());
+        allow write: if isOwner(userId);
       }
 
       // Karakterer (subcollection)
       match /grades/{gradeId} {
-        allow read, write: if isOwner(userId);
-        allow read: if isCounselorOrAdmin();
+        allow read: if isOwner(userId) ||
+          (isCounselorOrAdmin() && get(/databases/$(database)/documents/users/$(userId)).data.get("tenantId", null) == userTenantId());
+        allow write: if isOwner(userId);
       }
 
-      // Samtalehistorikk med AI (subcollection)
+      // Samtalehistorikk med AI (subcollection) — kun eleven selv
       match /conversations/{convId} {
         allow read, write: if isOwner(userId);
+      }
+
+      // Varsler (subcollection)
+      match /notifications/{notifId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) || isCounselorOrAdmin();
+        allow update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // Gamification (subcollection) — XP og achievements
+      match /gamification/{docId} {
+        allow read: if isOwner(userId) || isCounselorOrAdmin();
+        allow write: if isOwner(userId);
+      }
+
+      // Achievements (subcollection)
+      match /achievements/{achievId} {
+        allow read: if isOwner(userId);
+        allow write: if isOwner(userId);
+      }
+
+      // AI-innholdscache per bruker (subcollection)
+      match /aiCache/{cacheKey} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Dokumenter og testresultat-arkiv (subcollection)
+      match /documents/{docId} {
+        allow read: if isOwner(userId) ||
+          (isCounselorOrAdmin() && get(/databases/$(database)/documents/users/$(userId)).data.get("tenantId", null) == userTenantId());
+        allow write: if isOwner(userId);
+      }
+
+      // Søknader (subcollection)
+      match /soknader/{soknadId} {
+        allow read: if isOwner(userId) ||
+          (isCounselorOrAdmin() && get(/databases/$(database)/documents/users/$(userId)).data.get("tenantId", null) == userTenantId());
+        allow write: if isOwner(userId);
+      }
+
+      // Studier (subcollection) — emner og eksamenssjekkliste
+      match /studier/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // CV-utkast (subcollection)
+      match /cv/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Jobbmatch-favoritter (subcollection)
+      match /jobbmatch/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Søknadscoach-data (subcollection)
+      match /soknadscoach/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // GDPR-samtykke (subcollection) — sensitiv, kun eleven og superadmin
+      match /consent/{consentId} {
+        allow read: if isOwner(userId) || isSuperAdmin();
+        allow write: if isOwner(userId);
       }
     }
 
     // ---------------------------------------------------------------------------
-    // profiles/{userId} — profilens hoveddokument
+    // profiles/{userId} — offentlig(ere) profil med RIASEC/cluster
     // ---------------------------------------------------------------------------
 
     match /profiles/{userId} {
-      allow read: if isOwner(userId) || isCounselorOrAdmin();
+      allow read: if isOwner(userId) ||
+        (isCounselorOrAdmin() && get(/databases/$(database)/documents/users/$(userId)).data.get("tenantId", null) == userTenantId());
       allow write: if isOwner(userId);
     }
 
     // ---------------------------------------------------------------------------
-    // tenants/{tenantId}
+    // tenants/{tenantId} — skole/fylkeskommuneprofil
     // ---------------------------------------------------------------------------
 
     match /tenants/{tenantId} {
-      allow read: if isSameTenant(tenantId) || isAdmin();
-      allow create, update: if isAdmin();
+      // Tenant-admin leser og skriver sin tenant; superadmin kan alt
+      allow read: if isSameTenant(tenantId) || isSuperAdmin();
+      allow create: if isSuperAdmin();
+      allow update: if (isSameTenant(tenantId) && isAdmin()) || isSuperAdmin();
       allow delete: if isSuperAdmin();
+
+      // Rådgivere i denne tenanten
+      match /counselors/{counselorId} {
+        allow read: if isSameTenant(tenantId) || isSuperAdmin();
+        allow write: if (isSameTenant(tenantId) && isAdmin()) || isSuperAdmin();
+      }
+
+      // Konfigurasjon for tenanten (chatbot-innstillinger, branding etc.)
+      match /config/{configId} {
+        allow read: if isSameTenant(tenantId);
+        allow write: if (isSameTenant(tenantId) && isAdmin()) || isSuperAdmin();
+      }
+
+      // Aggregerte statistikker for tenanten (oppdateres av Cloud Functions)
+      match /stats/{period} {
+        allow read: if isCounselorInTenant(tenantId);
+        allow write: if false; // kun Cloud Functions (admin SDK)
+      }
+
+      // Rådgiver-notater om elever (tenantId-scopet, ikke under user/)
+      match /counselorNotes/{noteId} {
+        allow read: if isCounselorInTenant(tenantId);
+        allow create: if isCounselorInTenant(tenantId) &&
+          request.resource.data.tenantId == tenantId;
+        allow update: if isCounselorInTenant(tenantId) &&
+          resource.data.tenantId == tenantId &&
+          request.auth.uid == resource.data.authorId;
+        allow delete: if (isCounselorInTenant(tenantId) &&
+          request.auth.uid == resource.data.authorId) || isSuperAdmin();
+      }
+    }
+
+    // ---------------------------------------------------------------------------
+    // schoolStats/{tenantId} — denormaliserte skolestatistikker (Cloud Functions)
+    // ---------------------------------------------------------------------------
+
+    match /schoolStats/{tenantId} {
+      allow read: if isCounselorInTenant(tenantId);
+      allow write: if false; // kun Cloud Functions (admin SDK)
     }
 
     // ---------------------------------------------------------------------------
@@ -125,16 +264,51 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------------
+    // navJobs/{jobId} — NAV stillingsdatabase (ingestet av Cloud Scheduler)
+    // ---------------------------------------------------------------------------
+
+    match /navJobs/{jobId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // kun Cloud Functions
+    }
+
+    // ---------------------------------------------------------------------------
+    // semanticCache/{cacheId} — semantisk LLM-cache
+    // ---------------------------------------------------------------------------
+
+    match /semanticCache/{cacheId} {
+      // Leses av server-side Cloud Functions; klienter kan lese (for edge cache)
+      allow read: if isAuthenticated();
+      allow write: if false; // kun Cloud Functions (admin SDK)
+    }
+
+    // ---------------------------------------------------------------------------
+    // apiResponseCache/{cacheId} — API-respons cache
+    // ---------------------------------------------------------------------------
+
+    match /apiResponseCache/{cacheId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // kun Cloud Functions
+    }
+
+    // ---------------------------------------------------------------------------
+    // llmLogs/{logId} — LLM-brukslogg for kostnadsovervåking
+    // ---------------------------------------------------------------------------
+
+    match /llmLogs/{logId} {
+      allow read: if isSuperAdmin();
+      allow write: if false; // kun Cloud Functions
+    }
+
+    // ---------------------------------------------------------------------------
     // generatedContent/{contentId} — AI-generert innhold
     // ---------------------------------------------------------------------------
 
     match /generatedContent/{contentId} {
-      // Bruker kan lese eget eller klynge-delt innhold (userId == null)
       allow read: if isAuthenticated() &&
         (resource.data.userId == request.auth.uid ||
          resource.data.userId == null);
-      // Kun Cloud Functions (admin SDK) skriver hit
-      allow write: if false;
+      allow write: if false; // kun Cloud Functions
     }
 
     // ---------------------------------------------------------------------------
@@ -143,15 +317,16 @@ service cloud.firestore {
 
     match /subscriptions/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow write: if false; // kun via Cloud Functions / Stripe webhook
+      allow write: if false; // kun Cloud Functions (Stripe webhook)
     }
 
     // ---------------------------------------------------------------------------
-    // apiKeys/{userId}/keys/{keyId}
+    // apiKeys/{keyId}
     // ---------------------------------------------------------------------------
 
-    match /apiKeys/{userId}/keys/{keyId} {
-      allow read, write: if isOwner(userId);
+    match /apiKeys/{keyId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow write: if false;
     }
 
     // ---------------------------------------------------------------------------
@@ -161,6 +336,26 @@ service cloud.firestore {
     match /featureFlags/{flagId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
+    }
+
+    // ---------------------------------------------------------------------------
+    // notes/{noteId} — personlige notater
+    // ---------------------------------------------------------------------------
+
+    match /notes/{noteId} {
+      allow read, write: if isAuthenticated() &&
+        resource.data.userId == request.auth.uid;
+    }
+
+    // ---------------------------------------------------------------------------
+    // consentAudit/{auditId} — revisjonsspor for samtykke (immutable)
+    // ---------------------------------------------------------------------------
+
+    match /consentAudit/{auditId} {
+      allow read: if isSuperAdmin();
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false; // immutable audit trail
     }
   }
 }

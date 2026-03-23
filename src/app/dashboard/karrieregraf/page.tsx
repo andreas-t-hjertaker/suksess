@@ -5,11 +5,12 @@
  * SVG-basert interaktiv karrieregraf med fit-score fargekodet etter profil.
  */
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { useXp } from "@/hooks/use-xp";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { getRiasecCode } from "@/lib/personality/scoring";
-import { CAREER_NODES, calcFitScore, fitScoreColor } from "@/lib/karriere/data";
+import { CAREER_NODES, calcFitScore } from "@/lib/karriere/data";
 import {
   Sheet,
   SheetContent,
@@ -28,7 +29,6 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/types/domain";
 import type { CareerNode } from "@/lib/karriere/data";
 
@@ -178,10 +178,16 @@ function buildGraph(
 
 export default function KarriereGrafPage() {
   const { user } = useAuth();
+  const { earnXp } = useXp();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [selectedCareer, setSelectedCareer] = useState<CareerNode | null>(null);
   const [zoom, setZoom] = useState(1);
   const [filter, setFilter] = useState<"alle" | "topp" | "god">("alle");
+
+  const selectCareer = useCallback((career: CareerNode | null) => {
+    if (career) earnXp("career_path_viewed");
+    setSelectedCareer(career);
+  }, [earnXp]);
 
   useEffect(() => {
     if (!user) return;
@@ -341,12 +347,12 @@ export default function KarriereGrafPage() {
             return (
               <g
                 key={node.id}
-                onClick={() => setSelectedCareer(career)}
+                onClick={() => selectCareer(career)}
                 className="cursor-pointer"
                 role="button"
                 aria-label={`${node.label} — ${score}% match`}
                 tabIndex={0}
-                onKeyDown={(e) => e.key === "Enter" && setSelectedCareer(career)}
+                onKeyDown={(e) => e.key === "Enter" && selectCareer(career)}
               >
                 <circle
                   cx={node.x}
@@ -382,7 +388,7 @@ export default function KarriereGrafPage() {
       </div>
 
       {/* Detalj-panel */}
-      <Sheet open={!!selectedCareer} onOpenChange={(open) => !open && setSelectedCareer(null)}>
+      <Sheet open={!!selectedCareer} onOpenChange={(open) => !open && selectCareer(null)}>
         <SheetContent>
           {selectedCareer && (
             <>
@@ -437,7 +443,7 @@ export default function KarriereGrafPage() {
                       {selectedCareer.advancesTo.map((id) => {
                         const next = CAREER_NODES.find((c) => c.id === id);
                         return next ? (
-                          <Badge key={id} variant="secondary" className="text-xs cursor-pointer" onClick={() => setSelectedCareer(next)}>
+                          <Badge key={id} variant="secondary" className="text-xs cursor-pointer" onClick={() => selectCareer(next)}>
                             {next.title}
                           </Badge>
                         ) : null;

@@ -7,11 +7,13 @@ function makeGrade(
 ): GradeWithId {
   return {
     id: Math.random().toString(36),
+    userId: overrides.userId ?? "test-user",
     subject: overrides.subject,
     grade: overrides.grade,
     term: overrides.term ?? "vt",
     year: overrides.year ?? 2024,
-    fagkode: overrides.fagkode,
+    fagkode: overrides.fagkode ?? null,
+    programSubjectId: overrides.programSubjectId ?? null,
     createdAt: null,
     updatedAt: null,
   };

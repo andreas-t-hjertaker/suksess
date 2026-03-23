@@ -1,16 +1,27 @@
 /**
- * AI-innholds-caching — lag 1 og lag 3 av 3-lags caching-modellen (issue #9)
+ * AI-innholds-caching — 3-lags caching-modell
  *
- * Lag 1: Profil-spesifikt innhold caches i Firestore under users/{uid}/aiCache
- * Lag 3: Live-generert innhold caches i localStorage for rask tilgang
+ * Lag 1 — Profil-spesifikt (Firestore users/{uid}/aiCache):
+ *   Genereres ved profilendring. TTL: 7 dager.
+ *   Eks: personlige studietips, karriereforslag.
  *
- * TTL: Lag 1 = 7 dager, Lag 3 = 24 timer
+ * Lag 2 — Klynge-delt (Firestore generatedContent/{clusterId}_{type}):
+ *   Deles av alle brukere i samme k-means klynge. TTL: 24 timer.
+ *   Eks: klynge-spesifikke ukesutfordringer, karriereartikler.
+ *
+ * Lag 3 — Live/session (localStorage):
+ *   Session-cache for siste svar. TTL: 24 timer.
+ *   Eks: siste AI-svar, aktive samtaler.
  */
 
 import {
   doc,
   getDoc,
   setDoc,
+  collection,
+  query,
+  where,
+  getDocs,
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
@@ -19,7 +30,7 @@ import { db } from "@/lib/firebase/firestore";
 // Typer
 // ---------------------------------------------------------------------------
 
-export type CacheLevel = 1 | 3;
+export type CacheLevel = 1 | 2 | 3;
 
 export type CacheEntry = {
   content: string;
@@ -91,6 +102,62 @@ export async function setL1Cache(
 }
 
 // ---------------------------------------------------------------------------
+// Lag 2 — Klynge-delt innhold (Firestore generatedContent/, 24 timer TTL)
+// ---------------------------------------------------------------------------
+
+const L2_TTL_HOURS = 24;
+
+export async function getL2Cache(
+  clusterId: string,
+  contentType: string
+): Promise<string | null> {
+  try {
+    const q = query(
+      collection(db, "generatedContent"),
+      where("clusterId", "==", clusterId),
+      where("type", "==", contentType)
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+
+    const data = snap.docs[0].data();
+    const generatedAt = data.generatedAt?.toDate?.() ?? null;
+    if (!generatedAt) return null;
+
+    const ageHours = (Date.now() - generatedAt.getTime()) / 3600000;
+    if (ageHours > L2_TTL_HOURS) return null;
+
+    return data.content as string;
+  } catch {
+    return null;
+  }
+}
+
+export async function setL2Cache(
+  clusterId: string,
+  contentType: string,
+  content: string,
+  model = "gemini-2.0-flash"
+): Promise<void> {
+  try {
+    const docId = `${clusterId}_${contentType}`;
+    await setDoc(doc(db, "generatedContent", docId), {
+      clusterId,
+      type: contentType,
+      content,
+      userId: null, // Klynge-delt, ikke bruker-spesifikt
+      model,
+      generatedAt: serverTimestamp(),
+      expiresAt: null, // TTL håndteres manuelt
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  } catch {
+    // Silently fail
+  }
+}
+
+// ---------------------------------------------------------------------------
 // localStorage cache (lag 3 — live/session, 24 timer TTL)
 // ---------------------------------------------------------------------------
 
@@ -130,12 +197,14 @@ export function setL3Cache(cacheKey: string, content: string): void {
 }
 
 // ---------------------------------------------------------------------------
-// Hoved-cache-oppslag (sjekker L3 → L1 → null)
+// Hoved-cache-oppslag (sjekker L3 → L2 → L1 → null)
 // ---------------------------------------------------------------------------
 
 export async function getCachedContent(
   userId: string | null,
-  prompt: string
+  prompt: string,
+  clusterId?: string | null,
+  contentType?: string
 ): Promise<string | null> {
   const key = hashCacheKey(prompt);
 
@@ -143,12 +212,20 @@ export async function getCachedContent(
   const l3 = getL3Cache(key);
   if (l3) return l3;
 
-  // L1 — Firestore (krever bruker)
+  // L2 — klynge-delt innhold (krever clusterId)
+  if (clusterId && contentType) {
+    const l2 = await getL2Cache(clusterId, contentType);
+    if (l2) {
+      setL3Cache(key, l2); // Hydrer L3
+      return l2;
+    }
+  }
+
+  // L1 — profil-spesifikt (krever bruker)
   if (userId) {
     const l1 = await getL1Cache(userId, key);
     if (l1) {
-      // Hydrer L3-cache
-      setL3Cache(key, l1);
+      setL3Cache(key, l1); // Hydrer L3
       return l1;
     }
   }

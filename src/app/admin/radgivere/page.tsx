@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useMemo } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import type { UserProfile, BigFiveScores, RiasecScores } from "@/types/domain";
@@ -25,8 +25,6 @@ import {
   Brain,
   Compass,
   TrendingUp,
-  CheckCircle,
-  Clock,
   BarChart2,
   Info,
   RefreshCw,
@@ -195,7 +193,6 @@ export default function RadgivereAdminPage() {
 
   useEffect(() => {
     if (user) fetchProfiles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const stats = useMemo(() => computeStats(profiles), [profiles]);

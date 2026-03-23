@@ -1,54 +1,64 @@
 import type { PricingPlan } from "@/types";
 
 /**
- * Definer prisplaner her. Oppdater stripePriceId med faktiske Stripe Price IDs.
- * Disse brukes både på /pricing-siden og i checkout-flyten.
+ * Suksess prisplaner.
+ * Oppdater stripePriceId med faktiske Stripe Price IDs fra Stripe Dashboard.
+ * Disse brukes på /pricing-siden og i checkout-flyten.
  */
 export const plans: PricingPlan[] = [
   {
     id: "free",
-    name: "Gratis",
-    description: "For å komme i gang",
+    name: "Utforsker",
+    description: "Kom i gang med karriereutforsking",
     price: 0,
     currency: "NOK",
     interval: "month",
     features: [
-      "1 prosjekt",
-      "100 API-kall per dag",
-      "Fellesskapsstøtte",
+      "Personlighetsprofil (Big Five + RIASEC)",
+      "Karriereutforsker med 50+ yrker",
+      "Karakterkalkulator og SO-poeng",
+      "Grunnleggende AI-veileder (10 spørsmål/dag)",
+      "CV-builder",
     ],
     stripePriceId: "",
   },
   {
     id: "pro",
-    name: "Pro",
-    description: "For profesjonelle",
-    price: 299,
+    name: "Pro Student",
+    description: "Full karriere- og studieveiledning",
+    price: 99,
     currency: "NOK",
     interval: "month",
     features: [
-      "Ubegrenset prosjekter",
-      "10 000 API-kall per dag",
+      "Alt i Utforsker",
+      "Ubegrenset AI-veileder med personalisering",
+      "Søknads-coach med historiske trender",
+      "Jobbmatch og AI-generert søknadsbrev",
+      "Studiemestring og eksamensplan",
+      "Karrieregraf (visuell sti-utforsker)",
+      "XP-system og alle achievements",
       "Prioritert støtte",
-      "API-tilgang",
     ],
-    stripePriceId: "price_REPLACE_ME",
+    stripePriceId: "price_REPLACE_WITH_STRIPE_PRICE_ID",
     highlighted: true,
   },
   {
-    id: "team",
-    name: "Team",
-    description: "For team og bedrifter",
-    price: 999,
+    id: "skole",
+    name: "Skole",
+    description: "For videregående skoler og rådgivere",
+    price: 4990,
     currency: "NOK",
     interval: "month",
     features: [
-      "Alt i Pro",
-      "Ubegrenset API-kall",
-      "Teammedlemmer",
-      "SLA-garanti",
-      "Dedikert støtte",
+      "Alt i Pro Student",
+      "Inntil 500 elever",
+      "Rådgiver-dashboard med aggregert statistikk",
+      "Frafallsrisiko-varsler",
+      "Eksport av elevdata (GDPR-compliant)",
+      "Tilpasset branding",
+      "SLA-garanti og dedikert support",
+      "Onboarding og opplæring",
     ],
-    stripePriceId: "price_REPLACE_ME",
+    stripePriceId: "price_REPLACE_WITH_STRIPE_SCHOOL_PRICE_ID",
   },
 ];

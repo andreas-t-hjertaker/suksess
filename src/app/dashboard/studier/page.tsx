@@ -4,12 +4,13 @@
  * Studiemestringsmodul — faglig progresjon for høyere utdanning (issue #26)
  */
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { getRiasecCode } from "@/lib/personality/scoring";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase/firestore";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -120,17 +121,43 @@ const EXAM_CHECKLIST = [
 export default function StudierPage() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [courses, setCourses] = useState<Course[]>([
-    { id: "c1", name: "Examen philosophicum", credits: 10, grade: 3, passed: true, semester: "H24" },
-    { id: "c2", name: "Statistikk og dataanalyse", credits: 10, grade: 4, passed: true, semester: "H24" },
-    { id: "c3", name: "Innføring i informatikk", credits: 10, grade: 5, passed: true, semester: "V25" },
-  ]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(true);
   const [newName, setNewName] = useState("");
   const [newCredits, setNewCredits] = useState("10");
   const [newGrade, setNewGrade] = useState<string>("–");
   const [newSemester, setNewSemester] = useState("H25");
   const [examChecks, setExamChecks] = useState<Set<string>>(new Set());
   const [tab, setTab] = useState<"progresjon" | "studietips" | "eksamen">("progresjon");
+  const initialLoad = useRef(true);
+
+  // Last kurser fra Firestore
+  useEffect(() => {
+    if (!user) {
+      setLoadingCourses(false);
+      return;
+    }
+    const ref = doc(db, "users", user.uid, "studier", "emner");
+    getDoc(ref).then((snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setCourses((data.courses as Course[]) ?? []);
+        setExamChecks(new Set((data.examChecks as string[]) ?? []));
+      }
+      setLoadingCourses(false);
+      initialLoad.current = false;
+    }).catch(() => {
+      setLoadingCourses(false);
+      initialLoad.current = false;
+    });
+  }, [user]);
+
+  // Lagre kurser til Firestore når de endres (skip under initial load)
+  useEffect(() => {
+    if (initialLoad.current || !user) return;
+    const ref = doc(db, "users", user.uid, "studier", "emner");
+    setDoc(ref, { courses, examChecks: [...examChecks], updatedAt: serverTimestamp() }, { merge: true });
+  }, [courses, examChecks, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -184,6 +211,18 @@ export default function StudierPage() {
     if (grade === 3) return "text-blue-600 dark:text-blue-400";
     return "text-orange-600 dark:text-orange-400";
   };
+
+  if (loadingCourses) {
+    return (
+      <div className="space-y-4 max-w-3xl">
+        <div className="h-8 w-48 rounded-md bg-muted animate-pulse" />
+        <div className="h-4 w-80 rounded-md bg-muted animate-pulse" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-3xl">

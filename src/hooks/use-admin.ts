@@ -17,6 +17,9 @@ export function useAdmin() {
     firebaseUser.getIdTokenResult().then((result) => {
       setIsAdmin(!!result.claims.admin);
       setLoading(false);
+    }).catch(() => {
+      setIsAdmin(false);
+      setLoading(false);
     });
   }, [firebaseUser]);
 

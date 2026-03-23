@@ -11,6 +11,8 @@ import type { User as FirebaseUser } from "firebase/auth";
 import {
   onAuthChange,
   signInWithGoogle,
+  signInWithFeide,
+  getFeideRedirectResult,
   signInWithEmail,
   signUpWithEmail,
   signOutUser,
@@ -27,6 +29,7 @@ type AuthContextType = {
   firebaseUser: FirebaseUser | null;
   loading: boolean;
   signInGoogle: () => Promise<void>;
+  signInFeide: () => Promise<void>;
   signInEmail: (email: string, password: string) => Promise<void>;
   signUpEmail: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -72,8 +75,19 @@ export function useAuthState() {
       }
     : null;
 
+  // Håndter Feide-redirect-resultat ved oppstart
+  useEffect(() => {
+    getFeideRedirectResult().catch(() => {
+      // Ignorer feil — ingen aktiv redirect
+    });
+  }, []);
+
   const signInGoogle = useCallback(async () => {
     await signInWithGoogle();
+  }, []);
+
+  const signInFeideCallback = useCallback(async () => {
+    await signInWithFeide();
   }, []);
 
   const signInEmail = useCallback(async (email: string, password: string) => {
@@ -124,6 +138,7 @@ export function useAuthState() {
     firebaseUser,
     loading,
     signInGoogle,
+    signInFeide: signInFeideCallback,
     signInEmail,
     signUpEmail,
     signOut: handleSignOut,

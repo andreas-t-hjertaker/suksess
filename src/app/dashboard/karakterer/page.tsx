@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useGrades } from "@/hooks/use-grades";
+import { useXp } from "@/hooks/use-xp";
 import {
   calculateGradePoints,
   simulateGradeChange,
@@ -9,6 +10,7 @@ import {
   type StudyProgramEntry,
 } from "@/lib/grades/calculator";
 import { Button } from "@/components/ui/button";
+import { showToast } from "@/lib/toast";
 import { Input } from "@/components/ui/input";
 import {
   Card,
@@ -50,6 +52,7 @@ const YEARS = Array.from({ length: 4 }, (_, i) => CURRENT_YEAR - i);
 
 export default function KaraktererPage() {
   const { grades, loading, addGrade, removeGrade } = useGrades();
+  const { earnXp } = useXp();
 
   // Legg til ny karakter
   const [newSubject, setNewSubject] = useState("");
@@ -119,9 +122,12 @@ export default function KaraktererPage() {
         year: newYear,
         programSubjectId: null,
       });
+      earnXp("grades_added");
       setNewSubject("");
       setNewFagkode("");
       setNewGrade(4);
+    } catch {
+      showToast.error("Kunne ikke lagre karakter. Prøv igjen.");
     } finally {
       setAdding(false);
     }

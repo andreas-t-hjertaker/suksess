@@ -1,5 +1,6 @@
 import { onRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import type { DocumentReference } from "firebase-admin/firestore";
 import * as crypto from "crypto";
 import Stripe from "stripe";
 import { z } from "zod";
@@ -24,7 +25,7 @@ const createNoteSchema = z.object({
 
 /** GET / — API-info (offentlig) */
 const getRoot = ({ res }: RouteContext) => {
-  success(res, { message: "ketl cloud API", version: "0.1.0" });
+  success(res, { message: "Suksess API", version: "1.0.0" });
 };
 
 /** GET /collections — List Firestore-samlinger (offentlig) */
@@ -121,8 +122,8 @@ const createCheckout = withAuth(async ({ user, res, req }) => {
     customer: customerId,
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${req.headers.origin || "https://ketlcloud.web.app"}/dashboard/abonnement?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${req.headers.origin || "https://ketlcloud.web.app"}/pricing`,
+    success_url: `${req.headers.origin || "https://suksess.no"}/dashboard/abonnement?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${req.headers.origin || "https://suksess.no"}/pricing`,
     metadata: { firebaseUid: user.uid },
   });
 
@@ -141,7 +142,7 @@ const createPortal = withAuth(async ({ user, res, req }) => {
 
   const session = await getStripe().billingPortal.sessions.create({
     customer: customerId,
-    return_url: `${req.headers.origin || "https://ketlcloud.web.app"}/dashboard/abonnement`,
+    return_url: `${req.headers.origin || "https://suksess.no"}/dashboard/abonnement`,
   });
 
   success(res, { url: session.url });
@@ -333,15 +334,46 @@ const revokeApiKey = withAuth(async ({ user, req, res }) => {
 // Admin-handlers
 // ============================================================
 
-/** POST /admin/set-role — Sett admin-rolle på en bruker */
+/** POST /admin/set-role — Sett rolle og tenant på en bruker */
 const setAdminRole = withAdmin(async ({ req, res }) => {
-  const { uid, admin: isAdmin } = req.body as { uid?: string; admin?: boolean };
+  const { uid, role, tenantId, admin: isAdmin } = req.body as {
+    uid?: string;
+    role?: string;
+    tenantId?: string;
+    admin?: boolean;
+  };
+
   if (!uid) {
     fail(res, "uid er påkrevd");
     return;
   }
-  await admin.auth().setCustomUserClaims(uid, { admin: !!isAdmin });
-  success(res, { uid, admin: !!isAdmin });
+
+  // Støtte for både nytt rolle-system og gammelt admin-bool
+  const existingUser = await admin.auth().getUser(uid);
+  const existingClaims = (existingUser.customClaims as Record<string, unknown>) || {};
+
+  const newClaims: Record<string, unknown> = { ...existingClaims };
+
+  if (role !== undefined) {
+    const validRoles = ["student", "counselor", "admin", "superadmin"];
+    if (!validRoles.includes(role)) {
+      fail(res, `Ugyldig rolle. Tillatte verdier: ${validRoles.join(", ")}`);
+      return;
+    }
+    newClaims.role = role;
+    newClaims.admin = ["admin", "superadmin"].includes(role);
+  } else if (isAdmin !== undefined) {
+    // Bakoverkompatibel boolean-admin-flag
+    newClaims.admin = !!isAdmin;
+    newClaims.role = isAdmin ? "admin" : "student";
+  }
+
+  if (tenantId !== undefined) {
+    newClaims.tenantId = tenantId || null;
+  }
+
+  await admin.auth().setCustomUserClaims(uid, newClaims);
+  success(res, { uid, ...newClaims });
 });
 
 /** GET /admin/users — List alle brukere */
@@ -425,10 +457,18 @@ const deleteAdminUser = withAdmin(async ({ req, res }) => {
     return;
   }
 
-  // Slett Firestore-data
+  // Slett Suksess subcollections
+  const userRef = db.collection("users").doc(uid);
+  const subcollections = [
+    "personalityProfile", "grades", "xp", "achievements",
+    "notifications", "aiCache", "documents", "soknader",
+  ];
+  await Promise.all(subcollections.map((s) => deleteSubcollection(userRef, s)));
+
+  // Slett Firestore toppnivå-data
   const batch = db.batch();
-  const subRef = db.collection("subscriptions").doc(uid);
-  batch.delete(subRef);
+  batch.delete(userRef);
+  batch.delete(db.collection("subscriptions").doc(uid));
 
   const keysSnap = await db.collection("apiKeys").where("userId", "==", uid).get();
   keysSnap.docs.forEach((d) => batch.delete(d.ref));
@@ -531,21 +571,105 @@ const updateFeatureFlag = withAdmin(async ({ req, res }) => {
 // Konto-sletting
 // ============================================================
 
-/** DELETE /account — Slett alt brukerdata fra Firestore */
-const deleteAccount = withAuth(async ({ user, res }) => {
+/** Hjelpefunksjon: slett en hel subcollection */
+async function deleteSubcollection(parentRef: DocumentReference, subcollectionName: string) {
+  const snap = await parentRef.collection(subcollectionName).get();
+  if (snap.empty) return;
   const batch = db.batch();
+  snap.docs.forEach((d) => batch.delete(d.ref));
+  await batch.commit();
+}
 
-  const subRef = db.collection("subscriptions").doc(user.uid);
-  batch.delete(subRef);
+/** DELETE /account — Slett alt brukerdata fra Firestore (GDPR-rett til sletting) */
+const deleteAccount = withAuth(async ({ user, res }) => {
+  const uid = user.uid;
+  const userRef = db.collection("users").doc(uid);
 
-  const keysSnap = await db.collection("apiKeys").where("userId", "==", user.uid).get();
+  // Slett subcollections under users/{uid}
+  const subcollections = [
+    "personalityProfile",
+    "grades",
+    "xp",
+    "achievements",
+    "notifications",
+    "aiCache",
+    "documents",
+    "soknader",
+  ];
+
+  await Promise.all(subcollections.map((s) => deleteSubcollection(userRef, s)));
+
+  // Slett bruker-dokumentet selv
+  const batch = db.batch();
+  batch.delete(userRef);
+
+  // Slett abonnement og API-nøkler
+  batch.delete(db.collection("subscriptions").doc(uid));
+
+  const keysSnap = await db.collection("apiKeys").where("userId", "==", uid).get();
   keysSnap.docs.forEach((d) => batch.delete(d.ref));
 
-  const notesSnap = await db.collection("notes").where("userId", "==", user.uid).get();
+  const notesSnap = await db.collection("notes").where("userId", "==", uid).get();
   notesSnap.docs.forEach((d) => batch.delete(d.ref));
 
   await batch.commit();
   success(res, { deleted: true });
+});
+
+// ============================================================
+// XP-system
+// ============================================================
+
+/** Gyldige XP-kildetyper med maksimalt antall poeng per handling */
+const XP_SOURCES: Record<string, number> = {
+  profile_complete: 50,
+  grade_added: 10,
+  daily_login: 5,
+  career_explored: 5,
+  test_taken: 30,
+  cv_downloaded: 20,
+  job_applied: 25,
+  coach_session: 15,
+};
+
+/** POST /xp/award — Tildel XP server-side (forhindrer klient-manipulasjon) */
+const awardXp = withAuth(async ({ user, req, res }) => {
+  const { source, amount } = req.body as { source?: string; amount?: number };
+
+  if (!source || !(source in XP_SOURCES)) {
+    fail(res, `Ugyldig XP-kilde. Tillatte: ${Object.keys(XP_SOURCES).join(", ")}`);
+    return;
+  }
+
+  const maxXp = XP_SOURCES[source];
+  const xpToAward = Math.min(Math.max(1, Number(amount) || maxXp), maxXp);
+
+  const userRef = db.collection("users").doc(user.uid);
+  // Bruker samme sti som klient-hooken: users/{uid}/gamification/xp
+  const xpRef = userRef.collection("gamification").doc("xp");
+
+  const xpDoc = await xpRef.get();
+  const currentXp = (xpDoc.data()?.totalXp as number) || 0;
+  const newTotal = currentXp + xpToAward;
+
+  await xpRef.set({
+    totalXp: newTotal,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  success(res, { awarded: xpToAward, total: newTotal });
+});
+
+/** GET /xp — Hent brukerens XP-status */
+const getXp = withAuth(async ({ user, res }) => {
+  const xpRef = db.collection("users").doc(user.uid).collection("gamification").doc("xp");
+  const snap = await xpRef.get();
+
+  success(res, {
+    totalXp: (snap.data()?.totalXp as number) || 0,
+    streak: (snap.data()?.streak as number) || 0,
+    lastUpdated: snap.data()?.updatedAt ?? null,
+  });
 });
 
 // ============================================================
@@ -585,6 +709,9 @@ const routes: Route[] = [
   // PUT /admin/feature-flags/:id — håndteres med startsWith-matching under
   // Konto
   { method: "DELETE", path: "/account", handler: deleteAccount },
+  // XP
+  { method: "POST", path: "/xp/award", handler: awardXp },
+  { method: "GET", path: "/xp", handler: getXp },
 ];
 
 // ============================================================
@@ -599,7 +726,7 @@ export const health = onRequest(
   (_req, res) => {
     res.json({
       status: "ok",
-      project: "ketlcloud",
+      project: "suksess-842ed",
       timestamp: new Date().toISOString(),
       services: {
         firestore: "connected",

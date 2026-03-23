@@ -30,15 +30,6 @@ type BehaviorSignals = {
   fastScrollCount: number;
 };
 
-const signals: BehaviorSignals = {
-  pagesVisited: new Set(),
-  totalClicks: 0,
-  avgTimeOnPage: 0,
-  visualPageVisits: 0,
-  analyticalPageVisits: 0,
-  fastScrollCount: 0,
-};
-
 const VISUAL_PAGES = ["/dashboard/karriere", "/dashboard/karrieregraf", "/dashboard/analyse", "/dashboard/veileder"];
 const ANALYTICAL_PAGES = ["/dashboard/karakterer", "/dashboard/dokumenter", "/dashboard/mine-data", "/dashboard/fremgang"];
 
@@ -49,30 +40,64 @@ const ANALYTICAL_PAGES = ["/dashboard/karakterer", "/dashboard/dokumenter", "/da
 export function useImplicitProfiling() {
   const pathname = usePathname();
   const { overrideConfig } = usePersonality();
-  const pageEntryTime = useRef<number>(Date.now());
+  // Initialiser med 0, sett riktig tid i effect (unngår impure Date.now() under render)
+  const pageEntryTime = useRef<number>(0);
+  // Skoped til komponent-instans for å unngå kryssbrukerkontaminering
+  const signalsRef = useRef<BehaviorSignals>({
+    pagesVisited: new Set(),
+    totalClicks: 0,
+    avgTimeOnPage: 0,
+    visualPageVisits: 0,
+    analyticalPageVisits: 0,
+    fastScrollCount: 0,
+  });
+
+  function adjustUiFromSignals() {
+    const totalVisits = signalsRef.current.visualPageVisits + signalsRef.current.analyticalPageVisits;
+    if (totalVisits < 3) return;
+
+    const visualRatio = signalsRef.current.visualPageVisits / totalVisits;
+    const exploratoryNav = signalsRef.current.pagesVisited.size > 5;
+
+    if (signalsRef.current.fastScrollCount > 10) {
+      overrideConfig({ animationIntensity: "subtle" });
+    }
+    if (exploratoryNav) {
+      overrideConfig({ navigationStyle: "exploratory" });
+    }
+    if (visualRatio > 0.7) {
+      overrideConfig({ infoDensity: "minimal" });
+    } else if (visualRatio < 0.3) {
+      overrideConfig({ infoDensity: "detailed" });
+    }
+  }
+
+  // Initialiser pageEntryTime ved mount
+  useEffect(() => {
+    pageEntryTime.current = Date.now();
+  }, []);
 
   // Spor sideskifte
   useEffect(() => {
-    signals.pagesVisited.add(pathname);
+    signalsRef.current.pagesVisited.add(pathname);
 
     if (VISUAL_PAGES.some((p) => pathname.startsWith(p))) {
-      signals.visualPageVisits++;
+      signalsRef.current.visualPageVisits++;
     } else if (ANALYTICAL_PAGES.some((p) => pathname.startsWith(p))) {
-      signals.analyticalPageVisits++;
+      signalsRef.current.analyticalPageVisits++;
     }
 
     // Registrer tid på forrige side
     const timeSpent = (Date.now() - pageEntryTime.current) / 1000;
-    if (signals.avgTimeOnPage === 0) {
-      signals.avgTimeOnPage = timeSpent;
+    if (signalsRef.current.avgTimeOnPage === 0) {
+      signalsRef.current.avgTimeOnPage = timeSpent;
     } else {
-      signals.avgTimeOnPage = (signals.avgTimeOnPage + timeSpent) / 2;
+      signalsRef.current.avgTimeOnPage = (signalsRef.current.avgTimeOnPage + timeSpent) / 2;
     }
     pageEntryTime.current = Date.now();
 
-    // Analyser signaler og juster gradvis
     adjustUiFromSignals();
-  }, [pathname]);
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Spor hurtig scroll (proxy for animasjonstolerance)
   useEffect(() => {
@@ -85,7 +110,7 @@ export function useImplicitProfiling() {
       const deltaT = now - lastTime;
       if (deltaT > 0 && deltaY / deltaT > 5) {
         // Hurtig scroll: > 5px/ms
-        signals.fastScrollCount++;
+        signalsRef.current.fastScrollCount++;
       }
       lastY = window.scrollY;
       lastTime = now;
@@ -95,33 +120,8 @@ export function useImplicitProfiling() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  function adjustUiFromSignals() {
-    const totalVisits = signals.visualPageVisits + signals.analyticalPageVisits;
-    if (totalVisits < 3) return; // Ikke nok data
-
-    const visualRatio = signals.visualPageVisits / totalVisits;
-    const exploratoryNav = signals.pagesVisited.size > 5;
-
-    // Juster animasjoner basert på scroll-hastighet
-    if (signals.fastScrollCount > 10) {
-      overrideConfig({ animationIntensity: "subtle" });
-    }
-
-    // Juster navigasjonsstil basert på utforskende mønster
-    if (exploratoryNav) {
-      overrideConfig({ navigationStyle: "exploratory" });
-    }
-
-    // Juster informasjonstetthet basert på analytiske vs. visuelle preferanser
-    if (visualRatio > 0.7) {
-      overrideConfig({ infoDensity: "minimal" });
-    } else if (visualRatio < 0.3) {
-      overrideConfig({ infoDensity: "detailed" });
-    }
-  }
-
-  const trackClick = useCallback((elementType: string) => {
-    signals.totalClicks++;
+  const trackClick = useCallback((_elementType: string) => {
+    signalsRef.current.totalClicks++;
     // Logg implisitt preferanse uten å sende data eksternt
   }, []);
 

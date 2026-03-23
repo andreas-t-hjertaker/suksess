@@ -127,7 +127,7 @@ export default function TenantAdminPage() {
       setName(""); setSlug(""); setEmail(""); setMaxStudents("100");
       setShowForm(false);
       await loadTenants();
-    } catch (err) {
+    } catch {
       showToast.error("Opprettelse feilet");
     } finally {
       setCreating(false);

@@ -11,6 +11,7 @@ import { WebsiteJsonLd } from "@/components/json-ld";
 import { PersonalityProvider } from "@/components/personality-provider";
 import { SkipLink } from "@/components/skip-link";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
+import { AppCheckProvider } from "@/components/app-check-provider";
 
 const geist = Geist({
   variable: "--font-sans",
@@ -64,6 +65,7 @@ export default function RootLayout({
           description="AI-drevet karriere- og utdanningsveiledning for norske VGS-elever."
         />
         <ServiceWorkerRegistration />
+        <AppCheckProvider />
         <ThemeProvider>
           <AuthProvider>
             <PersonalityProvider>

@@ -1,15 +1,16 @@
 /**
- * i18n-støtte for Suksess — norsk bokmål og nynorsk (issue #29)
+ * i18n-støtte for Suksess — norsk bokmål, nynorsk og nordsamisk (Issue #42)
  *
  * Brukes via useLocale()-hook.
- * Fremtidig utvidelse: samisk, engelsk.
+ * Støttede språk: nb (bokmål), nn (nynorsk), se (nordsamisk/davvisámegiella)
  */
 
-export type Locale = "nb" | "nn";
+export type Locale = "nb" | "nn" | "se";
 
 export const SUPPORTED_LOCALES: { code: Locale; label: string; nativeName: string }[] = [
   { code: "nb", label: "Norsk bokmål", nativeName: "Norsk bokmål" },
   { code: "nn", label: "Norsk nynorsk", nativeName: "Norsk nynorsk" },
+  { code: "se", label: "Nordsamisk", nativeName: "Davvisámegiella" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -182,7 +183,95 @@ const NN_MESSAGES: Messages = {
   },
 };
 
+/**
+ * Nordsamisk (davvisámegiella) — Issue #42
+ * Oversettelse er basert på standardisert nordsamisk terminologi.
+ * Faglig gjennomgang av samisk språkekspert anbefales.
+ */
+const SE_MESSAGES: Messages = {
+  nav: {
+    dashboard: "Čoahkkáigeassu",
+    profile: "Mu profila",
+    advisor: "AI-bagadalli",
+    career: "Karrierra",
+    cv: "CV-huksen",
+    analyse: "Analyseren",
+    applicationCoach: "Ohcamheahtá",
+    grades: "Nummárat",
+    documents: "Dokumeanttat",
+    progress: "Ovdáneapmi & XP",
+    subscription: "Áinnasvuohta",
+    developer: "Ovddideaddji",
+    settings: "Mearrádusat",
+    myData: "Mu dieđut",
+    jobMatch: "Barggu oassálastin",
+    studies: "Oahppomearkkašupmi",
+    careerGraph: "Karrierra-gráfa",
+  },
+  dashboard: {
+    welcome: "Bures boahtin",
+    gradeAverage: "Nummáraskálla",
+    riasecCode: "RIASEC-koda",
+    level: "Dássi",
+    continueOnboarding: "Viggat mearrideami",
+    quickLinks: "Johtileamos liŋkkat",
+  },
+  profile: {
+    title: "Mu profila",
+    bigFive: "Big Five (OCEAN)",
+    riasec: "RIASEC-beroštumit",
+    strengths: "Nanu beali",
+    learningStyle: "Oahppoláhki",
+  },
+  common: {
+    save: "Vurke",
+    cancel: "Hávkka",
+    delete: "Sierase",
+    edit: "Redigere",
+    search: "Ohca",
+    loading: "Viggat…",
+    error: "Meattáhus dáhpáhuvai",
+    back: "Ruovttoluotta",
+    next: "Čuovvovaš",
+    finish: "Nohkkat",
+    yes: "Juo",
+    no: "Ii",
+    or: "dahje",
+    and: "ja",
+    of: "/ ",
+  },
+  auth: {
+    login: "Čállit sisseana",
+    logout: "Čállit olggosbajás",
+    register: "Registrere",
+    email: "E-poasta",
+    password: "Salasána",
+    forgotPassword: "Vajáldahttán salasánainis?",
+    loginWithGoogle: "Čállit sisseana Googlein",
+  },
+  gamification: {
+    xp: "XP",
+    level: "Dássi",
+    streak: "beaivvies streak",
+    achievements: "Oasseváldinemiid",
+    unlocked: "Rahppojuvvon",
+    locked: "Giddojuvvon",
+  },
+  grades: {
+    title: "Nummárat",
+    subject: "Fága",
+    grade: "Nummár",
+    term: "Semester",
+    year: "Jahki",
+    add: "Lasit nummára",
+    average: "Gaskamearri",
+    soPoints: "SO-pisttat",
+    sciencePoints: "Reálafáhka-pisttat",
+  },
+};
+
 export const MESSAGES: Record<Locale, Messages> = {
   nb: NB_MESSAGES,
   nn: NN_MESSAGES,
+  se: SE_MESSAGES,
 };
