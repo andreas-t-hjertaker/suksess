@@ -5,13 +5,15 @@
  * Støtter forhåndsvisning og nedlasting som HTML (print-vennlig).
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { FeatureGate } from "@/components/feature-gate";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { useGrades } from "@/hooks/use-grades";
 import { calculateGradePoints } from "@/lib/grades/calculator";
 import { getRiasecCode } from "@/lib/personality/scoring";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase/firestore";
 import type { UserProfile } from "@/types/domain";
 import {
   Card,
@@ -253,6 +255,8 @@ function CvPage() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [tab, setTab] = useState<"edit" | "preview">("edit");
+  const [cvLoading, setCvLoading] = useState(true);
+  const initialLoad = useRef(true);
 
   const [cv, setCv] = useState<CvData>({
     ...DEFAULT_CV,
@@ -260,17 +264,37 @@ function CvPage() {
     email: user?.email ?? "",
   });
 
-  // Oppdater navn/e-post fra auth
+  // Last CV-utkast fra Firestore
   useEffect(() => {
-    if (user && !cv.name) {
-      setCv((prev) => ({
-        ...prev,
-        name: user.displayName ?? prev.name,
-        email: user.email ?? prev.email,
-      }));
+    if (!user) {
+      setCvLoading(false);
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const ref = doc(db, "users", user.uid, "cv", "draft");
+    getDoc(ref).then((snap) => {
+      if (snap.exists()) {
+        setCv(snap.data() as CvData);
+      } else {
+        setCv((prev) => ({
+          ...prev,
+          name: user.displayName ?? prev.name,
+          email: user.email ?? prev.email,
+        }));
+      }
+      setCvLoading(false);
+      initialLoad.current = false;
+    }).catch(() => {
+      setCvLoading(false);
+      initialLoad.current = false;
+    });
   }, [user]);
+
+  // Lagre CV til Firestore ved endringer
+  useEffect(() => {
+    if (initialLoad.current || !user || cvLoading) return;
+    const ref = doc(db, "users", user.uid, "cv", "draft");
+    setDoc(ref, { ...cv, updatedAt: serverTimestamp() }, { merge: true });
+  }, [cv, user, cvLoading]);
 
   useEffect(() => {
     if (!user) return;

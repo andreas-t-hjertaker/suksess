@@ -118,6 +118,11 @@ service cloud.firestore {
       match /studier/{docId} {
         allow read, write: if isOwner(userId);
       }
+
+      // CV-utkast (subcollection)
+      match /cv/{docId} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
     // ---------------------------------------------------------------------------
