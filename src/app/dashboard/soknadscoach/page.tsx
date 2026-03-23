@@ -12,7 +12,8 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useXp } from "@/hooks/use-xp";
 import { useGrades } from "@/hooks/use-grades";
-import { calculateGradePoints, STUDY_PROGRAMS, type StudyProgramEntry } from "@/lib/grades/calculator";
+import { calculateGradePoints, type StudyProgramEntry } from "@/lib/grades/calculator";
+import { useStudyPrograms } from "@/hooks/use-study-programs";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { Card, CardContent } from "@/components/ui/card";
@@ -328,6 +329,9 @@ export default function SoknadsCoachPage() {
   const gradePoints = useMemo(() => calculateGradePoints(grades), [grades]);
   const myPoints = gradePoints.totalPoints;
 
+  // Reelle studieprogram fra Firestore (Issue #52), fallback til statiske data
+  const { programs: studyPrograms, loading: programsLoading, fromFirestore: programsFromFirestore } = useStudyPrograms(500);
+
   const [search, setSearch] = useState("");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
@@ -382,7 +386,7 @@ export default function SoknadsCoachPage() {
   };
 
   const filtered = useMemo(() => {
-    let list = STUDY_PROGRAMS;
+    let list = studyPrograms;
     if (showFavoritesOnly) list = list.filter((p) => favorites.has(programKey(p)));
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -398,7 +402,7 @@ export default function SoknadsCoachPage() {
       // Vis programmer du er nærmest å kvalifisere for øverst
       return Math.abs(diffA) - Math.abs(diffB);
     });
-  }, [search, showFavoritesOnly, favorites, myPoints]);
+  }, [studyPrograms, search, showFavoritesOnly, favorites, myPoints]);
 
   const doneCount = checklist.filter((c) => c.done).length;
 
@@ -410,6 +414,13 @@ export default function SoknadsCoachPage() {
         <p className="text-muted-foreground text-sm mt-1">
           Sammenlign studieprogram med dine poeng, se historiske trender og sjekk søknadsfristene.
         </p>
+        {!programsLoading && (
+          <p className="text-xs text-muted-foreground mt-1">
+            {programsFromFirestore
+              ? `${studyPrograms.length} studieprogram fra Samordna Opptak (oppdatert)`
+              : `${studyPrograms.length} studieprogram (statiske data — koble til for live-data)`}
+          </p>
+        )}
       </div>
 
       {/* Mine poeng-kort */}

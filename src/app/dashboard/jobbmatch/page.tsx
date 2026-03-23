@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/types/domain";
+import { useNavJobs } from "@/hooks/use-nav-jobs";
 
 // ---------------------------------------------------------------------------
 // Mock jobbdatabase (representativt utvalg)
@@ -331,6 +332,27 @@ function JobMatchPage() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const favoritesLoaded = useRef(false);
 
+  // Reelle NAV-jobber fra Firestore (Issue #52), fallback til mock-data
+  const { jobs: navJobs, fromFirestore: jobsFromFirestore } = useNavJobs({ maxResults: 200 });
+
+  // Map NavJob → Job (for bruk med eksisterende kortkomponent og scoring)
+  const allJobs = useMemo<Job[]>(() => {
+    if (!jobsFromFirestore || navJobs.length === 0) return JOBS;
+    return navJobs.map((j) => ({
+      id: j.id,
+      title: j.title,
+      company: j.company,
+      location: j.location,
+      type: j.type === "annet" ? "heltid" : j.type,
+      sector: j.sector,
+      riasecMatch: j.riasecCodes ?? [],
+      description: j.description,
+      requirements: [],
+      salary: undefined,
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navJobs, jobsFromFirestore]);
+
   useEffect(() => {
     if (!user) return;
     return subscribeToUserProfile(user.uid, setProfile);
@@ -381,10 +403,10 @@ Tilpass brevet til stilling og bedrift. Fremhev relevante styrker og motivasjon.
 
   const scored = useMemo(
     () =>
-      JOBS.map((j) => ({ job: j, score: calcMatchScore(j, riasecCode) })).sort(
+      allJobs.map((j) => ({ job: j, score: calcMatchScore(j, riasecCode) })).sort(
         (a, b) => b.score - a.score
       ),
-    [riasecCode]
+    [allJobs, riasecCode]
   );
 
   const filtered = useMemo(() => {
@@ -418,6 +440,11 @@ Beskrivelse: ${job.description}`;
         <h1 className="text-2xl font-bold">Jobbmatch</h1>
         <p className="text-muted-foreground text-sm mt-1">
           Jobber sortert etter match med din RIASEC-profil ({riasecCode}). Generer søknadsbrev med AI.
+        </p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {jobsFromFirestore
+            ? `${allJobs.length} stillinger fra NAV Arbeidsplassen`
+            : `${allJobs.length} eksempelstillinger (NAV-data ikke lastet ennå)`}
         </p>
       </div>
 
