@@ -32,6 +32,7 @@ import {
   Circle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useStudiedata } from "@/hooks/use-studiedata";
 import type { UserProfile } from "@/types/domain";
 
 // ---------------------------------------------------------------------------
@@ -128,7 +129,8 @@ export default function StudierPage() {
   const [newGrade, setNewGrade] = useState<string>("–");
   const [newSemester, setNewSemester] = useState("H25");
   const [examChecks, setExamChecks] = useState<Set<string>>(new Set());
-  const [tab, setTab] = useState<"progresjon" | "studietips" | "eksamen">("progresjon");
+  const [tab, setTab] = useState<"progresjon" | "studietips" | "eksamen" | "anbefalinger">("progresjon");
+  const studiedata = useStudiedata();
   const initialLoad = useRef(true);
 
   // Last kurser fra Firestore
@@ -263,7 +265,7 @@ export default function StudierPage() {
 
       {/* Tabs */}
       <div className="flex gap-2 border-b">
-        {(["progresjon", "studietips", "eksamen"] as const).map((t) => (
+        {(["progresjon", "anbefalinger", "studietips", "eksamen"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -274,7 +276,7 @@ export default function StudierPage() {
                 : "border-transparent text-muted-foreground hover:text-foreground"
             )}
           >
-            {t === "progresjon" ? "Emner" : t === "studietips" ? "Studietips" : "Eksamensforberedelse"}
+            {t === "progresjon" ? "Emner" : t === "anbefalinger" ? "Anbefalinger" : t === "studietips" ? "Studietips" : "Eksamensforberedelse"}
           </button>
         ))}
       </div>
@@ -354,6 +356,44 @@ export default function StudierPage() {
               ))
             )}
           </div>
+        </div>
+      )}
+
+      {tab === "anbefalinger" && (
+        <div className="space-y-4">
+          <div className="rounded-xl border bg-primary/5 border-primary/20 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Target className="h-4 w-4 text-primary" aria-hidden="true" />
+              <p className="text-sm font-medium">Anbefalte studieprogram basert på RIASEC ({riasecCode})</p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Disse studieprogrammene matcher din personlighetsprofil. Data fra utdanning.no.
+            </p>
+          </div>
+
+          {studiedata.loading ? (
+            <div className="space-y-2">
+              {[0, 1, 2].map((i) => <div key={i} className="h-16 rounded-xl bg-muted animate-pulse" />)}
+            </div>
+          ) : studiedata.error ? (
+            <p className="text-sm text-destructive text-center py-8">{studiedata.error}</p>
+          ) : studiedata.programs.length === 0 ? (
+            <p className="text-center text-muted-foreground text-sm py-8">
+              {profile?.riasec ? "Ingen studieprogram funnet for din profil ennå." : "Fullfør personlighetstesten for å se anbefalinger."}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {studiedata.programs.map((p, i) => (
+                <div key={i} className="flex items-start gap-3 rounded-xl border px-4 py-3">
+                  <BookOpen className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" aria-hidden="true" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">{p.institution}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
