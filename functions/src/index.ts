@@ -578,6 +578,16 @@ const deleteAdminUser = withAdmin(async ({ req, res }) => {
   success(res, { uid, deleted: true });
 });
 
+// Prisplan → månedlig beløp (NOK inkl. MVA 25%)
+const PLAN_MONTHLY_NOK: Record<string, number> = {
+  pro: 99,
+  pro_annual: Math.round((799 / 12) * 100) / 100,  // 799 kr/år
+  skole: Math.round((12_500 / 12) * 100) / 100,    // liten skole
+  skole_medium: Math.round((37_500 / 12) * 100) / 100,
+  skole_stor: Math.round((75_000 / 12) * 100) / 100,
+  kommune: Math.round((250_000 / 12) * 100) / 100,
+};
+
 /** GET /admin/stats — Aggregerte statistikker */
 const getAdminStats = withAdmin(async ({ res }) => {
   const [usersResult, subsSnap, keysSnap] = await Promise.all([
@@ -586,10 +596,17 @@ const getAdminStats = withAdmin(async ({ res }) => {
     db.collection("apiKeys").where("revoked", "==", false).get(),
   ]);
 
+  // Beregn MRR fra aktive abonnementer
+  const mrrNok = subsSnap.docs.reduce((sum, d) => {
+    const plan = (d.data().plan as string) ?? "";
+    return sum + (PLAN_MONTHLY_NOK[plan] ?? 0);
+  }, 0);
+
   success(res, {
     totalUsers: usersResult.users.length,
     activeSubscriptions: subsSnap.size,
     totalApiKeys: keysSnap.size,
+    mrrNok: Math.round(mrrNok),
   });
 });
 

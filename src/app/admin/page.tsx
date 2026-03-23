@@ -15,6 +15,7 @@ type AdminStats = {
   totalUsers: number;
   activeSubscriptions: number;
   totalApiKeys: number;
+  mrrNok: number;
 };
 
 export default function AdminPage() {
@@ -45,9 +46,11 @@ export default function AdminPage() {
     },
     {
       title: "MRR",
-      value: "—",
+      value: stats
+        ? stats.mrrNok.toLocaleString("nb-NO") + " kr"
+        : "—",
       icon: TrendingUp,
-      description: "Månedlig inntekt (kommer)",
+      description: "Estimert månedlig inntekt",
     },
     {
       title: "API-nøkler",
