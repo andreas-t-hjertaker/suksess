@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { useXp } from "@/hooks/use-xp";
+import { useKarrierePaths } from "@/hooks/use-karriere";
 import { FeatureGate } from "@/components/feature-gate";
 import type { UserProfile, RiasecScores } from "@/types/domain";
 import {
@@ -344,6 +345,7 @@ function KarrierePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const { earnXp } = useXp();
+  const { careers: firestoreCareers, fromFirestore: careersFromFirestore } = useKarrierePaths();
 
   const [search, setSearch] = useState("");
   const [sectorFilter, setSectorFilter] = useState<string>("alle");
@@ -363,8 +365,10 @@ function KarrierePage() {
 
   const riasec = profile?.riasec ?? null;
 
+  const allCareers = firestoreCareers.length > 0 ? firestoreCareers : CAREER_NODES;
+
   const filtered = useMemo(() => {
-    let list = CAREER_NODES;
+    let list = allCareers;
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -398,10 +402,10 @@ function KarrierePage() {
 
   const topMatches = useMemo(() => {
     if (!riasec) return [];
-    return [...CAREER_NODES]
+    return [...allCareers]
       .sort((a, b) => calcFitScore(b, riasec) - calcFitScore(a, riasec))
       .slice(0, 3);
-  }, [riasec]);
+  }, [riasec, allCareers]);
 
   const hasFilters =
     search.trim() !== "" ||
@@ -559,7 +563,10 @@ function KarrierePage() {
       <div className="flex items-center gap-2">
         <Briefcase className="h-4 w-4 text-muted-foreground" />
         <span className="text-sm text-muted-foreground">
-          {filtered.length} av {CAREER_NODES.length} yrker
+          {filtered.length} av {allCareers.length} yrker
+          {careersFromFirestore && (
+            <span className="ml-1 text-xs text-green-600 dark:text-green-400">● live</span>
+          )}
         </span>
       </div>
 
