@@ -128,6 +128,11 @@ service cloud.firestore {
       match /jobbmatch/{docId} {
         allow read, write: if isOwner(userId);
       }
+
+      // Søknadscoach-data (subcollection) — favoritter og sjekkliste
+      match /soknadscoach/{docId} {
+        allow read, write: if isOwner(userId);
+      }
     }
 
     // ---------------------------------------------------------------------------

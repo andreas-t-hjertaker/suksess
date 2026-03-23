@@ -8,9 +8,12 @@
  * - Søknadsfrist-sjekkliste
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useAuth } from "@/hooks/use-auth";
 import { useGrades } from "@/hooks/use-grades";
 import { calculateGradePoints, STUDY_PROGRAMS, type StudyProgramEntry } from "@/lib/grades/calculator";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase/firestore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -318,6 +321,7 @@ function ProgramCard({
 // ---------------------------------------------------------------------------
 
 export default function SoknadsCoachPage() {
+  const { user } = useAuth();
   const { grades } = useGrades();
   const gradePoints = useMemo(() => calculateGradePoints(grades), [grades]);
   const myPoints = gradePoints.totalPoints;
@@ -327,6 +331,30 @@ export default function SoknadsCoachPage() {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [checklist, setChecklist] = useState<CheckItem[]>(DEFAULT_CHECKLIST);
   const [tab, setTab] = useState<"programmer" | "sjekkliste">("programmer");
+  const dataLoaded = useRef(false);
+
+  // Last favoritter og sjekkliste fra Firestore
+  useEffect(() => {
+    if (!user) return;
+    const ref = doc(db, "users", user.uid, "soknadscoach", "data");
+    getDoc(ref).then((snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setFavorites(new Set((data.favorites as string[]) ?? []));
+        if (data.checklist) {
+          setChecklist(data.checklist as CheckItem[]);
+        }
+      }
+      dataLoaded.current = true;
+    });
+  }, [user]);
+
+  // Lagre til Firestore ved endringer
+  useEffect(() => {
+    if (!dataLoaded.current || !user) return;
+    const ref = doc(db, "users", user.uid, "soknadscoach", "data");
+    setDoc(ref, { favorites: [...favorites], checklist, updatedAt: serverTimestamp() }, { merge: true });
+  }, [favorites, checklist, user]);
 
   const programKey = (p: StudyProgramEntry) => `${p.name}|${p.institution}`;
 
