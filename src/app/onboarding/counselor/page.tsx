@@ -10,10 +10,10 @@
  * 4. Ferdig — gå til rådgiverportalen
  */
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
-import { doc, setDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, addDoc, collection, serverTimestamp, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,7 @@ type StepId = (typeof STEPS)[number]["id"];
 
 export default function CounselorOnboardingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { firebaseUser } = useAuth();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -57,6 +58,22 @@ export default function CounselorOnboardingPage() {
 
   // Steg 4: Inviter
   const [inviteEmails, setInviteEmails] = useState("");
+
+  // Håndter invitasjons-token fra URL (?invite=<token>)
+  useEffect(() => {
+    const inviteToken = searchParams.get("invite");
+    if (!inviteToken || !firebaseUser) return;
+
+    // Slå opp invite og pre-fyll skolenavn
+    getDocs(
+      query(collection(db, "counselorInvites"), where("token", "==", inviteToken))
+    ).then((snap) => {
+      if (!snap.empty) {
+        const data = snap.docs[0].data();
+        if (data.schoolName) setSchoolName(data.schoolName as string);
+      }
+    }).catch(() => {});
+  }, [searchParams, firebaseUser]);
 
   const currentStepId = STEPS[step].id as StepId;
   const progress = Math.round((step / (STEPS.length - 1)) * 100);
