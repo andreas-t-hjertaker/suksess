@@ -345,6 +345,8 @@ function JobMatchPage() {
         setFavorites(new Set((snap.data().ids as string[]) ?? []));
       }
       favoritesLoaded.current = true;
+    }).catch(() => {
+      favoritesLoaded.current = true;
     });
   }, [user]);
 

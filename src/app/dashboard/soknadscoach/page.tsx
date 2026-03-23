@@ -348,6 +348,8 @@ export default function SoknadsCoachPage() {
         }
       }
       dataLoaded.current = true;
+    }).catch(() => {
+      dataLoaded.current = true;
     });
   }, [user]);
 

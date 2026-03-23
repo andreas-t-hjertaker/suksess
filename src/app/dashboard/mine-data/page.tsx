@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   collection,
   getDocs,
+  getDoc,
   deleteDoc,
   doc,
   query,
@@ -52,8 +53,6 @@ async function exportUserData(userId: string) {
 
   // Subcollections
   const subcols = ["grades", "testResults", "conversations", "notifications", "gamification", "studier", "jobbmatch", "soknadscoach"];
-
-  const { getDoc } = await import("firebase/firestore");
 
   for (const [key, path] of Object.entries(paths)) {
     const snap = await getDoc(doc(db, path));
