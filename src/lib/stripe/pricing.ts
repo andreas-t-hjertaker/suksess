@@ -2,8 +2,12 @@ import type { PricingPlan } from "@/types";
 
 /**
  * Suksess prisplaner.
- * Oppdater stripePriceId med faktiske Stripe Price IDs fra Stripe Dashboard.
- * Disse brukes på /pricing-siden og i checkout-flyten.
+ *
+ * Price IDs hentes fra miljøvariabler (settes i .env.local / Firebase config):
+ *   NEXT_PUBLIC_STRIPE_PRICE_PRO    — Pro Student månedspris
+ *   NEXT_PUBLIC_STRIPE_PRICE_SKOLE  — Skole månedspris
+ *
+ * Free-planen har ingen Stripe Price ID (gratis tier).
  */
 export const plans: PricingPlan[] = [
   {
@@ -39,7 +43,7 @@ export const plans: PricingPlan[] = [
       "XP-system og alle achievements",
       "Prioritert støtte",
     ],
-    stripePriceId: "price_REPLACE_WITH_STRIPE_PRICE_ID",
+    stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO ?? "",
     highlighted: true,
   },
   {
@@ -59,6 +63,6 @@ export const plans: PricingPlan[] = [
       "SLA-garanti og dedikert support",
       "Onboarding og opplæring",
     ],
-    stripePriceId: "price_REPLACE_WITH_STRIPE_SCHOOL_PRICE_ID",
+    stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_SKOLE ?? "",
   },
 ];
