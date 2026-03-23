@@ -6,6 +6,19 @@ import Stripe from "stripe";
 import { z } from "zod";
 import { success, fail, withAuth, withAdmin, withValidation, rateLimit, type RouteContext } from "./middleware";
 
+// Re-eksporter Firestore-triggered funksjoner (e-postvarsler)
+export { onParentalConsentCreated, onCounselorInvited } from "./notifications";
+
+// Re-eksporter ingest Cloud Scheduler-funksjoner
+export {
+  ingestNavStillingerScheduled,
+  ingestUtdanningNoScheduled,
+  ingestDBHScheduled,
+  ingestLaerlingScheduled,
+  ingestSSBScheduled,
+  triggerIngest,
+} from "./ingest";
+
 admin.initializeApp();
 
 const db = admin.firestore();
