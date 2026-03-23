@@ -77,7 +77,7 @@ async function callGemini(
   userId: string,
   feature: string,
   modelName = DEFAULT_MODEL
-): Promise<{ text: string; inputTokens: number; outputTokens: number; costNok: number }> {
+): Promise<{ text: string; inputTokens: number; outputTokens: number; costNok: number; budgetWarning?: number; budgetBlocked?: boolean }> {
   const start = Date.now();
 
   const model = vertexAI.getGenerativeModel({
@@ -112,7 +112,56 @@ async function callGemini(
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   }).catch(() => {/* logging skal ikke stoppe svaret */});
 
-  return { text, inputTokens, outputTokens, costNok };
+  // Token-budsjett-sjekk (Issue #34)
+  const budget = await trackAndCheckBudget(userId, costNok);
+
+  return { text, inputTokens, outputTokens, costNok, budgetWarning: budget.warningPct, budgetBlocked: budget.blocked };
+}
+
+// ─── Token-budsjett per bruker/skole (Issue #34) ─────────────────────────────
+
+/**
+ * Månedlig token-budsjett i NOK. Gratis-plan: 5 kr/mnd, Pro: 50 kr/mnd, Skole: 500 kr/mnd.
+ * Henter plan fra Firestore users/{uid}/subscription, default = free-tier.
+ */
+const TOKEN_BUDGETS_NOK: Record<string, number> = {
+  free: 5,
+  pro: 50,
+  skole: 500,
+  kommune: 5000,
+};
+
+async function trackAndCheckBudget(
+  userId: string,
+  costNok: number
+): Promise<{ warningPct?: number; blocked?: boolean }> {
+  const monthKey = `budget_${userId}_${new Date().toISOString().slice(0, 7)}`; // YYYY-MM
+
+  // Hent abonnement + nåværende bruk parallelt
+  const [userSnap, budgetSnap] = await Promise.all([
+    db.collection("users").doc(userId).get(),
+    db.collection("tokenBudgets").doc(monthKey).get(),
+  ]);
+
+  const plan: string = (userSnap.data()?.subscription?.plan as string) ?? "free";
+  const budgetNok = TOKEN_BUDGETS_NOK[plan] ?? TOKEN_BUDGETS_NOK.free;
+  const spentBefore = (budgetSnap.data()?.spentNok ?? 0) as number;
+  const spentAfter = spentBefore + costNok;
+
+  // Skriv oppdatert forbruk asynkront
+  db.collection("tokenBudgets").doc(monthKey).set({
+    userId,
+    plan,
+    spentNok: spentAfter,
+    budgetNok,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true }).catch(() => {});
+
+  const pct = (spentAfter / budgetNok) * 100;
+
+  if (pct >= 100) return { blocked: true };
+  if (pct >= 80) return { warningPct: Math.round(pct) };
+  return {};
 }
 
 // ─── Rate limiting (Issue #57) ────────────────────────────────────────────────
@@ -288,13 +337,17 @@ const serverChat = withValidation(chatSchema, async ({ user, data, res }) => {
     : safetyCheck.sanitized;
 
   try {
-    const { text, inputTokens, outputTokens, costNok } = await callGemini(
+    const { text, inputTokens, outputTokens, costNok, budgetWarning, budgetBlocked } = await callGemini(
       fullPrompt,
       systemInstruction,
       user.uid,
       "chat"
     );
-    success(res, { reply: text, usage: { inputTokens, outputTokens, costNok } });
+    if (budgetBlocked) {
+      fail(res, "Månedlig AI-kvote er brukt opp. Oppgrader abonnementet for mer tilgang.", 429);
+      return;
+    }
+    success(res, { reply: text, usage: { inputTokens, outputTokens, costNok }, budgetWarning });
   } catch (err) {
     fail(res, err instanceof Error ? err.message : "Chat-kall feilet", 500);
   }
@@ -449,17 +502,22 @@ const ragChat = withValidation(ragChatSchema, async ({ user, data, res }) => {
     : safetyCheck.sanitized!;
 
   try {
-    const { text, inputTokens, outputTokens, costNok } = await callGemini(
+    const { text, inputTokens, outputTokens, costNok, budgetWarning, budgetBlocked } = await callGemini(
       fullPrompt,
       systemInstruction,
       user.uid,
       "rag-chat"
     );
+    if (budgetBlocked) {
+      fail(res, "Månedlig AI-kvote er brukt opp. Oppgrader abonnementet for mer tilgang.", 429);
+      return;
+    }
     success(res, {
       reply: text,
       sources,
       usage: { inputTokens, outputTokens, costNok },
       ragDocCount: studyDocs.length + careerDocs.length,
+      budgetWarning,
     });
   } catch (err) {
     fail(res, err instanceof Error ? err.message : "RAG-chat feilet", 500);
