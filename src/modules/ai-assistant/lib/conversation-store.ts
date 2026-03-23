@@ -55,7 +55,6 @@ export async function saveConversationMessages(
     role: m.role,
     content: m.content,
     timestamp: m.timestamp?.toISOString() ?? new Date().toISOString(),
-    sources: m.sources ?? [],
   }));
   await updateDoc(ref, {
     messages: serialized,
