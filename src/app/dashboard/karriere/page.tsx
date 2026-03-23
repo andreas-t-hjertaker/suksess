@@ -485,7 +485,7 @@ function KarrierePage() {
           />
         </div>
 
-        <Select value={sectorFilter} onValueChange={setSectorFilter}>
+        <Select value={sectorFilter} onValueChange={(v) => setSectorFilter(v ?? "alle")}>
           <SelectTrigger className="w-full sm:w-44">
             <SelectValue placeholder="Bransje" />
           </SelectTrigger>
@@ -499,7 +499,7 @@ function KarrierePage() {
           </SelectContent>
         </Select>
 
-        <Select value={eduFilter} onValueChange={setEduFilter}>
+        <Select value={eduFilter} onValueChange={(v) => setEduFilter(v ?? "alle")}>
           <SelectTrigger className="w-full sm:w-40">
             <SelectValue placeholder="Utdanning" />
           </SelectTrigger>
@@ -513,7 +513,7 @@ function KarrierePage() {
           </SelectContent>
         </Select>
 
-        <Select value={demandFilter} onValueChange={setDemandFilter}>
+        <Select value={demandFilter} onValueChange={(v) => setDemandFilter(v ?? "alle")}>
           <SelectTrigger className="w-full sm:w-44">
             <SelectValue placeholder="Etterspørsel" />
           </SelectTrigger>
@@ -525,7 +525,7 @@ function KarrierePage() {
           </SelectContent>
         </Select>
 
-        <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+        <Select value={sortBy} onValueChange={(v) => setSortBy((v ?? "match") as typeof sortBy)}>
           <SelectTrigger className="w-full sm:w-36">
             <SelectValue placeholder="Sorter" />
           </SelectTrigger>

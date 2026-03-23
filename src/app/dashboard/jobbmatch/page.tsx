@@ -308,12 +308,12 @@ function JobCard({
               <Sparkles className="h-3.5 w-3.5" />
               Generer søknadsbrev
             </Button>
-            <Button size="sm" variant="outline" className="gap-1.5" asChild>
-              <a href="https://arbeidsplassen.nav.no" target="_blank" rel="noopener noreferrer">
+            <a href="https://arbeidsplassen.nav.no" target="_blank" rel="noopener noreferrer">
+              <Button size="sm" variant="outline" className="gap-1.5">
                 <ExternalLink className="h-3.5 w-3.5" />
                 Se på NAV
-              </a>
-            </Button>
+              </Button>
+            </a>
           </div>
         </div>
       )}
