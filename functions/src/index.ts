@@ -13,6 +13,8 @@ export { onParentalConsentCreated, onCounselorInvited, onNotificationCreated } f
 export { feideSetClaims, onUserCreated } from "./feide-claims";
 
 // Re-eksporter K-means clustering jobb
+export { onProfileUpdatedGenerateContent } from "./content-cache";
+
 export { runClusteringJob, triggerClustering } from "./clustering";
 
 // Re-eksporter LLM API (server-side RAG og innholdsgenerering)

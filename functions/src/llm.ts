@@ -262,16 +262,24 @@ const chatSchema = z.object({
 // ─── Handlers ─────────────────────────────────────────────────────────────────
 
 /**
- * POST /llm/generate — Generer profilbasert innhold med L2-cache
- * Typisk bruk: AI-genererte sammendrag, karrieretips, studiemotivasjon
+ * POST /llm/generate — Generer profilbasert innhold med 3-lags cache (Issue #9)
+ * Lag 1 (profil-spesifikt, 7 d) → Lag 2 (klynge-delt, 24 t) → Lag 3 (live)
  */
 const generateContent = withValidation(generateContentSchema, async ({ user, data, res }) => {
   const { contentType, clusterId, profileContext } = data;
 
-  // Sjekk L2-cache (delt mellom brukere i same klynge)
+  // Lag 1: profil-spesifikt innhold (7 dager TTL)
+  const { getL1Cache } = await import("./content-cache");
+  const l1Cached = await getL1Cache(user.uid, contentType);
+  if (l1Cached) {
+    success(res, { content: l1Cached, cached: true, cacheLayer: 1 });
+    return;
+  }
+
+  // Lag 2: klynge-delt innhold (24 timer TTL)
   const cached = await getL2Cache(clusterId, contentType);
   if (cached) {
-    success(res, { content: cached, cached: true });
+    success(res, { content: cached, cached: true, cacheLayer: 2 });
     return;
   }
 
