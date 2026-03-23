@@ -22,6 +22,7 @@ import { withAdmin } from "../middleware";
 import { fetchUtdanningNoPrograms, ingestStudyPrograms, ingestYrker, ingestStyrk08, ingestVgsPrograms } from "./utdanning-no";
 import { fetchAdmissionStats, ingestAdmissionStats, fetchHistoricalAdmissionPoints, ingestHistoricalAdmissionPoints } from "./dbh";
 import { fetchJobMarketData } from "./nav-arbeidsplassen";
+import { ingestAllYrkesfag } from "./yrkesfag";
 
 // Re-eksporter NAV stillinger (allerede definert i nav-stillinger.ts)
 export { ingestNavStillingerScheduled } from "./nav-stillinger";
@@ -83,6 +84,25 @@ export const ingestDBHScheduled = onSchedule(
     ]);
 
     console.info(`[ingest] DBH: ${count} opptaksrekorder, ${historicalCount} historiske poenggrenser lagret`);
+  }
+);
+
+// ---------------------------------------------------------------------------
+// Yrkesfag scheduler (ukentlig onsdag 05:00) — Issue #62
+// ---------------------------------------------------------------------------
+
+export const ingestYrkesfagScheduled = onSchedule(
+  {
+    schedule: "0 3 * * 3", // Onsdag 05:00 Oslo
+    timeZone: "Europe/Oslo",
+    region: "europe-west1",
+  },
+  async () => {
+    console.info("[ingest] Starter yrkesfag ingest...");
+    const result = await ingestAllYrkesfag();
+    console.info(
+      `[ingest] Yrkesfag: ${result.larefag} lærefag, ${result.bedrifter} bedrifter, ${result.lonn} lønnsdata lagret`
+    );
   }
 );
 
