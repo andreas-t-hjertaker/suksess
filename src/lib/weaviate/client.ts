@@ -145,11 +145,12 @@ export const WEAVIATE_SCHEMA = {
     {
       class: WEAVIATE_CLASSES.STUDY_PROGRAM,
       description: "Studieprogram ved norske universiteter og høgskoler",
-      vectorizer: "text2vec-openai",
+      // NorSBERT4 — norsk BERT-modell fra NorwAI, optimert for norsk tekst (Issue #8)
+      vectorizer: "text2vec-huggingface",
       moduleConfig: {
-        "text2vec-openai": {
-          model: "text-embedding-3-small",
-          dimensions: 1536,
+        "text2vec-huggingface": {
+          model: "NorSBERT4/norbert4",
+          options: { waitForModel: true },
         },
       },
       properties: [
@@ -166,7 +167,13 @@ export const WEAVIATE_SCHEMA = {
     {
       class: WEAVIATE_CLASSES.CAREER_PATH,
       description: "Karriereveier og yrkesbeskrivelser",
-      vectorizer: "text2vec-openai",
+      vectorizer: "text2vec-huggingface",
+      moduleConfig: {
+        "text2vec-huggingface": {
+          model: "NorSBERT4/norbert4",
+          options: { waitForModel: true },
+        },
+      },
       properties: [
         { name: "title", dataType: ["text"], description: "Yrkestittel" },
         { name: "description", dataType: ["text"], description: "Yrkbeskrivelse" },
@@ -178,7 +185,13 @@ export const WEAVIATE_SCHEMA = {
     {
       class: WEAVIATE_CLASSES.KNOWLEDGE_ARTICLE,
       description: "Kunnskapsartikler om studier, søknad og karriere",
-      vectorizer: "text2vec-openai",
+      vectorizer: "text2vec-huggingface",
+      moduleConfig: {
+        "text2vec-huggingface": {
+          model: "NorSBERT4/norbert4",
+          options: { waitForModel: true },
+        },
+      },
       properties: [
         { name: "title", dataType: ["text"] },
         { name: "body", dataType: ["text"] },
@@ -190,7 +203,13 @@ export const WEAVIATE_SCHEMA = {
     {
       class: WEAVIATE_CLASSES.CONVERSATION_MEMORY,
       description: "Anonymiserte samtale-minner for RAG",
-      vectorizer: "text2vec-openai",
+      vectorizer: "text2vec-huggingface",
+      moduleConfig: {
+        "text2vec-huggingface": {
+          model: "NorSBERT4/norbert4",
+          options: { waitForModel: true },
+        },
+      },
       properties: [
         { name: "userId", dataType: ["text"] },
         { name: "question", dataType: ["text"] },
