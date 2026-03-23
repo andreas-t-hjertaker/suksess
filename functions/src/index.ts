@@ -9,6 +9,9 @@ import { success, fail, withAuth, withAdmin, withValidation, rateLimit, type Rou
 // Re-eksporter Firestore-triggered funksjoner (e-postvarsler)
 export { onParentalConsentCreated, onCounselorInvited, onNotificationCreated } from "./notifications";
 
+// Re-eksporter kostnads-anomali-varsling (Cloud Scheduler)
+export { checkCostAnomalies } from "./cost-alerts";
+
 // Re-eksporter Feide OIDC claims handler og user onCreate-trigger
 export { feideSetClaims, onUserCreated } from "./feide-claims";
 
