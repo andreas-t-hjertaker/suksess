@@ -99,6 +99,59 @@ async function calcLlmCost(tenantId: string): Promise<number> {
   return snap.docs.reduce((sum, d) => sum + ((d.data().costNok as number) || 0), 0);
 }
 
+/**
+ * Beregn gjennomsnittlig karaktersnitt for tenant-elever.
+ * Henter `gradeAverage` fra users-dokumentet (denormalisert felt).
+ * Faller tilbake til null dersom ingen elever har lagret karaktersnitt.
+ */
+async function calcAvgGradeAverage(tenantId: string): Promise<number | null> {
+  const snap = await db.collection("users")
+    .where("tenantId", "==", tenantId)
+    .where("gradeAverage", ">", 0)
+    .select("gradeAverage")
+    .get();
+
+  if (snap.empty) return null;
+
+  const sum = snap.docs.reduce(
+    (acc, d) => acc + ((d.data().gradeAverage as number) || 0), 0
+  );
+  return Math.round((sum / snap.size) * 100) / 100;
+}
+
+/**
+ * Aggreger topp karriereveier basert på `topCareers` felt på brukerdokumenter.
+ * Feltet settes av karrieregraf-siden (career_path_viewed XP-event).
+ */
+async function calcTopCareerPaths(userIds: string[]): Promise<Array<{ id: string; count: number }>> {
+  if (userIds.length === 0) return [];
+
+  const freq: Record<string, number> = {};
+  const batches: string[][] = [];
+  for (let i = 0; i < userIds.length; i += 10) {
+    batches.push(userIds.slice(i, i + 10));
+  }
+
+  for (const batch of batches) {
+    const snaps = await Promise.all(
+      batch.map((uid) =>
+        db.collection("users").doc(uid).collection("jobbmatch").get()
+      )
+    );
+    for (const snap of snaps) {
+      for (const d of snap.docs) {
+        const careerId = d.data().careerId as string | undefined;
+        if (careerId) freq[careerId] = (freq[careerId] ?? 0) + 1;
+      }
+    }
+  }
+
+  return Object.entries(freq)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 10)
+    .map(([id, count]) => ({ id, count }));
+}
+
 async function calcDropoutRisk(userIds: string[]): Promise<{ high: number; medium: number; low: number }> {
   const result = { high: 0, medium: 0, low: 0 };
   if (userIds.length === 0) return result;
@@ -188,6 +241,12 @@ export const getSchoolStats = withTenant(async ({ tenantId, user, res }) => {
   // Frafallsrisiko
   const dropoutRiskOverview = await calcDropoutRisk(userIds.slice(0, 100));
 
+  // Gjennomsnittlig karaktersnitt (denormalisert felt på user-dokument)
+  const avgGradeAverage = await calcAvgGradeAverage(effectiveTenantId);
+
+  // Topp karriereveier (fra jobbmatch-favoritter)
+  const topCareerPaths = await calcTopCareerPaths(userIds.slice(0, 200));
+
   // AI-chat statistikk
   const convSnap = await db.collectionGroup("conversations")
     .where("tenantId", "==", effectiveTenantId)
@@ -205,10 +264,10 @@ export const getSchoolStats = withTenant(async ({ tenantId, user, res }) => {
     activeStudents7d,
     personalityTestCompletionRate,
     programfagSelectionRate,
-    avgGradeAverage: null, // Krever separat aggregering — TODO
+    avgGradeAverage,
     riasecDistribution,
     clusterDistribution,
-    topCareerPaths: [], // TODO: aggreger fra karrieregraf-klikk
+    topCareerPaths,
     aiChatStats: {
       totalConversations,
       avgMessagesPerConversation: totalConversations > 0
