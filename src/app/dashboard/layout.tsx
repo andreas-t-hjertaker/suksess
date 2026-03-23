@@ -20,6 +20,8 @@ import { useImplicitProfiling } from "@/hooks/use-implicit-profiling";
 import { OnboardingStepper } from "@/components/onboarding-stepper";
 import { LevelUpOverlay } from "@/components/level-up-overlay";
 import { PageTransition } from "@/components/motion";
+import { CommandPalette } from "@/components/command-palette";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
@@ -50,10 +52,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         {/* Topplinje */}
         <header
           role="banner"
-          className="flex h-14 items-center justify-between border-b border-border px-4"
+          className="flex h-14 items-center justify-between border-b border-border px-4 gap-4"
         >
           <MobileSidebar />
-          <div className="ml-auto flex items-center gap-3">
+          {/* Breadcrumbs (skjult på mobil) */}
+          <Breadcrumbs className="hidden md:flex flex-1 min-w-0" />
+          {/* Kommandopalett-trigger */}
+          <CommandPalette />
+          <div className="flex items-center gap-3">
             <span
               className="hidden text-sm text-muted-foreground sm:inline"
               aria-hidden="true"
