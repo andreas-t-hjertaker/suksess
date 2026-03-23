@@ -10,6 +10,7 @@ import { saveUserProfile, saveTestResult } from "@/lib/firebase/profiles";
 import { serverTimestamp as firestoreServerTimestamp } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { RadarChart } from "@/components/radar-chart";
@@ -341,7 +342,10 @@ export function OnboardingStepper() {
     return null;
   }
 
-  const progress = innerProgress();
+  const innerProgressText = innerProgress();
+
+  // Beregn overordnet fremdrift i prosent
+  const overallProgress = Math.round((step / (TOTAL_STEPS - 1)) * 100);
 
   return (
     <div
@@ -351,6 +355,12 @@ export function OnboardingStepper() {
       className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
     >
       <Card className="w-full max-w-xl shadow-2xl">
+        {/* Fremdriftslinje øverst */}
+        <Progress
+          value={overallProgress}
+          className="h-1 rounded-none rounded-t-xl"
+          aria-label={`Onboarding ${overallProgress}% fullført`}
+        />
         {/* Steg-indikatorer */}
         <div className="flex items-center justify-between px-6 pt-6 pb-2">
           {STEPS.map((s, i) => {
@@ -694,8 +704,8 @@ export function OnboardingStepper() {
             Hopp over
           </Button>
           <div className="flex items-center gap-3">
-            {progress && (
-              <span className="text-xs text-muted-foreground">{progress}</span>
+            {innerProgressText && (
+              <span className="text-xs text-muted-foreground">{innerProgressText}</span>
             )}
             {step > 0 && (
               <Button variant="outline" size="sm" onClick={handlePrev}>
