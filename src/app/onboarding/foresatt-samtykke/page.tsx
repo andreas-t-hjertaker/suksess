@@ -60,8 +60,8 @@ export default function ForesattSamtykkePage() {
         updatedAt: serverTimestamp(),
       });
 
-      // TODO: Cloud Function trigger sender e-post til foresatt
-      // (Firestore trigger på users/{userId}/consent/parental ved create)
+      // Cloud Function trigger (onParentalConsentCreated) sender e-post
+      // automatisk ved create på users/{userId}/consent/parental.
 
       setStage("sent");
     } catch {
