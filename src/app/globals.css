@@ -251,3 +251,144 @@ summary {
 @utility animate-shimmer {
   animation: shimmer 1.5s infinite;
 }
+
+/* ---------------------------------------------------------------------------
+ * Design System #74 — Glassmorphism, Gen Z-estetikk, typografiskala
+ * ------------------------------------------------------------------------- */
+
+/* Glassmorphism utilities */
+@utility glass {
+  background: oklch(1 0 0 / 0.7);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border: 1px solid oklch(1 0 0 / 0.3);
+}
+
+@utility glass-dark {
+  background: oklch(0.18 0.02 265 / 0.75);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  border: 1px solid oklch(1 0 0 / 0.08);
+}
+
+@utility glass-card {
+  background: oklch(1 0 0 / 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid oklch(0.91 0.02 265 / 0.6);
+  box-shadow: 0 4px 24px oklch(0 0 0 / 0.04), 0 1px 4px oklch(0 0 0 / 0.06);
+}
+
+/* Gradient text */
+@utility gradient-text {
+  background: linear-gradient(135deg, oklch(0.52 0.2 265), oklch(0.62 0.2 300), oklch(0.68 0.18 320));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@utility gradient-text-warm {
+  background: linear-gradient(135deg, oklch(0.7 0.18 35), oklch(0.65 0.2 25));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glow effects */
+@utility glow-primary {
+  box-shadow: 0 0 32px oklch(0.52 0.2 265 / 0.25), 0 0 8px oklch(0.52 0.2 265 / 0.15);
+}
+
+@utility glow-sm {
+  box-shadow: 0 0 16px oklch(0.52 0.2 265 / 0.2);
+}
+
+/* Mesh gradient background */
+@utility mesh-gradient {
+  background-color: oklch(1 0 0);
+  background-image:
+    radial-gradient(ellipse at 20% 20%, oklch(0.88 0.06 265 / 0.5) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 10%, oklch(0.85 0.05 300 / 0.4) 0%, transparent 45%),
+    radial-gradient(ellipse at 60% 80%, oklch(0.9 0.04 265 / 0.3) 0%, transparent 40%);
+}
+
+@utility mesh-gradient-dark {
+  background-color: oklch(0.14 0.02 265);
+  background-image:
+    radial-gradient(ellipse at 20% 20%, oklch(0.3 0.1 265 / 0.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 10%, oklch(0.28 0.08 300 / 0.3) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 80%, oklch(0.25 0.06 265 / 0.25) 0%, transparent 45%);
+}
+
+/* Noise overlay for texture */
+@utility noise {
+  position: relative;
+}
+@utility noise::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+/* Floating animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@utility animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+@utility animate-float-delayed {
+  animation: float 4s ease-in-out 1.5s infinite;
+}
+
+/* Pulse glow */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px oklch(0.52 0.2 265 / 0.2); }
+  50% { box-shadow: 0 0 40px oklch(0.52 0.2 265 / 0.4), 0 0 80px oklch(0.52 0.2 265 / 0.15); }
+}
+
+@utility animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* Gradient border */
+@utility gradient-border {
+  position: relative;
+  background: linear-gradient(var(--background), var(--background)) padding-box,
+    linear-gradient(135deg, oklch(0.52 0.2 265), oklch(0.62 0.2 300)) border-box;
+  border: 1.5px solid transparent;
+}
+
+/* Bento grid utilities */
+@utility bento-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+/* Typography scale */
+:root {
+  --text-display: clamp(2.5rem, 5vw + 1rem, 4.5rem);
+  --text-hero: clamp(1.75rem, 3vw + 0.5rem, 3rem);
+  --text-title: clamp(1.25rem, 2vw + 0.25rem, 2rem);
+  --font-display: 800;
+}
+
+/* Scroll-driven animations */
+@utility reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+@utility revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
