@@ -9,6 +9,12 @@ import { success, fail, withAuth, withAdmin, withValidation, rateLimit, type Rou
 // Re-eksporter Firestore-triggered funksjoner (e-postvarsler)
 export { onParentalConsentCreated, onCounselorInvited } from "./notifications";
 
+// Re-eksporter Feide OIDC claims handler og user onCreate-trigger
+export { feideSetClaims, onUserCreated } from "./feide-claims";
+
+// Re-eksporter LLM API (server-side RAG og innholdsgenerering)
+export { llmApi } from "./llm";
+
 // Re-eksporter ingest Cloud Scheduler-funksjoner
 export {
   ingestNavStillingerScheduled,
