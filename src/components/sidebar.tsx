@@ -176,7 +176,7 @@ function CollapsedNav() {
   );
 }
 
-/** Bottom-navigasjon for mobil (viser 5 primære lenker) */
+/** Bottom-navigasjon for mobil (viser 5 primære lenker) — glassmorphism + active pill */
 export function MobileBottomNav() {
   const pathname = usePathname();
   const { isAdmin } = useAdmin();
@@ -191,37 +191,56 @@ export function MobileBottomNav() {
       : { href: "/dashboard/innstillinger", label: "Mer", icon: Settings },
   ];
 
+  function handleTap() {
+    // Taktil feedback på enheter som støtter det
+    if ("vibrate" in navigator) navigator.vibrate(8);
+  }
+
   return (
     <nav
       aria-label="Mobilnavigasjon"
-      className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-border bg-background/95 backdrop-blur-sm md:hidden"
+      className={cn(
+        "fixed bottom-0 left-0 right-0 z-40 md:hidden",
+        "border-t border-border/60 bg-background/90 backdrop-blur-xl",
+        // Sørg for tilstrekkelig høyde inkl. safe-area (notch/home indicator)
+        "pb-safe"
+      )}
     >
-      {primaryItems.map((item) => {
-        const isActive =
-          pathname === item.href ||
-          (item.href !== "/dashboard" && pathname.startsWith(item.href));
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={isActive ? "page" : undefined}
-            className={cn(
-              "flex flex-1 flex-col items-center justify-center gap-1 py-2 text-center transition-colors",
-              isActive
-                ? "text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <item.icon
-              className={cn("h-5 w-5", isActive && "text-primary")}
-              aria-hidden="true"
-            />
-            <span className={cn("text-[10px] font-medium", isActive && "text-primary")}>
-              {item.label}
-            </span>
-          </Link>
-        );
-      })}
+      <div className="flex h-16 items-center justify-around px-2">
+        {primaryItems.map((item) => {
+          const isActive =
+            pathname === item.href ||
+            (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={handleTap}
+              aria-current={isActive ? "page" : undefined}
+              className="flex flex-1 flex-col items-center justify-center gap-1 py-1 text-center transition-all active:scale-95"
+            >
+              <div className={cn(
+                "flex h-8 w-12 items-center justify-center rounded-full transition-all duration-200",
+                isActive && "bg-primary/12"
+              )}>
+                <item.icon
+                  className={cn(
+                    "h-5 w-5 transition-all duration-200",
+                    isActive ? "text-primary scale-110" : "text-muted-foreground"
+                  )}
+                  aria-hidden="true"
+                />
+              </div>
+              <span className={cn(
+                "text-[10px] font-medium transition-colors duration-200",
+                isActive ? "text-primary" : "text-muted-foreground"
+              )}>
+                {item.label}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
     </nav>
   );
 }

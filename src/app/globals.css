@@ -392,3 +392,76 @@ summary {
   opacity: 1;
   transform: translateY(0);
 }
+
+/* ---------------------------------------------------------------------------
+ * Mobil UX #78 — Safe-area, responsiv typografi, touch-optimalisering
+ * ------------------------------------------------------------------------- */
+
+/* iOS Safe Area Insets — for notch og home indicator */
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Responsiv typografi — flytende skala */
+@utility text-fluid-sm {
+  font-size: clamp(0.75rem, 1.5vw, 0.875rem);
+}
+
+@utility text-fluid-base {
+  font-size: clamp(0.875rem, 2vw, 1rem);
+}
+
+@utility text-fluid-lg {
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+}
+
+@utility text-fluid-xl {
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+}
+
+@utility text-fluid-2xl {
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+}
+
+@utility text-fluid-3xl {
+  font-size: clamp(1.875rem, 5vw, 3rem);
+}
+
+/* Touch — ingen highlight på mobil, men beholder accessibility */
+@media (pointer: coarse) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Forbedret touch-målstørrelse på interaktive elementer */
+  button,
+  [role="button"],
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Bottom sheet overscroll-behaviour */
+@utility overscroll-contain {
+  overscroll-behavior: contain;
+}
+
+/* Smooth momentum scrolling på iOS */
+@utility scroll-touch {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Pull-to-refresh deaktivering (unngå utilsiktet refresh) */
+html, body {
+  overscroll-behavior-y: none;
+}
+
+/* Smooth scroll globalt */
+html {
+  scroll-behavior: smooth;
+}
