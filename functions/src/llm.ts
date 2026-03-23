@@ -300,6 +300,172 @@ const serverChat = withValidation(chatSchema, async ({ user, data, res }) => {
   }
 });
 
+// ─── RAG Pipeline (Issue #35) ─────────────────────────────────────────────────
+
+const WEAVIATE_URL_SECRET = process.env.WEAVIATE_URL ?? "";
+const WEAVIATE_API_KEY_SECRET = process.env.WEAVIATE_API_KEY ?? "";
+
+type WeaviateDoc = {
+  _additional?: { id?: string; score?: number };
+  name?: string;
+  title?: string;
+  description?: string;
+  institution?: string;
+  source?: string;
+};
+
+async function weaviateHybridSearch(
+  query: string,
+  className: string,
+  topK = 3
+): Promise<WeaviateDoc[]> {
+  if (!WEAVIATE_URL_SECRET || !WEAVIATE_API_KEY_SECRET) return [];
+
+  try {
+    const resp = await fetch(`${WEAVIATE_URL_SECRET}/v1/graphql`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${WEAVIATE_API_KEY_SECRET}`,
+      },
+      body: JSON.stringify({
+        query: `{
+          Get {
+            ${className}(
+              hybrid: { query: ${JSON.stringify(query)}, alpha: 0.75 },
+              limit: ${topK}
+            ) {
+              _additional { id score }
+              name description institution source
+            }
+          }
+        }`,
+      }),
+      signal: AbortSignal.timeout(5_000),
+    });
+
+    if (!resp.ok) return [];
+    const data = await resp.json() as { data?: { Get?: Record<string, WeaviateDoc[]> } };
+    return data.data?.Get?.[className] ?? [];
+  } catch {
+    return [];
+  }
+}
+
+function buildRagContext(
+  studyDocs: WeaviateDoc[],
+  careerDocs: WeaviateDoc[]
+): { contextBlock: string; sources: string[] } {
+  const sources: string[] = [];
+  const lines: string[] = ["## Hentet kontekst fra utdanningsdatabasen\n"];
+
+  if (studyDocs.length > 0) {
+    lines.push("### Studieprogram");
+    for (const d of studyDocs) {
+      const title = d.name ?? d.title ?? "Ukjent";
+      const desc = (d.description ?? "").slice(0, 300);
+      const src = d.source ?? d.institution ?? "utdanning.no";
+      lines.push(`- **${title}** (${src}): ${desc}`);
+      sources.push(`${title} — ${src}`);
+    }
+  }
+
+  if (careerDocs.length > 0) {
+    lines.push("\n### Karriereveier");
+    for (const d of careerDocs) {
+      const title = d.name ?? d.title ?? "Ukjent";
+      const desc = (d.description ?? "").slice(0, 300);
+      lines.push(`- **${title}**: ${desc}`);
+      sources.push(title);
+    }
+  }
+
+  return {
+    contextBlock: lines.join("\n"),
+    sources: [...new Set(sources)].slice(0, 5),
+  };
+}
+
+const ragChatSchema = z.object({
+  message: z.string().min(1).max(4000),
+  profileContext: z.string().max(2000).optional(),
+  conversationHistory: z.array(z.object({
+    role: z.enum(["user", "assistant"]),
+    content: z.string().max(4000),
+  })).max(20).optional(),
+});
+
+/**
+ * POST /llm/rag-chat — RAG-augmentert chat (Issue #35)
+ *
+ * Henter kontekst fra Weaviate (studieprogram + karriereveier) og
+ * injiserer det i system-prompten før LLM-kallet.
+ * Returnerer svar med kildehenvisninger.
+ */
+const ragChat = withValidation(ragChatSchema, async ({ user, data, res }) => {
+  const { message, profileContext, conversationHistory = [] } = data;
+
+  // Rate limiting + sikkerhetssjekk
+  const rateCheck = await checkRateLimit(user.uid);
+  if (!rateCheck.allowed) {
+    fail(res, rateCheck.reason ?? "For mange meldinger", 429);
+    return;
+  }
+
+  const safetyCheck = sanitizeAndCheck(message);
+  if (!safetyCheck.safe) {
+    if (safetyCheck.kriseResponse) {
+      success(res, { reply: safetyCheck.kriseResponse, krise: true, sources: [] });
+      return;
+    }
+    fail(res, "Meldingen ble blokkert av sikkerhetsfilter.", 400);
+    return;
+  }
+
+  // Parallelt: hent kontekst fra Weaviate
+  const [studyDocs, careerDocs] = await Promise.all([
+    weaviateHybridSearch(safetyCheck.sanitized!, "StudyProgram", 3),
+    weaviateHybridSearch(safetyCheck.sanitized!, "CareerPath", 3),
+  ]);
+
+  const { contextBlock, sources } = buildRagContext(studyDocs, careerDocs);
+
+  const systemInstruction = [
+    "Du er Suksess AI-karriereveileder for norske VGS-elever.",
+    "VIKTIG: Henvis alltid til krise-hjelp (Kristelefonen 116 111) ved krise-signaler.",
+    profileContext ? `\nElevprofil:\n${profileContext}` : "",
+    studyDocs.length > 0 || careerDocs.length > 0 ? `\n${contextBlock}` : "",
+    "\nSvar alltid på norsk. Vær konkret, støttende og aldersadekvat (16–19 år).",
+    "\nNår du refererer til studieprogram eller karriereveier fra konteksten, nevn kilden.",
+  ].join("");
+
+  const historyText = conversationHistory
+    .slice(-6)
+    .map((m) => `${m.role === "user" ? "Elev" : "Veileder"}: ${m.content}`)
+    .join("\n");
+
+  const fullPrompt = historyText
+    ? `${historyText}\nElev: ${safetyCheck.sanitized}`
+    : safetyCheck.sanitized!;
+
+  try {
+    const { text, inputTokens, outputTokens, costNok } = await callGemini(
+      fullPrompt,
+      systemInstruction,
+      user.uid,
+      "rag-chat"
+    );
+    success(res, {
+      reply: text,
+      sources,
+      usage: { inputTokens, outputTokens, costNok },
+      ragDocCount: studyDocs.length + careerDocs.length,
+    });
+  } catch (err) {
+    fail(res, err instanceof Error ? err.message : "RAG-chat feilet", 500);
+  }
+});
+
 // ─── Cloud Functions exports ──────────────────────────────────────────────────
 
 export const llmApi = onRequest(
@@ -317,6 +483,10 @@ export const llmApi = onRequest(
     }
     if (req.method === "POST" && req.path === "/llm/chat") {
       await serverChat({ req, res });
+      return;
+    }
+    if (req.method === "POST" && req.path === "/llm/rag-chat") {
+      await ragChat({ req, res });
       return;
     }
     fail(res, "Ikke funnet", 404);
