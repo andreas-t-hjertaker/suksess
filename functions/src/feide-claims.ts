@@ -176,7 +176,7 @@ export const feideSetClaims = onRequest(
           category: null,
           previousValue: null,
           newValue: null,
-          ipAddress: req.ip?.split(".").slice(0, 3).join(".") + ".0" ?? null,
+          ipAddress: req.ip ? req.ip.split(".").slice(0, 3).join(".") + ".0" : null,
           userAgent: req.headers["user-agent"] ?? null,
           consentVersion: "2026-03-01",
           createdAt: admin.firestore.FieldValue.serverTimestamp(),

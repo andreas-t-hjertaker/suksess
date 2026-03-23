@@ -171,7 +171,7 @@ export const getSchoolStats = withTenant(async ({ tenantId, user, res }) => {
   // Klyngefordeling
   const clusterSnap = await db.collection("users")
     .where("tenantId", "==", effectiveTenantId)
-    .select(["clusterId"])
+    .select("clusterId")
     .get();
   const clusterDistribution: Record<string, number> = {};
   for (const d of clusterSnap.docs) {
@@ -191,7 +191,7 @@ export const getSchoolStats = withTenant(async ({ tenantId, user, res }) => {
   // AI-chat statistikk
   const convSnap = await db.collectionGroup("conversations")
     .where("tenantId", "==", effectiveTenantId)
-    .select(["messageCount"])
+    .select("messageCount")
     .get();
   const totalConversations = convSnap.size;
   const totalMessages = convSnap.docs.reduce(
