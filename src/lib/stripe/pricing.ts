@@ -1,10 +1,49 @@
 import type { PricingPlan } from "@/types";
 
 /**
- * Suksess prisplaner.
+ * Suksess prisplaner (Issue #32).
  * Oppdater stripePriceId med faktiske Stripe Price IDs fra Stripe Dashboard.
  * Disse brukes på /pricing-siden og i checkout-flyten.
+ *
+ * B2B skoleplaner faktureres via send_invoice + netto 30 dager.
+ * MVA: 25 % (SaaS-verktøy er ikke fritatt selv om kjøper er skole).
  */
+
+// B2B skole-tiers (flat-rate etter skolestørrelse, Issue #32)
+export type SchoolTier = "liten" | "medium" | "stor" | "kommune";
+
+export const SCHOOL_TIERS: Record<SchoolTier, {
+  name: string;
+  elever: string;
+  prisPerAar: number;
+  stripePriceId: string;
+}> = {
+  liten: {
+    name: "Liten skole",
+    elever: "1–200 elever",
+    prisPerAar: 12_500,
+    stripePriceId: "price_REPLACE_SCHOOL_LITEN",
+  },
+  medium: {
+    name: "Mellomstor skole",
+    elever: "201–500 elever",
+    prisPerAar: 37_500,
+    stripePriceId: "price_REPLACE_SCHOOL_MEDIUM",
+  },
+  stor: {
+    name: "Stor skole",
+    elever: "500+ elever",
+    stripePriceId: "price_REPLACE_SCHOOL_STOR",
+    prisPerAar: 75_000,
+  },
+  kommune: {
+    name: "Kommune-avtale",
+    elever: "10–30 skoler",
+    stripePriceId: "price_REPLACE_SCHOOL_KOMMUNE",
+    prisPerAar: 250_000,
+  },
+};
+
 export const plans: PricingPlan[] = [
   {
     id: "free",

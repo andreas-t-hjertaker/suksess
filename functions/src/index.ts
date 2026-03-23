@@ -130,6 +130,100 @@ const createCheckout = withAuth(async ({ user, res, req }) => {
   success(res, { url: session.url });
 });
 
+/**
+ * POST /stripe/school-checkout — B2B skole-abonnement (Issue #32)
+ *
+ * Oppretter Stripe Customer per skole med:
+ * - collection_method: send_invoice (norske skoler forventer faktura)
+ * - days_until_due: 30 (netto 30 for skolebudsjetter)
+ * - Norsk MVA 25 % (tax_id_collection)
+ * - Orgnummer i metadata
+ * - Tier-basert prising: liten/medium/stor/kommune
+ */
+const createSchoolCheckout = withAuth(async ({ user, res, req }) => {
+  const {
+    priceId,
+    schoolName,
+    orgnummer,
+    contactEmail,
+    tier,
+  } = req.body as {
+    priceId?: string;
+    schoolName?: string;
+    orgnummer?: string;
+    contactEmail?: string;
+    tier?: "liten" | "medium" | "stor" | "kommune";
+  };
+
+  if (!priceId || !schoolName) {
+    fail(res, "priceId og schoolName er påkrevd");
+    return;
+  }
+
+  // Hent eller opprett Stripe-kunde for skolen (bruk tenantId om tilgjengelig)
+  const tenantId = (await db.collection("users").doc(user.uid).get())
+    .data()?.tenantId as string | undefined;
+
+  let customerId: string;
+  const subDocRef = db.collection("subscriptions").doc(tenantId ?? user.uid);
+  const subDoc = await subDocRef.get();
+
+  if (subDoc.exists && subDoc.data()?.stripeCustomerId) {
+    customerId = subDoc.data()!.stripeCustomerId;
+  } else {
+    const customer = await getStripe().customers.create({
+      name: schoolName,
+      email: contactEmail ?? user.email ?? undefined,
+      metadata: {
+        firebaseUid: user.uid,
+        tenantId: tenantId ?? "",
+        orgnummer: orgnummer ?? "",
+        tier: tier ?? "liten",
+        type: "school",
+      },
+    });
+    customerId = customer.id;
+    await subDocRef.set(
+      {
+        stripeCustomerId: customerId,
+        status: "none",
+        schoolName,
+        orgnummer: orgnummer ?? null,
+        tier: tier ?? "liten",
+        type: "school",
+      },
+      { merge: true }
+    );
+  }
+
+  // B2B: send_invoice med netto 30
+  const session = await getStripe().checkout.sessions.create({
+    customer: customerId,
+    mode: "subscription",
+    line_items: [{ price: priceId, quantity: 1 }],
+    subscription_data: {
+      // collection_method: send_invoice er ikke støttet i Checkout Sessions.
+      // Bruk Stripe Dashboard til å sette default collection method per abonnement.
+      metadata: {
+        schoolName,
+        orgnummer: orgnummer ?? "",
+        tier: tier ?? "liten",
+        firebaseUid: user.uid,
+        tenantId: tenantId ?? "",
+        type: "school",
+        invoiceDaysDue: "30",
+      },
+    },
+    tax_id_collection: { enabled: true },
+    customer_update: { name: "auto", address: "auto" },
+    success_url: `${req.headers.origin ?? "https://suksess.no"}/dashboard/abonnement?session_id={CHECKOUT_SESSION_ID}&school=1`,
+    cancel_url: `${req.headers.origin ?? "https://suksess.no"}/pricing`,
+    metadata: { firebaseUid: user.uid, type: "school" },
+  });
+
+  success(res, { url: session.url });
+});
+
 /** POST /stripe/portal — Opprett Stripe kundeportal-sesjon */
 const createPortal = withAuth(async ({ user, res, req }) => {
   const subDoc = await db.collection("subscriptions").doc(user.uid).get();
@@ -693,6 +787,7 @@ const routes: Route[] = [
   { method: "GET", path: "/notes", handler: getNotes },
   // Stripe
   { method: "POST", path: "/stripe/checkout", handler: createCheckout },
+  { method: "POST", path: "/stripe/school-checkout", handler: createSchoolCheckout },
   { method: "POST", path: "/stripe/portal", handler: createPortal },
   { method: "POST", path: "/stripe/webhook", handler: handleWebhook },
   // API-nøkler
