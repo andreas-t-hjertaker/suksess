@@ -37,12 +37,20 @@ export function ConsentBanner() {
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background p-4 shadow-lg">
+    <div
+      role="alertdialog"
+      aria-labelledby="consent-title"
+      aria-describedby="consent-desc"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background p-4 shadow-lg"
+    >
       <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 sm:flex-row sm:justify-between">
-        <p className="text-sm text-muted-foreground">
-          Vi bruker informasjonskapsler og analyse for å forbedre opplevelsen din.
-          Ved å godta samtykker du til bruk av Firebase Analytics.
-        </p>
+        <div>
+          <p id="consent-title" className="sr-only">Samtykke til informasjonskapsler</p>
+          <p id="consent-desc" className="text-sm text-muted-foreground">
+            Vi bruker informasjonskapsler og analyse for å forbedre opplevelsen din.
+            Ved å godta samtykker du til bruk av Firebase Analytics.
+          </p>
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={decline}>
             Avslå

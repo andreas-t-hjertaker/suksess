@@ -1,12 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import Markdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "../types";
 
 export function ChatBubble({ message }: { message: ChatMessage }) {
-  const [showTime, setShowTime] = useState(false);
   const isUser = message.role === "user";
 
   const time = message.timestamp.toLocaleTimeString("nb-NO", {
@@ -18,14 +16,9 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
 
   return (
     <div
-      className={cn("flex flex-col gap-1", isUser ? "items-end" : "items-start")}
+      className={cn("group flex flex-col gap-1", isUser ? "items-end" : "items-start")}
       role="article"
       aria-label={`${roleLabel}, ${time}`}
-      onMouseEnter={() => setShowTime(true)}
-      onMouseLeave={() => setShowTime(false)}
-      onFocus={() => setShowTime(true)}
-      onBlur={() => setShowTime(false)}
-      tabIndex={0}
     >
       <div
         className={cn(
@@ -54,9 +47,7 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
           </>
         )}
       </div>
-      {showTime && (
-        <span className="px-1 text-[10px] text-muted-foreground" aria-hidden="true">{time}</span>
-      )}
+      <span className="px-1 text-[10px] text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true">{time}</span>
     </div>
   );
 }

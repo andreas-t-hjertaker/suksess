@@ -81,11 +81,12 @@ export function ConversationHistory({
             size="icon-xs"
             onClick={() => { onNewChat(); onClose?.(); }}
             title="Ny samtale"
+            aria-label="Ny samtale"
           >
             <Plus className="h-3.5 w-3.5" />
           </Button>
           {onClose && (
-            <Button variant="ghost" size="icon-xs" onClick={onClose} title="Lukk historikk">
+            <Button variant="ghost" size="icon-xs" onClick={onClose} title="Lukk historikk" aria-label="Lukk historikk">
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
           )}
@@ -95,9 +96,9 @@ export function ConversationHistory({
       {/* Liste */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="space-y-2 p-3">
+          <div className="space-y-2 p-3" role="status" aria-label="Laster samtaler">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="h-12 rounded-lg bg-muted animate-pulse" />
+              <div key={i} className="h-12 rounded-lg bg-muted animate-pulse" aria-hidden="true" />
             ))}
           </div>
         ) : conversations.length === 0 ? (
@@ -129,7 +130,7 @@ export function ConversationHistory({
                 </div>
                 <button
                   onClick={(e) => handleDelete(e, conv.id)}
-                  className="shrink-0 rounded p-0.5 opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
+                  className="shrink-0 rounded p-0.5 opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100"
                   title="Slett samtale"
                   aria-label={`Slett samtale: ${conv.title}`}
                 >
