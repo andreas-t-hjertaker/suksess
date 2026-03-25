@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     // E2E-tester krever @playwright/test som ikke er installert lokalt
     "e2e/**",
     "playwright.config.ts",
+    // Kompilert Cloud Functions output
+    "functions/lib/**",
   ]),
   {
     rules: {
