@@ -194,29 +194,3 @@ export async function retrieveRagContext(
   };
 }
 
-/**
- * Injiser RAG-kontekst i en system-prompt.
- * Legger til kontekstblokk etter kjerneprompt, før spesifikke instruksjoner.
- */
-export function injectRagContext(
-  systemPrompt: string,
-  ragContext: RagContext
-): string {
-  if (!ragContext.contextBlock) return systemPrompt;
-
-  // Finn passsende injeksjonspunkt (etter persona-blokk, før avslutning)
-  const injectionMarker = "## Rammer";
-  const markerIndex = systemPrompt.indexOf(injectionMarker);
-
-  if (markerIndex !== -1) {
-    return (
-      systemPrompt.slice(0, markerIndex) +
-      ragContext.contextBlock +
-      "\n\n" +
-      systemPrompt.slice(markerIndex)
-    );
-  }
-
-  // Fallback: legg til på slutten
-  return systemPrompt + "\n\n" + ragContext.contextBlock;
-}

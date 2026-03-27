@@ -99,6 +99,11 @@ export function useAuthState() {
   }, []);
 
   const handleSignOut = useCallback(async () => {
+    // Rydd opp localStorage-cache ved utlogging (GDPR)
+    try {
+      const { pruneL3Cache } = await import("@/lib/ai/cache");
+      pruneL3Cache();
+    } catch { /* cache-modul ikke tilgjengelig */ }
     await signOutUser();
   }, []);
 
