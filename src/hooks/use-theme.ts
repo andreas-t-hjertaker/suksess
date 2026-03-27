@@ -29,12 +29,13 @@ function getSystemTheme(): "light" | "dark" {
 }
 
 function getStoredTheme(): Theme {
-  if (typeof window === "undefined") return "system";
+  if (typeof window === "undefined") return "dark";
   const stored = localStorage.getItem("theme");
   if (stored === "light" || stored === "dark" || stored === "system") {
     return stored;
   }
-  return "system";
+  // Default til dark for nye brukere (73% Gen Z-preferanse)
+  return "dark";
 }
 
 /** Hook som bare brukes av ThemeProvider internt */

@@ -13,16 +13,31 @@ import { SkipLink } from "@/components/skip-link";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { AppCheckProvider } from "@/components/app-check-provider";
 
-const geist = localFont({
-  src: "./fonts/GeistVF.woff2",
-  variable: "--font-sans",
-  weight: "100 900",
+const plusJakartaSans = localFont({
+  src: [
+    { path: "./fonts/PlusJakartaSansVariable.woff2", style: "normal" },
+    { path: "./fonts/PlusJakartaSansVariable-LatinExt.woff2", style: "normal" },
+  ],
+  variable: "--font-display",
+  weight: "200 800",
+  display: "swap",
+  preload: true,
 });
 
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff2",
-  variable: "--font-mono",
+const inter = localFont({
+  src: "./fonts/InterVariable.woff2",
+  variable: "--font-sans",
   weight: "100 900",
+  display: "swap",
+  preload: true,
+});
+
+const jetbrainsMono = localFont({
+  src: "./fonts/JetBrainsMonoVariable.woff2",
+  variable: "--font-mono",
+  weight: "100 800",
+  display: "swap",
+  preload: true,
 });
 
 export const metadata: Metadata = {
@@ -58,7 +73,7 @@ export default function RootLayout({
   return (
     <html lang="nb" suppressHydrationWarning>
       <body
-        className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}
+        className={`${plusJakartaSans.variable} ${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         <SkipLink />
         <WebsiteJsonLd
