@@ -38,8 +38,67 @@ import {
   ChevronRight,
   Check,
   ShieldCheck,
+  Sparkles,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AnimatePresence, motion } from "framer-motion";
+
+// ---------------------------------------------------------------------------
+// Lokal lagring av delvis utfylte tester
+// ---------------------------------------------------------------------------
+
+const STORAGE_KEY = "suksess-onboarding-progress";
+
+type SavedProgress = {
+  step: number;
+  bigFiveBlock: number;
+  riasecBlock: number;
+  bigFiveAnswers: RawAnswers;
+  riasecAnswers: RawAnswers;
+  strengthAnswers: RawAnswers;
+  displayName: string;
+  consentPersonality: boolean;
+  consentAnalytics: boolean;
+};
+
+function loadProgress(): SavedProgress | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveProgress(data: SavedProgress) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch {
+    // Ignorer — localStorage kan være fullt
+  }
+}
+
+function clearProgress() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Ignorer
+  }
+}
+
+// Steg-overgangsanimasjon
+const stepVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 60 : -60,
+    opacity: 0,
+  }),
+  center: { x: 0, opacity: 1 },
+  exit: (direction: number) => ({
+    x: direction < 0 ? 60 : -60,
+    opacity: 0,
+  }),
+};
 
 // ---------------------------------------------------------------------------
 // Steg-definisjon
@@ -94,6 +153,8 @@ export function OnboardingStepper() {
   const [checking, setChecking] = useState(true);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [direction, setDirection] = useState(1); // 1 = fremover, -1 = bakover
+  const [celebration, setCelebration] = useState<string | null>(null);
 
   // GDPR-samtykke
   const [consentPersonality, setConsentPersonality] = useState(false);
@@ -127,11 +188,46 @@ export function OnboardingStepper() {
     getDoc(doc(db, "users", firebaseUser.uid)).then((snap) => {
       if (!snap.exists() || !snap.data()?.onboardingComplete) {
         setDisplayName(firebaseUser.displayName || "");
+        // Gjenopprett lagret fremdrift
+        const saved = loadProgress();
+        if (saved) {
+          setStep(saved.step);
+          setBigFiveBlock(saved.bigFiveBlock);
+          setRiasecBlock(saved.riasecBlock);
+          setBigFiveAnswers(saved.bigFiveAnswers);
+          setRiasecAnswers(saved.riasecAnswers);
+          setStrengthAnswers(saved.strengthAnswers);
+          if (saved.displayName) setDisplayName(saved.displayName);
+          setConsentPersonality(saved.consentPersonality);
+          setConsentAnalytics(saved.consentAnalytics);
+        }
         setShow(true);
       }
       setChecking(false);
     });
   }, [firebaseUser]);
+
+  // Lagre fremdrift til localStorage ved endringer
+  useEffect(() => {
+    if (!show) return;
+    saveProgress({
+      step,
+      bigFiveBlock,
+      riasecBlock,
+      bigFiveAnswers,
+      riasecAnswers,
+      strengthAnswers,
+      displayName,
+      consentPersonality,
+      consentAnalytics,
+    });
+  }, [show, step, bigFiveBlock, riasecBlock, bigFiveAnswers, riasecAnswers, strengthAnswers, displayName, consentPersonality, consentAnalytics]);
+
+  // Micro-celebration ved dimensjon-fullføring
+  function showCelebration(message: string) {
+    setCelebration(message);
+    setTimeout(() => setCelebration(null), 2000);
+  }
 
   // Beregn scorer når vi ankommer results-steget
   useEffect(() => {
@@ -238,6 +334,7 @@ export function OnboardingStepper() {
         { merge: true }
       );
 
+      clearProgress();
       setShow(false);
     } finally {
       setSaving(false);
@@ -246,6 +343,7 @@ export function OnboardingStepper() {
 
   async function handleSkip() {
     if (!firebaseUser) return;
+    clearProgress();
     await setDoc(
       doc(db, "users", firebaseUser.uid),
       { onboardingComplete: true },
@@ -278,10 +376,12 @@ export function OnboardingStepper() {
   }
 
   function handleNext() {
+    setDirection(1);
     const current = STEPS[step].id;
 
     if (current === "bigfive" && bigFiveBlock < BIG_FIVE_BLOCKS.length - 1) {
       setBigFiveBlock((b) => b + 1);
+      showCelebration(`${BIG_FIVE_TITLES[bigFiveBlock]} fullført! ✓`);
       return;
     }
     if (current === "riasec" && riasecBlock < 5) {
@@ -289,14 +389,24 @@ export function OnboardingStepper() {
       return;
     }
 
-    // Tilbakestill sub-blokk ved steg-bytte
-    if (current === "bigfive") setBigFiveBlock(0);
-    if (current === "riasec") setRiasecBlock(0);
+    // Celebration ved overgang til nytt steg
+    if (current === "bigfive") {
+      setBigFiveBlock(0);
+      showCelebration("Personlighetstest fullført! 🎉");
+    }
+    if (current === "riasec") {
+      setRiasecBlock(0);
+      showCelebration("Interessetest fullført! 🎉");
+    }
+    if (current === "strengths") {
+      showCelebration("Styrketest fullført! 🎉");
+    }
 
     setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
   }
 
   function handlePrev() {
+    setDirection(-1);
     const current = STEPS[step].id;
     if (current === "bigfive" && bigFiveBlock > 0) {
       setBigFiveBlock((b) => b - 1);
@@ -345,7 +455,15 @@ export function OnboardingStepper() {
   const innerProgressText = innerProgress();
 
   // Beregn overordnet fremdrift i prosent
-  const overallProgress = Math.round((step / (TOTAL_STEPS - 1)) * 100);
+  const totalAnswered = Object.keys(bigFiveAnswers).length + Object.keys(riasecAnswers).length + Object.keys(strengthAnswers).length;
+  const totalQuestions = 40 + 30 + 14; // Big Five + RIASEC + Styrker
+  const overallProgress = Math.round(
+    ((step + (currentStepId === "bigfive" ? bigFiveBlock / 5 : 0) +
+      (currentStepId === "riasec" ? riasecBlock / 6 : 0)) /
+      (TOTAL_STEPS - 1)) * 100
+  );
+  const remainingQuestions = totalQuestions - totalAnswered;
+  const estimatedMinutes = Math.max(1, Math.ceil(remainingQuestions * 0.15));
 
   return (
     <div
@@ -390,16 +508,53 @@ export function OnboardingStepper() {
           })}
         </div>
 
-        <CardContent className="px-6 pb-4 pt-2 min-h-[340px]">
+        <CardContent className="px-6 pb-4 pt-2 min-h-[340px] relative overflow-hidden">
+
+          {/* Micro-celebration overlay */}
+          <AnimatePresence>
+            {celebration && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, y: -20 }}
+                className="absolute inset-0 z-10 flex items-center justify-center bg-background/90 backdrop-blur-sm"
+              >
+                <div className="text-center space-y-2">
+                  <Trophy className="mx-auto h-10 w-10 text-primary" aria-hidden="true" />
+                  <p className="text-lg font-semibold" role="status">{celebration}</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence mode="wait" custom={direction}>
+          <motion.div
+            key={`${currentStepId}-${bigFiveBlock}-${riasecBlock}`}
+            custom={direction}
+            variants={stepVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+          >
 
           {/* ---- STEG: VELKOMMEN ---- */}
           {currentStepId === "welcome" && (
             <div className="space-y-4 text-center py-6">
-              <Rocket className="mx-auto h-12 w-12 text-primary" />
-              <CardTitle className="text-2xl">Velkommen til Suksess!</CardTitle>
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", bounce: 0.5, delay: 0.2 }}
+              >
+                <Sparkles className="mx-auto h-12 w-12 text-primary" aria-hidden="true" />
+              </motion.div>
+              <CardTitle className="text-2xl font-display">Velkommen til Suksess!</CardTitle>
               <p className="text-muted-foreground">
                 Vi hjelper deg med å finne den studieveien og karrieren som passer deg best.
                 Svar på noen spørsmål om deg selv — det tar ca. 10–15 minutter.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Du kan når som helst lukke og gjenoppta der du slapp.
               </p>
               <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
                 <div className="rounded-lg bg-muted p-3">
@@ -696,6 +851,9 @@ export function OnboardingStepper() {
               </div>
             );
           })()}
+
+          </motion.div>
+          </AnimatePresence>
         </CardContent>
 
         {/* Navigasjon */}
@@ -706,6 +864,9 @@ export function OnboardingStepper() {
           <div className="flex items-center gap-3">
             {innerProgressText && (
               <span className="text-xs text-muted-foreground">{innerProgressText}</span>
+            )}
+            {(currentStepId === "bigfive" || currentStepId === "riasec" || currentStepId === "strengths") && remainingQuestions > 0 && (
+              <span className="text-xs text-muted-foreground hidden sm:inline">~{estimatedMinutes} min igjen</span>
             )}
             {step > 0 && (
               <Button variant="outline" size="sm" onClick={handlePrev}>
