@@ -5,13 +5,44 @@
  * Brukes på dashboard.
  */
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useXp } from "@/hooks/use-xp";
 import { LEVELS, ACHIEVEMENTS, getNextLevel } from "@/lib/gamification/xp";
+import { getWeeklyQuests } from "@/lib/gamification/quests";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Flame, Trophy, Zap, Lock } from "lucide-react";
+import { Flame, Trophy, Zap, Lock, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+function WeeklyQuests() {
+  const quests = useMemo(() => getWeeklyQuests(null), []);
+
+  return (
+    <div>
+      <p className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+        <Target className="h-3 w-3" aria-hidden="true" />
+        Ukens oppdrag
+      </p>
+      <div className="space-y-2">
+        {quests.map((q) => (
+          <div
+            key={q.id}
+            className="flex items-center gap-3 rounded-lg border p-3"
+          >
+            <span className="text-lg" aria-hidden="true">{q.icon}</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium">{q.title}</p>
+              <p className="text-xs text-muted-foreground">{q.description}</p>
+            </div>
+            <Badge variant="outline" className="text-xs shrink-0">
+              +{q.xpReward} XP
+            </Badge>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function XpProgress() {
   const { loading, totalXp, level, progress, streak, earnedAchievements, recordDailyLogin } = useXp();
@@ -110,6 +141,9 @@ export function XpProgress() {
             })}
           </div>
         </div>
+
+        {/* Ukentlige oppdrag (#68) */}
+        <WeeklyQuests />
 
         {/* Nivå-oversikt */}
         <details className="group">

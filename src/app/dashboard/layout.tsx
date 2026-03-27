@@ -21,6 +21,8 @@ import { PageTransition } from "@/components/motion";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { CommandPalette } from "@/components/command-palette";
 import { ScrollToTop } from "@/components/scroll-to-top";
+import { LevelUpOverlay } from "@/components/level-up-overlay";
+import { BadgeToastListener } from "@/components/badge-toast";
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
@@ -109,6 +111,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       />
       <OnboardingStepper />
       <ScrollToTop />
+      <LevelUpOverlay />
+      <BadgeToastListener />
     </div>
   );
 }
