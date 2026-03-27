@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
+import { StaggerList, StaggerItem } from "@/components/motion";
 
 // ---------------------------------------------------------------------------
 // Lokal lagring av delvis utfylte tester
@@ -60,6 +61,7 @@ type SavedProgress = {
   displayName: string;
   consentPersonality: boolean;
   consentAnalytics: boolean;
+  selectedGoal: string | null;
 };
 
 function loadProgress(): SavedProgress | null {
@@ -106,6 +108,7 @@ const stepVariants = {
 
 const STEPS = [
   { id: "welcome", label: "Velkommen", icon: Rocket },
+  { id: "goals", label: "Mål", icon: Sparkles },
   { id: "consent", label: "Samtykke", icon: ShieldCheck },
   { id: "profile", label: "Profil", icon: Upload },
   { id: "bigfive", label: "Personlighet", icon: Brain },
@@ -114,16 +117,23 @@ const STEPS = [
   { id: "results", label: "Resultater", icon: Check },
 ] as const;
 
+const GOALS = [
+  { id: "studieretning", emoji: "🎯", label: "Finne riktig studieretning", desc: "Hvilken linje passer meg?" },
+  { id: "yrker", emoji: "🔍", label: "Utforske ulike yrker", desc: "Hva kan jeg jobbe med?" },
+  { id: "søknad", emoji: "📝", label: "Forberede studiesøknad", desc: "SO-poeng og frister" },
+  { id: "usikker", emoji: "🤷", label: "Jeg er usikker", desc: "Og det er helt OK!" },
+];
+
 type StepId = (typeof STEPS)[number]["id"];
 const TOTAL_STEPS = STEPS.length;
 
-// Likert-skala
+// Likert-skala med emoji
 const LIKERT = [
-  { value: 1, label: "Stemmer ikke" },
-  { value: 2, label: "Stemmer lite" },
-  { value: 3, label: "Nøytral" },
-  { value: 4, label: "Stemmer godt" },
-  { value: 5, label: "Stemmer svært godt" },
+  { value: 1, label: "Stemmer ikke", emoji: "😕" },
+  { value: 2, label: "Stemmer lite", emoji: "🤔" },
+  { value: 3, label: "Nøytral", emoji: "😐" },
+  { value: 4, label: "Stemmer godt", emoji: "🙂" },
+  { value: 5, label: "Stemmer svært godt", emoji: "🤩" },
 ];
 
 // Big Five-spørsmål i blokker av 8 (ett steg per dimensjon)
@@ -155,6 +165,9 @@ export function OnboardingStepper() {
   const [saving, setSaving] = useState(false);
   const [direction, setDirection] = useState(1); // 1 = fremover, -1 = bakover
   const [celebration, setCelebration] = useState<string | null>(null);
+
+  // Mål-setting
+  const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
 
   // GDPR-samtykke
   const [consentPersonality, setConsentPersonality] = useState(false);
@@ -198,6 +211,7 @@ export function OnboardingStepper() {
           setRiasecAnswers(saved.riasecAnswers);
           setStrengthAnswers(saved.strengthAnswers);
           if (saved.displayName) setDisplayName(saved.displayName);
+          if (saved.selectedGoal) setSelectedGoal(saved.selectedGoal);
           setConsentPersonality(saved.consentPersonality);
           setConsentAnalytics(saved.consentAnalytics);
         }
@@ -220,8 +234,9 @@ export function OnboardingStepper() {
       displayName,
       consentPersonality,
       consentAnalytics,
+      selectedGoal,
     });
-  }, [show, step, bigFiveBlock, riasecBlock, bigFiveAnswers, riasecAnswers, strengthAnswers, displayName, consentPersonality, consentAnalytics]);
+  }, [show, step, bigFiveBlock, riasecBlock, bigFiveAnswers, riasecAnswers, strengthAnswers, displayName, consentPersonality, consentAnalytics, selectedGoal]);
 
   // Micro-celebration ved dimensjon-fullføring
   function showCelebration(message: string) {
@@ -576,6 +591,40 @@ export function OnboardingStepper() {
             </div>
           )}
 
+          {/* ---- STEG: MÅL-SETTING ---- */}
+          {currentStepId === "goals" && (
+            <div className="space-y-4 py-4">
+              <div className="text-center">
+                <CardTitle className="text-xl font-display">Hva vil du oppnå med Suksess?</CardTitle>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Velg det som passer deg best — vi tilpasser opplevelsen.
+                </p>
+              </div>
+              <StaggerList className="grid grid-cols-2 gap-3">
+                {GOALS.map((goal) => (
+                  <StaggerItem key={goal.id}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedGoal(goal.id)}
+                      className={cn(
+                        "flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-all w-full",
+                        "hover:border-primary/50 hover:bg-primary/5",
+                        "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                        selectedGoal === goal.id
+                          ? "border-primary bg-primary/10 shadow-sm"
+                          : "border-border"
+                      )}
+                    >
+                      <span className="text-2xl" aria-hidden="true">{goal.emoji}</span>
+                      <span className="text-sm font-medium">{goal.label}</span>
+                      <span className="text-xs text-muted-foreground">{goal.desc}</span>
+                    </button>
+                  </StaggerItem>
+                ))}
+              </StaggerList>
+            </div>
+          )}
+
           {/* ---- STEG: SAMTYKKE (GDPR) ---- */}
           {currentStepId === "consent" && (
             <div className="space-y-5 py-4">
@@ -922,14 +971,14 @@ function QuestionRow({
             aria-label={`${l.value} — ${l.label}`}
             onClick={() => onChange(l.value)}
             className={cn(
-              "flex h-8 w-8 flex-1 items-center justify-center rounded border text-xs font-medium transition-colors",
+              "flex h-9 flex-1 items-center justify-center rounded-lg border text-sm transition-all",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
               value === l.value
-                ? "border-primary bg-primary text-primary-foreground"
+                ? "border-primary bg-primary/10 scale-110 shadow-sm"
                 : "border-border hover:border-primary/50 hover:bg-primary/5"
             )}
           >
-            {l.value}
+            <span aria-hidden="true">{l.emoji}</span>
           </button>
         ))}
       </div>
