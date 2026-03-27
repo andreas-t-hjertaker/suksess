@@ -5,11 +5,13 @@
  * Viser distribusjoner, fullføringsstatus og karrierematch uten individuelle data.
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
+import { useRealtimeStudents } from "@/hooks/use-realtime-students";
 import type { UserProfile, BigFiveScores, RiasecScores } from "@/types/domain";
+import type { DropoutRiskLevel } from "@/lib/risk/dropout-risk";
 import {
   Card,
   CardContent,
@@ -28,9 +30,94 @@ import {
   BarChart2,
   Info,
   RefreshCw,
+  Download,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+// ---------------------------------------------------------------------------
+// Periodefilter
+// ---------------------------------------------------------------------------
+
+type PeriodFilter = "week" | "month" | "semester" | "year";
+
+const PERIOD_LABELS: Record<PeriodFilter, string> = {
+  week: "Siste uke",
+  month: "Siste måned",
+  semester: "Semester",
+  year: "Skoleår",
+};
+
+// ---------------------------------------------------------------------------
+// Trafikklysmodell
+// ---------------------------------------------------------------------------
+
+type TrafficLight = "green" | "yellow" | "red";
+
+function classifyActivity(
+  lastLogin: Date | null,
+  testCompleted: boolean,
+  riskLevel: DropoutRiskLevel | null
+): TrafficLight {
+  const now = Date.now();
+  const twoWeeks = 14 * 24 * 60 * 60 * 1000;
+  const fourWeeks = 28 * 24 * 60 * 60 * 1000;
+
+  if (!lastLogin || now - lastLogin.getTime() > fourWeeks) return "red";
+  if (riskLevel === "high") return "red";
+  if (!testCompleted || now - lastLogin.getTime() > twoWeeks || riskLevel === "medium") return "yellow";
+  return "green";
+}
+
+const TRAFFIC_CONFIG: Record<TrafficLight, { label: string; desc: string; color: string; icon: typeof CheckCircle2 }> = {
+  green: { label: "Aktiv", desc: "Innlogget siste 2 uker, test fullført", color: "text-green-600 dark:text-green-400", icon: CheckCircle2 },
+  yellow: { label: "Passiv", desc: "Lav aktivitet eller ufullstendig profil", color: "text-amber-600 dark:text-amber-400", icon: Clock },
+  red: { label: "Inaktiv", desc: "Ikke innlogget 4+ uker eller høy risiko", color: "text-red-600 dark:text-red-400", icon: AlertTriangle },
+};
+
+// ---------------------------------------------------------------------------
+// CSV-eksport
+// ---------------------------------------------------------------------------
+
+function exportToCsv(stats: AggregateStats, trafficCounts: Record<TrafficLight, number>) {
+  const rows = [
+    ["Metrikk", "Verdi"],
+    ["Antall profiler", String(stats.totalProfiles)],
+    ["Aktive (grønn)", String(trafficCounts.green)],
+    ["Passive (gul)", String(trafficCounts.yellow)],
+    ["Inaktive (rød)", String(trafficCounts.red)],
+    [""],
+    ["Big Five dimensjon", "Gjennomsnitt"],
+    ["Åpenhet", String(stats.bigFiveAvg.openness)],
+    ["Planmessighet", String(stats.bigFiveAvg.conscientiousness)],
+    ["Utadvendthet", String(stats.bigFiveAvg.extraversion)],
+    ["Medmenneskelighet", String(stats.bigFiveAvg.agreeableness)],
+    ["Nevrotisisme", String(stats.bigFiveAvg.neuroticism)],
+    [""],
+    ["RIASEC dimensjon", "Gjennomsnitt", "Antall dominerende"],
+    ...Object.entries(stats.riasecAvg).map(([k, v]) => [
+      RIASEC_LABELS[k as keyof RiasecScores] ?? k,
+      String(v),
+      String(stats.riasecTopFreq[k as keyof RiasecScores] ?? 0),
+    ]),
+    [""],
+    ["Topp karrierer", "Fit-score"],
+    ...stats.topCareers.map((c) => [c.title, `${c.avgScore}%`]),
+  ];
+
+  const csv = rows.map((r) => r.join(";")).join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `radgiver-rapport-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 // ---------------------------------------------------------------------------
 // Aggregert statistikk
@@ -177,11 +264,14 @@ export default function RadgivereAdminPage() {
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastFetched, setLastFetched] = useState<Date | null>(null);
+  const [period, setPeriod] = useState<PeriodFilter>("month");
+
+  // Realtime elevdata for trafikklys
+  const { students } = useRealtimeStudents();
 
   async function fetchProfiles() {
     setLoading(true);
     try {
-      // Hent alle profiler. I produksjon bør dette filtreres på tenantId.
       const snap = await getDocs(collection(db, "profiles"));
       const data = snap.docs.map((d) => d.data() as UserProfile);
       setProfiles(data);
@@ -197,6 +287,20 @@ export default function RadgivereAdminPage() {
 
   const stats = useMemo(() => computeStats(profiles), [profiles]);
 
+  // Trafikklys-aggregering
+  const trafficCounts = useMemo(() => {
+    const counts: Record<TrafficLight, number> = { green: 0, yellow: 0, red: 0 };
+    for (const s of students) {
+      const light = classifyActivity(s.lastLoginAt, s.bigFiveCompleted, s.riskLevel);
+      counts[light]++;
+    }
+    return counts;
+  }, [students]);
+
+  const handleExport = useCallback(() => {
+    exportToCsv(stats, trafficCounts);
+  }, [stats, trafficCounts]);
+
   const riasecKeys: (keyof RiasecScores)[] = ["realistic", "investigative", "artistic", "social", "enterprising", "conventional"];
   const bigFiveKeys: (keyof BigFiveScores)[] = ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"];
 
@@ -210,21 +314,41 @@ export default function RadgivereAdminPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Skoler & rådgivere</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Rådgiverdashbord</h1>
           <p className="text-muted-foreground mt-1">
-            Aggregerte, anonymiserte elevdata. Ingen individuelle profiler vises.
+            Læringsanalyse og elevoppfølging — aggregert og anonymisert (GDPR)
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={fetchProfiles}
-          disabled={loading}
-          className="gap-2"
-        >
-          <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-          Oppdater
-        </Button>
+        <div className="flex gap-2 flex-wrap">
+          <div className="flex rounded-lg border bg-muted/50 p-0.5">
+            {(Object.entries(PERIOD_LABELS) as [PeriodFilter, string][]).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setPeriod(key)}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                  period === key ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <Button variant="outline" size="sm" onClick={handleExport} className="gap-2">
+            <Download className="h-4 w-4" />
+            CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchProfiles}
+            disabled={loading}
+            className="gap-2"
+          >
+            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+            Oppdater
+          </Button>
+        </div>
       </div>
 
       {/* Privacy notice */}
@@ -234,6 +358,37 @@ export default function RadgivereAdminPage() {
           Data vises aggregert og anonymisert i samsvar med GDPR. Ingen enkeltelevers identitet, navn eller e-post er synlig.
         </p>
       </div>
+
+      {/* Trafikklys-risikoindikator (#67) */}
+      {students.length > 0 && (
+        <div className="grid gap-4 sm:grid-cols-3">
+          {(["green", "yellow", "red"] as TrafficLight[]).map((light) => {
+            const cfg = TRAFFIC_CONFIG[light];
+            const Icon = cfg.icon;
+            const count = trafficCounts[light];
+            const pct = students.length > 0 ? Math.round((count / students.length) * 100) : 0;
+            return (
+              <Card key={light}>
+                <CardContent className="p-4 flex items-center gap-4">
+                  <div className={cn("flex h-10 w-10 items-center justify-center rounded-full", {
+                    "bg-green-100 dark:bg-green-900/30": light === "green",
+                    "bg-amber-100 dark:bg-amber-900/30": light === "yellow",
+                    "bg-red-100 dark:bg-red-900/30": light === "red",
+                  })}>
+                    <Icon className={cn("h-5 w-5", cfg.color)} />
+                  </div>
+                  <div>
+                    <p className={cn("text-2xl font-bold", cfg.color)}>{count}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {cfg.label} ({pct}%) — {cfg.desc}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
