@@ -18,6 +18,8 @@ import { NotificationBell } from "@/components/notification-bell";
 import { useImplicitProfiling } from "@/hooks/use-implicit-profiling";
 import { OnboardingStepper } from "@/components/onboarding-stepper";
 import { PageTransition } from "@/components/motion";
+import { Breadcrumbs } from "@/components/breadcrumbs";
+import { CommandPalette } from "@/components/command-palette";
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
@@ -43,7 +45,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           className="flex h-14 items-center justify-between border-b border-border px-4"
         >
           <MobileSidebar />
+          <Breadcrumbs />
           <div className="ml-auto flex items-center gap-3">
+            <CommandPalette />
             <span
               className="hidden text-sm text-muted-foreground sm:inline"
               aria-hidden="true"
