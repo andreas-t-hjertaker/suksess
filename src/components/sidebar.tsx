@@ -119,6 +119,7 @@ export function Sidebar() {
           size="icon"
           onClick={() => setCollapsed(!collapsed)}
           className={cn(collapsed && "mx-auto")}
+          aria-label={collapsed ? "Utvid sidemeny" : "Minimer sidemeny"}
         >
           {collapsed ? (
             <PanelLeft className="h-4 w-4" />

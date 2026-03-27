@@ -209,6 +209,7 @@ export default function FeatureFlagsPage() {
                     size="icon"
                     onClick={() => handleDeleteFlag(flag.id)}
                     disabled={actionLoading === flag.id}
+                    aria-label={`Slett feature flag ${flag.label}`}
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
