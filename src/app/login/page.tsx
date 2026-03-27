@@ -174,11 +174,11 @@ export default function LoginPage() {
   const showSocialButtons = mode === "login" || mode === "register";
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <main id="main-content" tabIndex={-1} className="flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mb-2 flex justify-center">
-            <Cloud className="h-8 w-8" />
+            <Cloud className="h-8 w-8" aria-hidden="true" />
           </div>
           <CardTitle className="text-2xl">{title[mode]}</CardTitle>
           <CardDescription>{description[mode]}</CardDescription>
@@ -213,10 +213,10 @@ export default function LoginPage() {
             )}
 
             {error && (
-              <p className="text-sm text-destructive">{error}</p>
+              <p role="alert" className="text-sm text-destructive">{error}</p>
             )}
             {message && (
-              <p className="text-sm text-green-500">{message}</p>
+              <p role="status" className="text-sm text-green-500">{message}</p>
             )}
 
             <Button
@@ -358,6 +358,6 @@ export default function LoginPage() {
           )}
         </CardFooter>
       </Card>
-    </div>
+    </main>
   );
 }

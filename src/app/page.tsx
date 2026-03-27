@@ -187,6 +187,8 @@ export default function LandingPage() {
         </div>
       </nav>
 
+      {/* Hovedinnhold */}
+      <main id="main-content" tabIndex={-1}>
       {/* Hero */}
       <section className="mx-auto max-w-6xl px-6 pt-20 pb-16 md:pt-28 md:pb-24">
         <div className="max-w-3xl">
@@ -471,6 +473,7 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+      </main>
     </div>
   );
 }
