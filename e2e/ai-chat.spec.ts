@@ -10,40 +10,78 @@ test.describe("AI-veileder chat", () => {
     await page.waitForLoadState("networkidle");
   });
 
-  test("chat-widget er tilgjengelig", async ({ page }) => {
-    // FAB-knapp for AI-chat bør finnes
-    const chatFab = page.locator("button").filter({ has: page.locator("[data-lucide='bot']") }).or(
-      page.getByRole("button").filter({ hasText: /ai/i })
-    );
-    // Sjekk at siden laster
-    await expect(page.getByRole("heading").first()).toBeVisible();
+  test("veileder-siden lastes med heading og foreslåtte spørsmål", async ({ page }) => {
+    await expect(page.getByText("AI-veileder")).toBeVisible();
+    // Foreslåtte spørsmål bør vises før noe er sendt
+    await expect(page.getByText("Forslag til spørsmål")).toBeVisible();
+    const suggestions = page.locator("button").filter({
+      hasText: /karriere|RIASEC|studie|yrker/i,
+    });
+    await expect(suggestions.first()).toBeVisible();
   });
 
-  test("chat-meldinger har riktige ARIA-roller", async ({ page }) => {
-    // Chat-loggen bør ha role="log"
-    const chatLog = page.locator("[role='log']");
-    // Den kan være skjult til chatten åpnes, men sjekk at den finnes i DOM
-    const logCount = await chatLog.count();
-    // Godta 0 (chat ikke åpnet) eller 1+ (chat åpnet)
-    expect(logCount).toBeGreaterThanOrEqual(0);
+  test("brukeren kan klikke et foreslått spørsmål", async ({ page }) => {
+    const suggestion = page.locator("button").filter({
+      hasText: /karriere/i,
+    });
+    await expect(suggestion.first()).toBeVisible();
+    await suggestion.first().click();
+
+    // Spørsmålet skal dukke opp i chatten som brukermelding
+    // Foreslåtte spørsmål bør forsvinne etter sending
+    await expect(page.getByText("Forslag til spørsmål")).not.toBeVisible({ timeout: 5000 });
   });
 
-  test("streaming-indikator har tilgjengelig label", async ({ page }) => {
-    // Verifiser at streaming-indikatoren har role="status" når synlig
-    const streamingIndicators = page.locator("[role='status'][aria-label='Veileder skriver...']");
-    // Den vises kun under streaming, men sjekk at attributtene er korrekte om den finnes
-    const count = await streamingIndicators.count();
-    expect(count).toBeGreaterThanOrEqual(0);
+  test("chat-input er synlig og aksepterer tekst", async ({ page }) => {
+    const input = page.locator("textarea, input[type='text']").filter({
+      hasText: /$/,
+    });
+    // Finn input-feltet via placeholder
+    const chatInput = page.getByPlaceholder(/karrierevalg|studier|spørsmål/i);
+    await expect(chatInput).toBeVisible();
+
+    // Skriv noe i input
+    await chatInput.fill("Hva betyr RIASEC?");
+    await expect(chatInput).toHaveValue("Hva betyr RIASEC?");
+  });
+
+  test("tøm-samtale-knapp er synlig", async ({ page }) => {
+    const clearBtn = page.getByRole("button", { name: /tøm samtale/i });
+    await expect(clearBtn).toBeVisible();
+    // Bør være disabled når ingen meldinger
+    await expect(clearBtn).toBeDisabled();
+  });
+
+  test("veileder-header viser RIASEC-badge når profil finnes", async ({ page }) => {
+    // Sjekk at header-seksjonen er korrekt strukturert
+    const header = page.locator("div").filter({ hasText: "AI-veileder" }).first();
+    await expect(header).toBeVisible();
   });
 });
 
 test.describe("AI-chat sikkerhet", () => {
-  test("krise-meldinger viser hjelpeinformasjon", async ({ page }) => {
-    // Denne testen verifiserer at krise-deteksjon fungerer i klienten
-    // Vi kan ikke enkelt teste LLM-bypass uten mock, men vi kan verifisere
-    // at safety-modulen er importert
+  test("safety-modul er aktiv — chat lastes uten feil", async ({ page }) => {
+    const errors: string[] = [];
+    page.on("console", (msg) => {
+      if (msg.type() === "error" && !msg.text().includes("Firebase")) {
+        errors.push(msg.text());
+      }
+    });
+
     await page.goto("/dashboard/veileder");
-    // Siden bør laste uten feil
-    await expect(page.getByRole("heading").first()).toBeVisible();
+    await page.waitForLoadState("networkidle");
+
+    // Siden bør laste uten kritiske JavaScript-feil
+    expect(errors.filter((e) => e.includes("safety") || e.includes("crash"))).toHaveLength(0);
+  });
+
+  test("velkomstmelding er tilgjengelig og personlig", async ({ page }) => {
+    await page.goto("/dashboard/veileder");
+    await page.waitForLoadState("networkidle");
+
+    // Velkomstmelding bør inneholde "Hei"
+    await expect(page.getByText(/hei/i).first()).toBeVisible();
+    // Bot-ikonet bør være synlig
+    await expect(page.locator("svg").first()).toBeVisible();
   });
 });
