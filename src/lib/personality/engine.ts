@@ -203,6 +203,9 @@ export function computePersonalityUI(
 
     // Layout-padding-multiplier som data-attributt (brukes av komponenter)
     "--personality-spacing-scale": layoutDensity === "compact" ? "0.85" : layoutDensity === "spacious" ? "1.2" : "1",
+
+    // Gradient-bakgrunn per profil
+    "--personality-gradient": `var(--gradient-${profileKey})`,
   };
 
   return {

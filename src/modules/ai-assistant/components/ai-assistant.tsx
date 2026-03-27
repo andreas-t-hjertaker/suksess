@@ -83,6 +83,8 @@ export function AiAssistant(config?: ChatConfig) {
                   size="icon-xs"
                   onClick={() => setShowHistory(!showHistory)}
                   title="Samtalehistorikk"
+                  aria-label="Samtalehistorikk"
+                  aria-expanded={showHistory}
                 >
                   <History className="h-3.5 w-3.5" />
                 </Button>
@@ -93,6 +95,7 @@ export function AiAssistant(config?: ChatConfig) {
                 onClick={handleClear}
                 disabled={messages.length === 0}
                 title="Tøm samtale"
+                aria-label="Tøm samtale"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -101,6 +104,7 @@ export function AiAssistant(config?: ChatConfig) {
                 size="icon-xs"
                 onClick={() => setOpen(false)}
                 title="Lukk"
+                aria-label="Lukk chat"
               >
                 <X className="h-3.5 w-3.5" />
               </Button>
@@ -136,18 +140,20 @@ export function AiAssistant(config?: ChatConfig) {
       <button
         type="button"
         onClick={open ? () => setOpen(false) : handleOpen}
+        aria-label={open ? "Lukk AI-assistent" : hasUnread ? "Åpne AI-assistent (ulest melding)" : "Åpne AI-assistent"}
+        aria-expanded={open}
         className={cn(
           "fixed z-50 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all hover:scale-105 hover:shadow-xl active:scale-95",
           position === "bottom-right" ? "right-6 bottom-6" : "left-6 bottom-6"
         )}
       >
         {open ? (
-          <X className="h-5 w-5" />
+          <X className="h-5 w-5" aria-hidden="true" />
         ) : (
           <>
-            <Bot className="h-5 w-5" />
+            <Bot className="h-5 w-5" aria-hidden="true" />
             {hasUnread && (
-              <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-destructive" />
+              <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-destructive" aria-hidden="true" />
             )}
           </>
         )}

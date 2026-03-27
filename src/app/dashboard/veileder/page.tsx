@@ -174,7 +174,7 @@ function VeilederPage() {
             <Sparkles className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <p className="text-sm font-semibold">AI-veileder</p>
+            <h1 className="text-sm font-semibold">AI-veileder</h1>
             <p className="text-xs text-muted-foreground">
               {profileLoading
                 ? "Laster profil…"
@@ -224,9 +224,9 @@ function VeilederPage() {
 
             {/* Suggested questions */}
             <div className="w-full max-w-lg space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center mb-3">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider text-center mb-3">
                 Forslag til spørsmål
-              </p>
+              </h3>
               {suggestions.map((q) => (
                 <button
                   key={q}
