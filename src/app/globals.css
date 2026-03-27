@@ -328,6 +328,41 @@
   font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
 }
 
+/* ---------------------------------------------------------------------------
+ * Mobil UX utilities (#78)
+ * ------------------------------------------------------------------------- */
+
+/* Safe area padding for iPhone notch/home indicator */
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Touch-optimalisert knapp-feedback */
+@utility touch-feedback {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Horisontale scroll-snap kortrader */
+@utility snap-x-mandatory {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+@utility snap-start {
+  scroll-snap-align: start;
+}
+
+/* Hide scrollbar for snap containers */
+.snap-x-mandatory::-webkit-scrollbar {
+  display: none;
+}
+
 /* Shimmer-animasjon for skeleton-loading */
 @keyframes shimmer {
   100% {

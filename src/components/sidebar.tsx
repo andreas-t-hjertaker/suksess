@@ -185,10 +185,17 @@ export function MobileBottomNav() {
       : { href: "/dashboard/innstillinger", label: "Mer", icon: Settings },
   ];
 
+  function handleTap() {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(10);
+    }
+  }
+
   return (
     <nav
       aria-label="Mobilnavigasjon"
-      className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-border bg-background/95 backdrop-blur-sm md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-border bg-background/95 backdrop-blur-sm pb-safe md:hidden"
+      style={{ minHeight: "4rem" }}
     >
       {primaryItems.map((item) => {
         const isActive =
@@ -198,19 +205,26 @@ export function MobileBottomNav() {
           <Link
             key={item.href}
             href={item.href}
+            onClick={handleTap}
             aria-current={isActive ? "page" : undefined}
             className={cn(
-              "flex flex-1 flex-col items-center justify-center gap-1 py-2 text-center transition-colors",
+              "flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-center transition-all touch-feedback active:scale-95",
+              "min-h-[44px] min-w-[44px]",
               isActive
                 ? "text-foreground"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <item.icon
-              className={cn("h-5 w-5", isActive && "text-primary")}
-              aria-hidden="true"
-            />
-            <span className={cn("text-[10px] font-medium", isActive && "text-primary")}>
+            <div className="relative">
+              <item.icon
+                className={cn("h-5 w-5 transition-colors", isActive && "text-primary")}
+                aria-hidden="true"
+              />
+              {isActive && (
+                <span className="absolute -top-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-primary" aria-hidden="true" />
+              )}
+            </div>
+            <span className={cn("text-[10px] font-medium transition-colors", isActive && "text-primary")}>
               {item.label}
             </span>
           </Link>
