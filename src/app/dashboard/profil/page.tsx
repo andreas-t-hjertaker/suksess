@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { showToast } from "@/lib/toast";
+import { usePersonality } from "@/components/personality-provider";
+import { ShareCard } from "@/components/share-card";
 import type { UserProfile } from "@/types/domain";
 import Link from "next/link";
 
@@ -263,9 +265,11 @@ function ScoreBar({
 
 export default function ProfilPage() {
   const { firebaseUser, user } = useAuth();
+  const { config } = usePersonality();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [shareFormat, setShareFormat] = useState<"stories" | "feed">("stories");
 
   useEffect(() => {
     if (!firebaseUser) {
@@ -504,6 +508,73 @@ export default function ProfilPage() {
               Disse karrierene er basert på din RIASEC-kode. Bruk
               karakterkalkulatoren og AI-veilederen for mer personlig rådgivning.
             </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Delbare profilkort (#80) */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Share2 className="h-4 w-4 text-primary" />
+            <CardTitle className="text-base">Del profilen din</CardTitle>
+          </div>
+          <CardDescription>
+            Last ned som bilde og del på sosiale medier
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2 mb-6">
+            <Button
+              variant={shareFormat === "stories" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShareFormat("stories")}
+            >
+              Stories (9:16)
+            </Button>
+            <Button
+              variant={shareFormat === "feed" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShareFormat("feed")}
+            >
+              Feed (1:1)
+            </Button>
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-center">RIASEC-kode</p>
+              <ShareCard
+                variant="riasec"
+                riasec={profile.riasec}
+                profileKey={config?.profileKey ?? "structured"}
+                format={shareFormat}
+              />
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-center">Big Five</p>
+              <ShareCard
+                variant="bigfive"
+                bigFive={profile.bigFive}
+                clusterName={config?.profileName ?? "Strukturert"}
+                description={config?.profileDescription ?? ""}
+                profileKey={config?.profileKey ?? "structured"}
+                format={shareFormat}
+              />
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-center">Karrierematch</p>
+              <ShareCard
+                variant="career"
+                riasecCode={riasecCode}
+                careers={topRiasec.slice(0, 3).map(([key, value]) => ({
+                  name: RIASEC_META[key].careers[0],
+                  matchPercent: value,
+                  sector: RIASEC_META[key].description,
+                }))}
+                profileKey={config?.profileKey ?? "structured"}
+                format={shareFormat}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
