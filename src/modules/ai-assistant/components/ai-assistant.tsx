@@ -58,18 +58,23 @@ export function AiAssistant(config?: ChatConfig) {
       <div
         className={cn(
           "fixed z-50 flex flex-col overflow-hidden transition-all duration-200 ease-out",
-          position === "bottom-right" ? "right-6 bottom-20" : "left-6 bottom-20",
+          "inset-0 sm:inset-auto",
+          position === "bottom-right" ? "sm:right-6 sm:bottom-20" : "sm:left-6 sm:bottom-20",
           open
             ? "pointer-events-auto scale-100 opacity-100"
             : "pointer-events-none scale-95 opacity-0"
         )}
       >
-        <Card className="flex h-[500px] w-[380px] flex-col shadow-xl sm:w-[400px]">
+        <Card className="flex h-[100dvh] w-screen flex-col shadow-xl sm:h-[500px] sm:w-[400px] sm:rounded-xl">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <div className="flex items-center gap-2">
-              <Bot className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">{title}</span>
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
+                <Bot className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+              </div>
+              <div>
+                <span className="text-sm font-medium font-display">{title}</span>
+              </div>
             </div>
             <div className="flex items-center gap-1">
               {user && (
@@ -116,7 +121,7 @@ export function AiAssistant(config?: ChatConfig) {
           )}
 
           {/* Meldinger */}
-          <ChatMessages messages={messages} welcomeMessage={welcomeMessage} />
+          <ChatMessages messages={messages} welcomeMessage={welcomeMessage} onSendSuggestion={handleSend} />
 
           {/* Inndata */}
           <ChatInput
