@@ -13,25 +13,31 @@ import { SkipLink } from "@/components/skip-link";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { AppCheckProvider } from "@/components/app-check-provider";
 
-const inter = localFont({
-  src: "./fonts/inter-latin-wght-normal.woff2",
-  variable: "--font-sans",
+const plusJakartaSans = localFont({
+  src: [
+    { path: "./fonts/PlusJakartaSansVariable.woff2", style: "normal" },
+    { path: "./fonts/PlusJakartaSansVariable-LatinExt.woff2", style: "normal" },
+  ],
+  variable: "--font-display",
+  weight: "200 800",
   display: "swap",
-  weight: "100 900",
+  preload: true,
 });
 
-const plusJakarta = localFont({
-  src: "./fonts/plus-jakarta-sans-latin-wght-normal.woff2",
-  variable: "--font-display",
+const inter = localFont({
+  src: "./fonts/InterVariable.woff2",
+  variable: "--font-sans",
+  weight: "100 900",
   display: "swap",
-  weight: "200 800",
+  preload: true,
 });
 
 const jetbrainsMono = localFont({
-  src: "./fonts/jetbrains-mono-latin-wght-normal.woff2",
+  src: "./fonts/JetBrainsMonoVariable.woff2",
   variable: "--font-mono",
-  display: "swap",
   weight: "100 800",
+  display: "swap",
+  preload: true,
 });
 
 export const metadata: Metadata = {
@@ -67,7 +73,7 @@ export default function RootLayout({
   return (
     <html lang="nb" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${plusJakarta.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+        className={`${plusJakartaSans.variable} ${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         <SkipLink />
         <WebsiteJsonLd

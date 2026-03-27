@@ -9,12 +9,7 @@ import { calculateGradePoints } from "@/lib/grades/calculator";
 import { getRiasecCode } from "@/lib/personality/scoring";
 import { XpProgress } from "@/components/xp-progress";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Brain,
   Compass,
@@ -31,8 +26,11 @@ import {
   Briefcase,
   BookOpen,
   GitBranch,
+  Flame,
+  Bot,
+  User,
 } from "lucide-react";
-import { SlideIn, StaggerList, StaggerItem } from "@/components/motion";
+import { SlideIn, StaggerList, StaggerItem, AnimatedCounter } from "@/components/motion";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/types/domain";
@@ -176,7 +174,7 @@ function getChecklist(profile: UserProfile | null, gradeCount: number): CheckIte
 }
 
 // ---------------------------------------------------------------------------
-// Page
+// Page — Bento Grid Dashboard
 // ---------------------------------------------------------------------------
 
 export default function DashboardPage() {
@@ -199,15 +197,16 @@ export default function DashboardPage() {
     [profile, grades.length]
   );
   const completedSteps = checklist.filter((c) => c.done).length;
+  const progressPercent = Math.round((completedSteps / checklist.length) * 100);
 
   const firstName = user?.displayName?.split(" ")[0] ?? null;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Velkomsthilsen */}
       <SlideIn direction="up" duration={0.4}>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-fluid-2xl font-bold tracking-tight font-display">
             Hei{firstName ? `, ${firstName}` : ""}! 👋
           </h1>
           <p className="text-muted-foreground mt-1">
@@ -216,20 +215,94 @@ export default function DashboardPage() {
         </div>
       </SlideIn>
 
-      {/* Hurtigstatistikk */}
-      <StaggerList className="grid gap-4 sm:grid-cols-3" staggerDelay={0.08}>
+      {/* Bento Grid */}
+      <StaggerList
+        className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+        staggerDelay={0.08}
+      >
+        {/* Profilkort — stor (span 2 kolonner på lg) */}
+        <StaggerItem>
+          <Card variant="glass" className="lg:col-span-1 row-span-1 h-full">
+            <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 ring-2 ring-primary/20">
+                {user?.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt=""
+                    className="h-16 w-16 rounded-full object-cover"
+                  />
+                ) : (
+                  <User className="h-7 w-7 text-primary" aria-hidden="true" />
+                )}
+              </div>
+              <div>
+                <p className="font-semibold font-display">{user?.displayName ?? "Ny bruker"}</p>
+                {riasecCode && (
+                  <p className="text-sm font-mono text-primary mt-0.5">{riasecCode}</p>
+                )}
+              </div>
+              {topStrengths.length > 0 && (
+                <div className="flex flex-wrap justify-center gap-1.5">
+                  {topStrengths.map((s) => (
+                    <Badge key={s} variant="secondary" className="capitalize text-xs">
+                      {s}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <Link
+                href="/dashboard/profil"
+                className="text-xs text-primary hover:underline mt-1"
+              >
+                Se full profil →
+              </Link>
+            </CardContent>
+          </Card>
+        </StaggerItem>
+
+        {/* XP & Streak-kort */}
+        <StaggerItem>
+          <Card variant="glass" className="h-full">
+            <CardContent className="py-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10">
+                    <Star className="h-4 w-4 text-amber-500" aria-hidden="true" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground">XP & Nivå</span>
+                </div>
+                {streak >= 3 && (
+                  <Badge variant="secondary" className="gap-1 text-orange-500">
+                    <Flame className="h-3 w-3" aria-hidden="true" />
+                    {streak} d
+                  </Badge>
+                )}
+              </div>
+              <p className="text-3xl font-bold font-display">
+                <AnimatedCounter value={totalXp} />
+                <span className="text-base font-normal text-muted-foreground ml-1">XP</span>
+              </p>
+              <Badge variant="outline" className={cn("mt-2 gap-1", level.color)}>
+                {level.label}
+              </Badge>
+            </CardContent>
+          </Card>
+        </StaggerItem>
+
         {/* Karaktersnitt */}
         <StaggerItem>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardDescription>Karaktersnitt</CardDescription>
-              <GraduationCap className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">
+          <Card variant="glass" className="h-full">
+            <CardContent className="py-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10">
+                  <GraduationCap className="h-4 w-4 text-amber-500" aria-hidden="true" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">Karaktersnitt</span>
+              </div>
+              <p className="text-3xl font-bold font-display">
                 {gradePoints.average > 0 ? gradePoints.average.toFixed(2) : "—"}
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-muted-foreground mt-1.5">
                 {grades.length > 0
                   ? `${gradePoints.subjectCount} fag · ${gradePoints.quotaPoints} SO-poeng`
                   : "Ingen karakterer ennå"}
@@ -238,48 +311,127 @@ export default function DashboardPage() {
           </Card>
         </StaggerItem>
 
-        {/* RIASEC */}
+        {/* RIASEC Interesseprofil */}
         <StaggerItem>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardDescription>Interesseprofil</CardDescription>
-              <Compass className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold font-mono">
+          <Card variant="glass" className="h-full">
+            <CardContent className="py-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10">
+                  <Compass className="h-4 w-4 text-blue-500" aria-hidden="true" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">Interesseprofil</span>
+              </div>
+              <p className="text-3xl font-bold font-mono">
                 {riasecCode ?? "—"}
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-muted-foreground mt-1.5">
                 {riasecCode ? "RIASEC-kode" : "Fullfør onboarding"}
               </p>
             </CardContent>
           </Card>
         </StaggerItem>
 
-        {/* XP */}
+        {/* AI Chat widget */}
         <StaggerItem>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardDescription>XP & nivå</CardDescription>
-              <Star className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{totalXp}</p>
-              <p className="text-xs text-muted-foreground mt-0.5 capitalize">
-                {level.label}
-                {streak >= 3 && ` · 🔥 ${streak} dager`}
-              </p>
+          <Link href="/dashboard/veileder" className="block h-full group">
+            <Card variant="glass" className="h-full transition-all group-hover:shadow-lg group-hover:-translate-y-0.5">
+              <CardContent className="py-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-500/10">
+                    <Bot className="h-4 w-4 text-violet-500" aria-hidden="true" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground">AI-veileder</span>
+                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" aria-hidden="true" />
+                </div>
+                <p className="text-sm text-foreground">
+                  Hei! Jeg kan hjelpe deg med karrierevalg, studier og jobbsøking.
+                </p>
+                <div className="flex gap-1.5 mt-3 flex-wrap">
+                  <Badge variant="secondary" className="text-xs">Karrieretips</Badge>
+                  <Badge variant="secondary" className="text-xs">Studievalg</Badge>
+                  <Badge variant="secondary" className="text-xs">CV-hjelp</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        </StaggerItem>
+
+        {/* Kom-i-gang sjekkliste — høyt kort */}
+        <StaggerItem>
+          <Card variant="glass" className="h-full">
+            <CardContent className="py-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10">
+                    <TrendingUp className="h-4 w-4 text-emerald-500" aria-hidden="true" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground">Kom i gang</span>
+                </div>
+                <span className="text-xs font-mono text-muted-foreground">
+                  {completedSteps}/{checklist.length}
+                </span>
+              </div>
+
+              {/* Sirkulær progressring */}
+              <div className="flex items-center gap-4 mb-4">
+                <div className="relative h-14 w-14 shrink-0">
+                  <svg className="h-14 w-14 -rotate-90" viewBox="0 0 56 56" aria-hidden="true">
+                    <circle cx="28" cy="28" r="24" fill="none" stroke="currentColor" strokeWidth="4" className="text-muted/50" />
+                    <circle
+                      cx="28" cy="28" r="24" fill="none" stroke="currentColor" strokeWidth="4"
+                      className="text-primary transition-all duration-700"
+                      strokeDasharray={`${2 * Math.PI * 24}`}
+                      strokeDashoffset={`${2 * Math.PI * 24 * (1 - progressPercent / 100)}`}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold">
+                    {progressPercent}%
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {completedSteps === checklist.length
+                    ? "Alt fullført! 🎉"
+                    : `${checklist.length - completedSteps} steg gjenstår`}
+                </div>
+              </div>
+
+              <ul className="space-y-1.5">
+                {checklist.slice(0, 5).map((item) => (
+                  <li key={item.label}>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors",
+                        item.done ? "text-muted-foreground" : "hover:bg-accent"
+                      )}
+                    >
+                      {item.done ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                      ) : (
+                        <Circle className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      )}
+                      <span className={item.done ? "line-through" : ""}>{item.label}</span>
+                    </Link>
+                  </li>
+                ))}
+                {checklist.length > 5 && (
+                  <li className="text-xs text-muted-foreground px-2 pt-1">
+                    +{checklist.length - 5} flere steg
+                  </li>
+                )}
+              </ul>
             </CardContent>
           </Card>
         </StaggerItem>
       </StaggerList>
 
-      {/* XP og fremgang */}
+      {/* XP og fremgang (full bredde) */}
       <XpProgress />
 
-      {/* Hurtiglenker */}
+      {/* Utforsk — Hurtiglenker */}
       <div>
-        <h2 className="text-lg font-semibold mb-4">Utforsk</h2>
+        <h2 className="text-lg font-semibold font-display mb-4">Utforsk</h2>
         <StaggerList className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" staggerDelay={0.05}>
           {QUICK_LINKS.map((link) => (
             <StaggerItem key={link.href}>
@@ -301,56 +453,10 @@ export default function DashboardPage() {
         </StaggerList>
       </div>
 
-      {/* Kom-i-gang sjekkliste */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Kom i gang</h2>
-          <span className="text-sm text-muted-foreground">
-            {completedSteps}/{checklist.length} fullført
-          </span>
-        </div>
-        <Card>
-          <CardContent className="pt-4">
-            {/* Progress bar */}
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted mb-4">
-              <div
-                className="h-full rounded-full bg-primary transition-all duration-700"
-                style={{ width: `${(completedSteps / checklist.length) * 100}%` }}
-              />
-            </div>
-            <ul className="space-y-2">
-              {checklist.map((item) => (
-                <li key={item.label}>
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                      item.done
-                        ? "text-muted-foreground"
-                        : "hover:bg-accent"
-                    )}
-                  >
-                    {item.done ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                    ) : (
-                      <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
-                    )}
-                    <span className={item.done ? "line-through" : ""}>{item.label}</span>
-                    {!item.done && (
-                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground ml-auto" />
-                    )}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Styrker (hvis tilgjengelig) */}
       {topStrengths.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
+          <h2 className="text-lg font-semibold mb-3 flex items-center gap-2 font-display">
             <TrendingUp className="h-5 w-5 text-primary" />
             Dine topp-styrker
           </h2>

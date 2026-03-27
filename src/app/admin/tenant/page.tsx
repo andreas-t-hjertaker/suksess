@@ -176,8 +176,9 @@ export default function TenantAdminPage() {
           <CardContent className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">Skolenavn *</label>
+                <label htmlFor="tenant-name" className="text-sm font-medium">Skolenavn *</label>
                 <Input
+                  id="tenant-name"
                   placeholder="f.eks. Nydalen videregående skole"
                   value={name}
                   onChange={(e) => {
@@ -189,8 +190,9 @@ export default function TenantAdminPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">Slug (tenant-ID) *</label>
+                <label htmlFor="tenant-slug" className="text-sm font-medium">Slug (tenant-ID) *</label>
                 <Input
+                  id="tenant-slug"
                   placeholder="nydalen-vgs"
                   value={slug}
                   onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
@@ -198,8 +200,9 @@ export default function TenantAdminPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">Kontakt-e-post *</label>
+                <label htmlFor="tenant-email" className="text-sm font-medium">Kontakt-e-post *</label>
                 <Input
+                  id="tenant-email"
                   type="email"
                   placeholder="it@nydalen-vgs.no"
                   value={email}
@@ -207,8 +210,9 @@ export default function TenantAdminPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">Maks elever</label>
+                <label htmlFor="tenant-max-students" className="text-sm font-medium">Maks elever</label>
                 <Input
+                  id="tenant-max-students"
                   type="number"
                   value={maxStudents}
                   onChange={(e) => setMaxStudents(e.target.value)}
@@ -217,7 +221,7 @@ export default function TenantAdminPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Plan</label>
+              <label id="tenant-plan-label" className="text-sm font-medium">Plan</label>
               <div className="flex gap-2 flex-wrap">
                 {(["pilot", "school", "municipality"] as const).map((p) => (
                   <button

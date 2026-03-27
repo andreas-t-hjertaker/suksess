@@ -21,8 +21,8 @@
     --accent: oklch(0.92 0.04 265);
     --accent-foreground: oklch(0.3 0.1 265);
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.75 0.02 265);
-    --input: oklch(0.75 0.02 265);
+    --border: oklch(0.70 0.02 265);
+    --input: oklch(0.62 0.03 265);
     --ring: oklch(0.52 0.2 265);
     --chart-1: oklch(0.72 0.18 265);
     --chart-2: oklch(0.62 0.18 300);
@@ -39,7 +39,7 @@
     --sidebar-border: oklch(0.91 0.02 265);
     --sidebar-ring: oklch(0.52 0.2 265);
 
-    /* Fluid typografiskala (Major Third 1.25) */
+    /* Fluid typografiskala */
     --text-xs:   clamp(0.69rem, 0.66rem + 0.18vw, 0.80rem);
     --text-sm:   clamp(0.83rem, 0.78rem + 0.29vw, 1.00rem);
     --text-base: clamp(1.00rem, 0.91rem + 0.43vw, 1.25rem);
@@ -53,13 +53,10 @@
     --glass-bg: rgba(255, 255, 255, 0.08);
     --glass-border: rgba(255, 255, 255, 0.12);
     --glass-blur: 16px;
-    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 
-    /* Gradient-bakgrunner per personlighetsprofil */
-    --gradient-creative:  linear-gradient(135deg, oklch(0.96 0.03 295), oklch(0.99 0.01 260));
-    --gradient-social:    linear-gradient(135deg, oklch(0.96 0.03 170), oklch(0.99 0.01 200));
-    --gradient-analytic:  linear-gradient(135deg, oklch(0.96 0.03 250), oklch(0.99 0.01 230));
-    --gradient-structured: linear-gradient(135deg, oklch(0.97 0.01 230), oklch(0.99 0.005 220));
+    /* Gradient-bakgrunn (standard — strukturert) */
+    --gradient-bg: linear-gradient(135deg, oklch(0.96 0.01 230), oklch(0.98 0.005 220));
 }
 
 .dark {
@@ -100,11 +97,8 @@
     --glass-border: rgba(255, 255, 255, 0.08);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.24);
 
-    /* Dark mode gradienter */
-    --gradient-creative:  linear-gradient(135deg, oklch(0.25 0.08 295), oklch(0.15 0.04 260));
-    --gradient-social:    linear-gradient(135deg, oklch(0.22 0.06 170), oklch(0.15 0.03 200));
-    --gradient-analytic:  linear-gradient(135deg, oklch(0.20 0.06 250), oklch(0.14 0.03 230));
-    --gradient-structured: linear-gradient(135deg, oklch(0.18 0.02 230), oklch(0.13 0.01 220));
+    /* Dark mode gradient-bakgrunn */
+    --gradient-bg: linear-gradient(135deg, oklch(0.18 0.02 230), oklch(0.13 0.01 220));
 }
 
 @theme inline {
@@ -142,13 +136,23 @@
     --color-card: var(--card);
     --color-foreground: var(--foreground);
     --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.5);
-    --radius-md: calc(var(--radius) * 0.75);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
     --radius-xl: calc(var(--radius) * 1.33);
-    --radius-2xl: calc(var(--radius) * 1.67);
-    --radius-3xl: calc(var(--radius) * 2);
-    --radius-4xl: calc(var(--radius) * 2.67);
+    --radius-2xl: calc(var(--radius) * 2);
+    --radius-3xl: calc(var(--radius) * 2.67);
+    --radius-4xl: calc(var(--radius) * 3.33);
+
+    /* Fluid typografi utilities */
+    --text-fluid-xs: var(--text-xs);
+    --text-fluid-sm: var(--text-sm);
+    --text-fluid-base: var(--text-base);
+    --text-fluid-lg: var(--text-lg);
+    --text-fluid-xl: var(--text-xl);
+    --text-fluid-2xl: var(--text-2xl);
+    --text-fluid-3xl: var(--text-3xl);
+    --text-fluid-hero: var(--text-hero);
 }
 
 /* ---------------------------------------------------------------------------
@@ -245,8 +249,9 @@
 }
 
 /* ---------------------------------------------------------------------------
- * Glassmorphism-utilities
+ * Glassmorphism utilities
  * ------------------------------------------------------------------------- */
+
 .glass-card {
   background: var(--glass-bg);
   backdrop-filter: blur(var(--glass-blur));
@@ -256,35 +261,106 @@
   border-radius: var(--radius-xl);
 }
 
-.glass-card-subtle {
-  background: var(--glass-bg);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
+/* ---------------------------------------------------------------------------
+ * Gradient-bakgrunner per personlighetsprofil
+ * ------------------------------------------------------------------------- */
+
+[data-personality-profile="creative"] {
+  --gradient-bg: linear-gradient(135deg, oklch(0.25 0.08 295), oklch(0.15 0.04 260));
+}
+[data-personality-profile="social"] {
+  --gradient-bg: linear-gradient(135deg, oklch(0.22 0.06 170), oklch(0.15 0.03 200));
+}
+[data-personality-profile="analytic"] {
+  --gradient-bg: linear-gradient(135deg, oklch(0.20 0.06 250), oklch(0.14 0.03 230));
+}
+[data-personality-profile="structured"] {
+  --gradient-bg: linear-gradient(135deg, oklch(0.18 0.02 230), oklch(0.13 0.01 220));
+}
+
+/* Light mode overrides for personality gradients */
+:root [data-personality-profile="creative"] {
+  --gradient-bg: linear-gradient(135deg, oklch(0.95 0.04 295), oklch(0.98 0.02 260));
+}
+:root [data-personality-profile="social"] {
+  --gradient-bg: linear-gradient(135deg, oklch(0.95 0.03 170), oklch(0.98 0.015 200));
+}
+:root [data-personality-profile="analytic"] {
+  --gradient-bg: linear-gradient(135deg, oklch(0.95 0.03 250), oklch(0.98 0.015 230));
+}
+:root [data-personality-profile="structured"] {
+  --gradient-bg: linear-gradient(135deg, oklch(0.96 0.01 230), oklch(0.98 0.005 220));
 }
 
 /* ---------------------------------------------------------------------------
- * Fluid typografi-utilities
+ * Fluid typografi utility-klasser
  * ------------------------------------------------------------------------- */
-.text-fluid-xs   { font-size: var(--text-xs); }
-.text-fluid-sm   { font-size: var(--text-sm); }
-.text-fluid-base { font-size: var(--text-base); }
-.text-fluid-lg   { font-size: var(--text-lg); }
-.text-fluid-xl   { font-size: var(--text-xl); }
-.text-fluid-2xl  { font-size: var(--text-2xl); }
-.text-fluid-3xl  { font-size: var(--text-3xl); }
-.text-fluid-hero {
+
+@utility text-fluid-xs {
+  font-size: var(--text-xs);
+}
+@utility text-fluid-sm {
+  font-size: var(--text-sm);
+}
+@utility text-fluid-base {
+  font-size: var(--text-base);
+}
+@utility text-fluid-lg {
+  font-size: var(--text-lg);
+}
+@utility text-fluid-xl {
+  font-size: var(--text-xl);
+}
+@utility text-fluid-2xl {
+  font-size: var(--text-2xl);
+}
+@utility text-fluid-3xl {
+  font-size: var(--text-3xl);
+}
+@utility text-fluid-hero {
   font-size: var(--text-hero);
-  font-family: var(--font-display);
-  font-weight: 800;
-  letter-spacing: -0.02em;
   line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
 /* Display-font for headings */
-.font-display {
-  font-family: var(--font-display);
+@utility font-display {
+  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+}
+
+/* ---------------------------------------------------------------------------
+ * Mobil UX utilities (#78)
+ * ------------------------------------------------------------------------- */
+
+/* Safe area padding for iPhone notch/home indicator */
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Touch-optimalisert knapp-feedback */
+@utility touch-feedback {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Horisontale scroll-snap kortrader */
+@utility snap-x-mandatory {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+@utility snap-start {
+  scroll-snap-align: start;
+}
+
+/* Hide scrollbar for snap containers */
+.snap-x-mandatory::-webkit-scrollbar {
+  display: none;
 }
 
 /* Shimmer-animasjon for skeleton-loading */

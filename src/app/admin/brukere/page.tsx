@@ -161,7 +161,7 @@ export default function BrukerePage() {
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button variant="ghost" size="icon" disabled={actionLoading === row.uid} />
+              <Button variant="ghost" size="icon" disabled={actionLoading === row.uid} aria-label="Brukerhandlinger" />
             }
           >
             {actionLoading === row.uid ? (

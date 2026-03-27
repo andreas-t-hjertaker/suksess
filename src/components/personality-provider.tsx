@@ -93,9 +93,10 @@ export function PersonalityProvider({ children }: { children: React.ReactNode })
       ...(override.cssVars ?? {}),
     };
     applyCssVars(mergedVars);
-    // Sett data-layout-attributt for CSS-selektorer
+    // Sett data-attributter for CSS-selektorer
     document.documentElement.setAttribute("data-layout", merged.layoutDensity);
     document.documentElement.setAttribute("data-animation", merged.animationIntensity);
+    document.documentElement.setAttribute("data-personality-profile", merged.profileKey);
   }, [baseConfig, override]);
 
   const overrideConfig = useCallback((partial: Partial<PersonalityUIConfig>) => {

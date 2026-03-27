@@ -27,7 +27,7 @@ export function ThemeToggle() {
   return (
     <Tooltip>
       <TooltipTrigger
-        render={<Button variant="ghost" size="icon" onClick={next} />}
+        render={<Button variant="ghost" size="icon" onClick={next} aria-label={labels[theme]} />}
       >
         {theme === "light" && <Sun className="h-4 w-4" />}
         {theme === "dark" && <Moon className="h-4 w-4" />}

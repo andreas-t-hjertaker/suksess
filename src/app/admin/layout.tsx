@@ -283,7 +283,7 @@ function AdminContent({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
   );

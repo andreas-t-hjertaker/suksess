@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, Search } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AiAssistant } from "@/modules/ai-assistant";
 import { NotificationBell } from "@/components/notification-bell";
@@ -19,7 +19,8 @@ import { useImplicitProfiling } from "@/hooks/use-implicit-profiling";
 import { OnboardingStepper } from "@/components/onboarding-stepper";
 import { PageTransition } from "@/components/motion";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { CommandPalette, CommandPaletteTrigger } from "@/components/command-palette";
+import { CommandPalette } from "@/components/command-palette";
+import { ScrollToTop } from "@/components/scroll-to-top";
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
@@ -45,8 +46,9 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           className="flex h-14 items-center justify-between border-b border-border px-4"
         >
           <MobileSidebar />
-          <CommandPaletteTrigger />
+          <Breadcrumbs />
           <div className="ml-auto flex items-center gap-3">
+            <CommandPalette />
             <span
               className="hidden text-sm text-muted-foreground sm:inline"
               aria-hidden="true"
@@ -86,15 +88,12 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <Breadcrumbs />
-
         {/* Hovedinnhold */}
-        <main id="main-content" className="flex-1 overflow-y-auto p-6 pb-20 md:pb-6" tabIndex={-1}>
+        <main id="main-content" className="flex-1 overflow-y-auto p-4 pb-24 sm:p-6 md:pb-6" tabIndex={-1}>
           <PageTransition>{children}</PageTransition>
         </main>
       </div>
       <MobileBottomNav />
-      <CommandPalette />
       <AiAssistant
         title="Suksess-assistent"
         welcomeMessage="Hei! Jeg er din AI-assistent for Suksess. Spør meg om karakterer, karrierevalg, utdanning og mer!"
@@ -109,6 +108,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         })}
       />
       <OnboardingStepper />
+      <ScrollToTop />
     </div>
   );
 }

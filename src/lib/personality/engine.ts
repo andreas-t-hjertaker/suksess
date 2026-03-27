@@ -18,7 +18,11 @@ export type InfoDensity = "minimal" | "standard" | "detailed";
 export type ToneOfVoice = "formal" | "friendly" | "direct" | "encouraging";
 export type NavigationStyle = "linear" | "exploratory";
 
+export type PersonalityProfile = "creative" | "social" | "analytic" | "structured";
+
 export type PersonalityUIConfig = {
+  /** Intern profil-nøkkel for CSS data-attributt */
+  profileKey: PersonalityProfile;
   /** Navn på den beregnede profilen (én av 4) */
   profileName: string;
   /** Profilbeskrivelse til bruk i UI */
@@ -205,6 +209,7 @@ export function computePersonalityUI(
   };
 
   return {
+    profileKey,
     profileName,
     profileDescription,
     animationIntensity,

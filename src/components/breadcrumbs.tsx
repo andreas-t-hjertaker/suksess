@@ -2,11 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, ChevronLeft } from "lucide-react";
-
-// ---------------------------------------------------------------------------
-// Route-label mapping for breadcrumbs
-// ---------------------------------------------------------------------------
+import { ChevronRight, ArrowLeft } from "lucide-react";
 
 const ROUTE_LABELS: Record<string, string> = {
   dashboard: "Dashboard",
@@ -32,43 +28,34 @@ const ROUTE_LABELS: Record<string, string> = {
   "feature-flags": "Feature Flags",
   radgivere: "Rådgivere",
   tenant: "Tenant",
+  onboarding: "Onboarding",
+  login: "Innlogging",
 };
 
 function getLabel(segment: string): string {
-  return ROUTE_LABELS[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
+  return ROUTE_LABELS[segment] ?? segment.charAt(0).toUpperCase() + segment.slice(1);
 }
-
-// ---------------------------------------------------------------------------
-// Breadcrumbs komponent
-// ---------------------------------------------------------------------------
 
 export function Breadcrumbs() {
   const pathname = usePathname();
-
-  // Ikke vis breadcrumbs på root dashboard
-  if (pathname === "/dashboard") return null;
-
   const segments = pathname.split("/").filter(Boolean);
 
-  // Bygg crumbs: [{ label, href }]
+  // Don't show on root pages
+  if (segments.length <= 1) return null;
+
   const crumbs = segments.map((segment, i) => ({
     label: getLabel(segment),
     href: "/" + segments.slice(0, i + 1).join("/"),
     isLast: i === segments.length - 1,
   }));
 
-  // Mobil: vis kun «← Tilbake»
-  const parentCrumb = crumbs.length > 1 ? crumbs[crumbs.length - 2] : null;
-
   return (
-    <nav aria-label="Breadcrumb" className="px-4 py-2 border-b border-border/40">
+    <>
       {/* Desktop breadcrumbs */}
-      <ol className="hidden sm:flex items-center gap-1 text-sm text-muted-foreground">
-        {crumbs.map((crumb) => (
-          <li key={crumb.href} className="flex items-center gap-1">
-            {crumb !== crumbs[0] && (
-              <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            )}
+      <nav aria-label="Brødsmulesti" className="hidden sm:flex items-center gap-1 text-sm text-muted-foreground">
+        {crumbs.map((crumb, i) => (
+          <span key={crumb.href} className="flex items-center gap-1">
+            {i > 0 && <ChevronRight className="h-3 w-3" aria-hidden="true" />}
             {crumb.isLast ? (
               <span className="font-medium text-foreground" aria-current="page">
                 {crumb.label}
@@ -81,20 +68,22 @@ export function Breadcrumbs() {
                 {crumb.label}
               </Link>
             )}
-          </li>
+          </span>
         ))}
-      </ol>
+      </nav>
 
-      {/* Mobil: Tilbake-knapp */}
-      {parentCrumb && (
-        <Link
-          href={parentCrumb.href}
-          className="flex sm:hidden items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          <span>Tilbake til {parentCrumb.label}</span>
-        </Link>
+      {/* Mobile back button */}
+      {crumbs.length >= 2 && (
+        <nav aria-label="Tilbakenavigasjon" className="flex sm:hidden">
+          <Link
+            href={crumbs[crumbs.length - 2].href}
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>{crumbs[crumbs.length - 2].label}</span>
+          </Link>
+        </nav>
       )}
-    </nav>
+    </>
   );
 }

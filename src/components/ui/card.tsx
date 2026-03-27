@@ -8,8 +8,8 @@ function Card({
   variant = "default",
   ...props
 }: React.ComponentProps<"div"> & {
-  size?: "default" | "sm";
-  variant?: "default" | "glass";
+  size?: "default" | "sm"
+  variant?: "default" | "glass"
 }) {
   return (
     <div

@@ -1,8 +1,16 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Command } from "cmdk";
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
 import {
   LayoutDashboard,
   User,
@@ -21,62 +29,36 @@ import {
   Code,
   Settings,
   DatabaseZap,
-  Shield,
+  MessageSquare,
   Search,
   Clock,
-  Zap,
-  MessageSquare,
-  Brain,
 } from "lucide-react";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-type CommandItem = {
-  id: string;
-  label: string;
-  href?: string;
-  icon: React.ElementType;
-  category: "sider" | "handlinger" | "sist-besøkt";
-  keywords?: string;
-  onSelect?: () => void;
-};
-
-// ---------------------------------------------------------------------------
-// Navigation items
-// ---------------------------------------------------------------------------
-
-const PAGE_ITEMS: CommandItem[] = [
-  { id: "dashboard", label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, category: "sider" },
-  { id: "profil", label: "Min profil", href: "/dashboard/profil", icon: User, category: "sider" },
-  { id: "veileder", label: "AI-veileder", href: "/dashboard/veileder", icon: Sparkles, category: "sider", keywords: "chat ai bot" },
-  { id: "karriere", label: "Karriere", href: "/dashboard/karriere", icon: Compass, category: "sider", keywords: "jobb yrke" },
-  { id: "karrieregraf", label: "Karrieregraf", href: "/dashboard/karrieregraf", icon: GitBranch, category: "sider", keywords: "graf tre" },
-  { id: "cv", label: "CV-builder", href: "/dashboard/cv", icon: ScrollText, category: "sider", keywords: "cv resume søknad" },
-  { id: "analyse", label: "Analyse", href: "/dashboard/analyse", icon: BarChart2, category: "sider", keywords: "personlighet big five riasec" },
-  { id: "soknadscoach", label: "Søknads-coach", href: "/dashboard/soknadscoach", icon: ClipboardList, category: "sider", keywords: "søknad tips" },
-  { id: "jobbmatch", label: "Jobbmatch", href: "/dashboard/jobbmatch", icon: Briefcase, category: "sider", keywords: "jobb stilling" },
-  { id: "studier", label: "Studiemestring", href: "/dashboard/studier", icon: BookOpen, category: "sider", keywords: "studie utdanning" },
-  { id: "karakterer", label: "Karakterer", href: "/dashboard/karakterer", icon: GraduationCap, category: "sider", keywords: "karakter poeng" },
-  { id: "dokumenter", label: "Dokumenter", href: "/dashboard/dokumenter", icon: FileText, category: "sider" },
-  { id: "fremgang", label: "Fremgang & XP", href: "/dashboard/fremgang", icon: TrendingUp, category: "sider", keywords: "xp badge gamification" },
-  { id: "abonnement", label: "Abonnement", href: "/dashboard/abonnement", icon: CreditCard, category: "sider", keywords: "betaling stripe" },
-  { id: "utvikler", label: "Utvikler", href: "/dashboard/utvikler", icon: Code, category: "sider", keywords: "api nøkkel" },
-  { id: "innstillinger", label: "Innstillinger", href: "/dashboard/innstillinger", icon: Settings, category: "sider" },
-  { id: "mine-data", label: "Mine data", href: "/dashboard/mine-data", icon: DatabaseZap, category: "sider", keywords: "gdpr eksport slett" },
-  { id: "admin", label: "Admin", href: "/admin", icon: Shield, category: "sider", keywords: "admin dashboard" },
+const PAGES = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, keywords: "hjem oversikt" },
+  { href: "/dashboard/profil", label: "Min profil", icon: User, keywords: "riasec big five personlighet" },
+  { href: "/dashboard/veileder", label: "AI-veileder", icon: Sparkles, keywords: "chat ai assistent" },
+  { href: "/dashboard/karriere", label: "Karrierestiutforsker", icon: Compass, keywords: "yrke jobb utdanning" },
+  { href: "/dashboard/karrieregraf", label: "Karrieregraf", icon: GitBranch, keywords: "visualiser karrierevei" },
+  { href: "/dashboard/cv", label: "CV-builder", icon: ScrollText, keywords: "cv resume søknad" },
+  { href: "/dashboard/analyse", label: "Avansert analyse", icon: BarChart2, keywords: "personlighet statistikk" },
+  { href: "/dashboard/soknadscoach", label: "Søknads-coach", icon: ClipboardList, keywords: "søknad poeng sjanse" },
+  { href: "/dashboard/jobbmatch", label: "Jobbmatch", icon: Briefcase, keywords: "jobb stilling arbeid" },
+  { href: "/dashboard/studier", label: "Studiemestring", icon: BookOpen, keywords: "studie ects eksamen" },
+  { href: "/dashboard/karakterer", label: "Karakterer", icon: GraduationCap, keywords: "karakter snitt so-poeng" },
+  { href: "/dashboard/dokumenter", label: "Dokumenter", icon: FileText, keywords: "fil dokument" },
+  { href: "/dashboard/fremgang", label: "Fremgang & XP", icon: TrendingUp, keywords: "nivå achievement badge" },
+  { href: "/dashboard/abonnement", label: "Abonnement", icon: CreditCard, keywords: "betaling plan stripe" },
+  { href: "/dashboard/utvikler", label: "Utvikler", icon: Code, keywords: "api nøkkel utvikler" },
+  { href: "/dashboard/innstillinger", label: "Innstillinger", icon: Settings, keywords: "innstilling tema" },
+  { href: "/dashboard/mine-data", label: "Mine data", icon: DatabaseZap, keywords: "gdpr eksport slett" },
 ];
 
-const ACTION_ITEMS: CommandItem[] = [
-  { id: "action-chat", label: "Start ny chat med AI-veileder", href: "/dashboard/veileder", icon: MessageSquare, category: "handlinger" },
-  { id: "action-test", label: "Ta personlighetstest", href: "/dashboard/analyse", icon: Brain, category: "handlinger" },
-  { id: "action-profil", label: "Se min profil", href: "/dashboard/profil", icon: User, category: "handlinger" },
+const ACTIONS = [
+  { id: "chat", label: "Start ny chat", icon: MessageSquare, href: "/dashboard/veileder" },
+  { id: "test", label: "Ta personlighetstest", icon: User, href: "/dashboard" },
+  { id: "search", label: "Søk i karrierer", icon: Search, href: "/dashboard/karriere" },
 ];
-
-// ---------------------------------------------------------------------------
-// Recently visited (localStorage)
-// ---------------------------------------------------------------------------
 
 const RECENT_KEY = "suksess-recent-pages";
 const MAX_RECENT = 5;
@@ -84,38 +66,27 @@ const MAX_RECENT = 5;
 function getRecentPages(): string[] {
   if (typeof window === "undefined") return [];
   try {
-    const stored = localStorage.getItem(RECENT_KEY);
-    return stored ? JSON.parse(stored) : [];
+    return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
   } catch {
     return [];
   }
 }
 
 function addRecentPage(href: string) {
-  if (typeof window === "undefined") return;
-  try {
-    const recent = getRecentPages().filter((p) => p !== href);
-    recent.unshift(href);
-    localStorage.setItem(RECENT_KEY, JSON.stringify(recent.slice(0, MAX_RECENT)));
-  } catch {
-    // Ignore localStorage errors
-  }
+  const recent = getRecentPages().filter((h) => h !== href);
+  recent.unshift(href);
+  localStorage.setItem(RECENT_KEY, JSON.stringify(recent.slice(0, MAX_RECENT)));
 }
-
-// ---------------------------------------------------------------------------
-// Komponent
-// ---------------------------------------------------------------------------
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
-  // Keyboard shortcut: Cmd+K / Ctrl+K
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setOpen((prev) => !prev);
+        setOpen((v) => !v);
       }
     }
     document.addEventListener("keydown", onKeyDown);
@@ -131,146 +102,81 @@ export function CommandPalette() {
     [router]
   );
 
-  // Build recent items
   const recentHrefs = getRecentPages();
-  const recentItems: CommandItem[] = recentHrefs
-    .map((href) => PAGE_ITEMS.find((p) => p.href === href))
-    .filter(Boolean) as CommandItem[];
-
-  if (!open) return null;
+  const recentPages = recentHrefs
+    .map((href) => PAGES.find((p) => p.href === href))
+    .filter(Boolean);
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-start justify-center pt-[20vh]"
-      onClick={() => setOpen(false)}
-      role="presentation"
-    >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" aria-hidden="true" />
-
-      {/* Command panel */}
-      <div
-        className="relative w-full max-w-lg mx-4 glass-card rounded-2xl border border-border/50 bg-card shadow-2xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+    <>
+      {/* Search trigger button in header */}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="hidden sm:flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        aria-label="Åpne søk (Cmd+K)"
       >
-        <Command label="Kommandopalett" className="[&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-display [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-2">
-          <div className="flex items-center gap-2 border-b border-border/40 px-3">
-            <Search className="h-4 w-4 text-muted-foreground shrink-0" />
-            <Command.Input
-              placeholder="Søk etter sider, handlinger..."
-              className="flex-1 h-12 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-              autoFocus
-            />
-            <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground font-mono">
-              ESC
-            </kbd>
-          </div>
+        <Search className="h-3.5 w-3.5" aria-hidden="true" />
+        <span>Søk...</span>
+        <kbd className="ml-2 rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-mono">
+          ⌘K
+        </kbd>
+      </button>
 
-          <Command.List className="max-h-[320px] overflow-y-auto p-2">
-            <Command.Empty className="py-8 text-center text-sm text-muted-foreground">
-              Ingen treff. Prøv et annet søkeord.
-            </Command.Empty>
+      <CommandDialog open={open} onOpenChange={setOpen}>
+        <CommandInput placeholder="Søk etter sider, karrierer eller handlinger..." />
+        <CommandList>
+          <CommandEmpty>
+            Ingen treff funnet. Prøv et annet søkeord.
+          </CommandEmpty>
 
-            {/* Sist besøkt */}
-            {recentItems.length > 0 && (
-              <Command.Group heading="Sist besøkt">
-                {recentItems.map((item) => (
-                  <Command.Item
-                    key={`recent-${item.id}`}
-                    value={`recent ${item.label}`}
-                    onSelect={() => item.href && navigate(item.href)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm cursor-pointer data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground transition-colors"
+          {recentPages.length > 0 && (
+            <>
+              <CommandGroup heading="Nylig besøkt">
+                {recentPages.map((page) => page && (
+                  <CommandItem
+                    key={`recent-${page.href}`}
+                    value={`${page.label} ${page.keywords}`}
+                    onSelect={() => navigate(page.href)}
                   >
-                    <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <span>{item.label}</span>
-                  </Command.Item>
+                    <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
+                    {page.label}
+                  </CommandItem>
                 ))}
-              </Command.Group>
-            )}
+              </CommandGroup>
+              <CommandSeparator />
+            </>
+          )}
 
-            {/* Sider */}
-            <Command.Group heading="Sider">
-              {PAGE_ITEMS.map((item) => (
-                <Command.Item
-                  key={item.id}
-                  value={`${item.label} ${item.keywords || ""}`}
-                  onSelect={() => item.href && navigate(item.href)}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm cursor-pointer data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground transition-colors"
-                >
-                  <item.icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span>{item.label}</span>
-                </Command.Item>
-              ))}
-            </Command.Group>
+          <CommandGroup heading="Sider">
+            {PAGES.map((page) => (
+              <CommandItem
+                key={page.href}
+                value={`${page.label} ${page.keywords}`}
+                onSelect={() => navigate(page.href)}
+              >
+                <page.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                {page.label}
+              </CommandItem>
+            ))}
+          </CommandGroup>
 
-            {/* Handlinger */}
-            <Command.Group heading="Handlinger">
-              {ACTION_ITEMS.map((item) => (
-                <Command.Item
-                  key={item.id}
-                  value={`${item.label} ${item.keywords || ""}`}
-                  onSelect={() => item.href && navigate(item.href)}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm cursor-pointer data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground transition-colors"
-                >
-                  <Zap className="h-4 w-4 text-primary shrink-0" />
-                  <span>{item.label}</span>
-                </Command.Item>
-              ))}
-            </Command.Group>
-          </Command.List>
+          <CommandSeparator />
 
-          {/* Footer */}
-          <div className="border-t border-border/40 px-3 py-2 flex items-center justify-between text-[10px] text-muted-foreground">
-            <span>
-              <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono">↑↓</kbd>{" "}
-              navigere{" "}
-              <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono">↵</kbd>{" "}
-              åpne
-            </span>
-            <span>
-              <kbd className="rounded border border-border bg-muted px-1 py-0.5 font-mono">esc</kbd>{" "}
-              lukk
-            </span>
-          </div>
-        </Command>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Trigger-knapp for header
-// ---------------------------------------------------------------------------
-
-export function CommandPaletteTrigger() {
-  const [, setForceRender] = useState(0);
-
-  // Trigger re-render to open the palette via a custom event
-  useEffect(() => {
-    function handler() {
-      setForceRender((n) => n + 1);
-    }
-    window.addEventListener("open-command-palette", handler);
-    return () => window.removeEventListener("open-command-palette", handler);
-  }, []);
-
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        // Dispatch keyboard event to toggle
-        document.dispatchEvent(
-          new KeyboardEvent("keydown", { key: "k", metaKey: true })
-        );
-      }}
-      className="hidden sm:flex items-center gap-2 rounded-lg border border-border/60 bg-muted/50 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      aria-label="Åpne søk (Cmd+K)"
-    >
-      <Search className="h-3.5 w-3.5" />
-      <span>Søk...</span>
-      <kbd className="ml-2 rounded border border-border bg-background px-1 py-0.5 text-[10px] font-mono">
-        ⌘K
-      </kbd>
-    </button>
+          <CommandGroup heading="Handlinger">
+            {ACTIONS.map((action) => (
+              <CommandItem
+                key={action.id}
+                value={action.label}
+                onSelect={() => navigate(action.href)}
+              >
+                <action.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                {action.label}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
+    </>
   );
 }
