@@ -69,6 +69,10 @@ export function withAuth(handler: AuthHandler): PublicHandler {
 
     try {
       const token = header.split("Bearer ")[1];
+      if (!token) {
+        fail(res, "Ikke autentisert", 401);
+        return;
+      }
       const user = await admin.auth().verifyIdToken(token);
       await handler({ req, res, user });
     } catch {

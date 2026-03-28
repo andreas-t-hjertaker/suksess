@@ -53,7 +53,9 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
             <>
               {message.content ? (
                 <div className="prose-sm prose-neutral dark:prose-invert max-w-none [&_pre]:rounded-lg [&_pre]:bg-background/50 [&_pre]:p-2.5 [&_pre]:font-mono [&_pre]:text-xs [&_code]:rounded-md [&_code]:bg-background/50 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-xs [&_p]:m-0 [&_p]:leading-relaxed [&_ul]:m-0 [&_ul]:pl-4 [&_ol]:m-0 [&_ol]:pl-4 [&_li]:m-0">
-                  <Markdown>{message.content}</Markdown>
+                  <Markdown
+                  allowedElements={["p", "br", "strong", "em", "ul", "ol", "li", "code", "pre", "blockquote", "h1", "h2", "h3", "a", "span"]}
+                >{message.content}</Markdown>
                 </div>
               ) : null}
               {message.streaming && (

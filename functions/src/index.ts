@@ -284,7 +284,7 @@ const createApiKey = withAuth(async ({ user, req, res }) => {
     userId: user.uid,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     lastUsedAt: null,
-    expiresAt: null,
+    expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
     revoked: false,
   });
 
@@ -296,7 +296,7 @@ const createApiKey = withAuth(async ({ user, req, res }) => {
       prefix,
       createdAt: new Date(),
       lastUsedAt: null,
-      expiresAt: null,
+      expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
       revoked: false,
     },
   }, 201);
