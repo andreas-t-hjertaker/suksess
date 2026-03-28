@@ -809,7 +809,7 @@ export function OnboardingStepper() {
             <div className="space-y-4 py-2">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                  Styrketест
+                  Styrketest
                 </p>
                 <CardTitle className="mt-0.5 text-lg">Hva er du god på?</CardTitle>
                 <p className="text-xs text-muted-foreground mt-1">

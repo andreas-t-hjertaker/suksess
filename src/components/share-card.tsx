@@ -123,7 +123,7 @@ function CardShell({
   return (
     <div
       style={{
-        width: isStories ? 1080 : 1080,
+        width: 1080,
         height: isStories ? 1920 : 1080,
         background: `linear-gradient(135deg, ${grad.from}, ${grad.via}, ${grad.to})`,
         display: "flex",
@@ -442,7 +442,7 @@ function ProgressCard({
               fontWeight: 700,
             }}
           >
-            {streak} dager p&aring; rad!
+            {streak} dager på rad!
           </div>
         )}
       </div>
