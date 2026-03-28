@@ -18,6 +18,9 @@ export function LevelUpOverlay() {
   const [previousLevel, setPreviousLevel] = useState<string | null>(null);
   const [showOverlay, setShowOverlay] = useState(false);
   const [newLevel, setNewLevel] = useState<LevelDefinition | null>(null);
+  const [particleOffsets] = useState(() =>
+    Array.from({ length: 8 }, () => ({ x: (Math.random() - 0.5) * 200, y: (Math.random() - 0.5) * 200 }))
+  );
 
   useEffect(() => {
     const currentLevel = getLevelForXp(totalXp);
@@ -60,8 +63,8 @@ export function LevelUpOverlay() {
                   scale: 0,
                 }}
                 animate={{
-                  x: (Math.random() - 0.5) * 200,
-                  y: (Math.random() - 0.5) * 200,
+                  x: particleOffsets[i].x,
+                  y: particleOffsets[i].y,
                   opacity: 0,
                   scale: [0, 1.5, 0],
                 }}
