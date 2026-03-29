@@ -8,15 +8,24 @@
 // ─── Krisedeteksjon ──────────────────────────────────────────────────────────
 
 const CRISIS_PATTERNS = [
-  // Selvmordstanker / selvskading
-  /\b(ta livet mitt|ta mitt eget liv|vil dø|vil ikke leve|selvmord|suicid)\b/i,
-  /\b(kutte meg|skade meg selv|selvskading|cutting)\b/i,
-  /\b(orker ikke mer|gir opp alt|ingen vits å leve)\b/i,
-  // Overgrep
-  /\b(blir slått|blir mishandl|seksuelle? overgrep|voldtekt|tvunget til sex)\b/i,
-  /\b(noen skader meg|redd hjemme|vold hjemme)\b/i,
+  // Selvmordstanker / selvskading — inkl. norske bøyningsformer og ungdomsslang
+  /\b(ta livet mitt|ta mitt eget liv|vil dø|vil ikke leve|selvmord(?:e[t]?|ene)?|suicid(?:al|e)?)\b/i,
+  /\b(kutte meg|skade meg selv|selvskading|cutting|kutta meg|skadet meg)\b/i,
+  /\b(orker ikke mer|gir opp alt|ingen vits å leve|hva er vitsen|ferdig med alt)\b/i,
+  /\b(vil forsvinne|vil bare sove for alltid|håper jeg ikke våkner|vil ikke være her)\b/i,
+  // Indirekte uttrykk som ungdom bruker
+  /\b(ingen savner meg|alle hadde hatt det bedre uten meg|er en byrde)\b/i,
+  /\b(kms|kys|unalive|unaliving)\b/i,
+  // Overgrep og vold
+  /\b(blir slått|blir mishandl(?:a|et)?|seksuelle? overgrep|voldtekt|tvunget til sex)\b/i,
+  /\b(noen skader meg|redd hjemme|vold hjemme|slår meg|banker meg)\b/i,
+  /\b(tvinger meg|tar på meg|tafser)\b/i,
+  // Spiseforstyrrelser (vanlig blant 15-19)
+  /\b(spiser ikke|kaster opp med vilje|renser meg|bulimi|anoreksi)\b/i,
   // Engelske varianter (elever kan bytte språk)
-  /\b(kill myself|want to die|end my life|self[- ]?harm|suicide)\b/i,
+  /\b(kill myself|want to die|end my life|self[- ]?harm|suicide|suicidal)\b/i,
+  /\b(don'?t want to (?:be here|live|exist)|wanna die|rather be dead)\b/i,
+  /\b(sh|s\/h|sewerslide|sewer slide)\b/i,
 ];
 
 export type CrisisResult = {
@@ -33,11 +42,12 @@ const CRISIS_RESPONSE = `Jeg forstår at du har det vanskelig nå. Det er modig 
 **Chat/nett:**
 - **ung.no/radogrett** — Anonym chat med fagpersoner
 - **kirkens-sos.no** — Chat og telefon, døgnåpent
+- **rfrsk.no** — ROS (Rådgivning om spiseforstyrrelser)
 
 **På skolen:**
 - Snakk med helsesykepleier, rådgiver eller en voksen du stoler på
 
-Du er ikke alene, og det finnes hjelp. ❤️`;
+Du er ikke alene, og det finnes hjelp.`;
 
 export function detectCrisis(text: string): CrisisResult {
   const isCrisis = CRISIS_PATTERNS.some((pattern) => pattern.test(text));

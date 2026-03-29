@@ -40,22 +40,46 @@ const SAFETY_SETTINGS = [
 ];
 
 const CRISIS_PATTERNS = [
-  /\b(ta livet mitt|ta mitt eget liv|vil dø|vil ikke leve|selvmord|suicid)\b/i,
-  /\b(kutte meg|skade meg selv|selvskading|cutting)\b/i,
-  /\b(orker ikke mer|gir opp alt|ingen vits å leve)\b/i,
-  /\b(blir slått|blir mishandl|seksuelle? overgrep|voldtekt|tvunget til sex)\b/i,
-  /\b(noen skader meg|redd hjemme|vold hjemme)\b/i,
-  /\b(kill myself|want to die|end my life|self[- ]?harm|suicide)\b/i,
+  // Selvmordstanker / selvskading — inkl. norske bøyningsformer og ungdomsslang
+  /\b(ta livet mitt|ta mitt eget liv|vil dø|vil ikke leve|selvmord(?:e[t]?|ene)?|suicid(?:al|e)?)\b/i,
+  /\b(kutte meg|skade meg selv|selvskading|cutting|kutta meg|skadet meg)\b/i,
+  /\b(orker ikke mer|gir opp alt|ingen vits å leve|hva er vitsen|ferdig med alt)\b/i,
+  /\b(vil forsvinne|vil bare sove for alltid|håper jeg ikke våkner|vil ikke være her)\b/i,
+  // Indirekte uttrykk som ungdom bruker
+  /\b(ingen savner meg|alle hadde hatt det bedre uten meg|er en byrde)\b/i,
+  /\b(kms|kys|unalive|unaliving)\b/i,
+  // Overgrep og vold
+  /\b(blir slått|blir mishandl(?:a|et)?|seksuelle? overgrep|voldtekt|tvunget til sex)\b/i,
+  /\b(noen skader meg|redd hjemme|vold hjemme|slår meg|banker meg)\b/i,
+  /\b(tvinger meg|tar på meg|tafser)\b/i,
+  // Spiseforstyrrelser (vanlig blant 15-19)
+  /\b(spiser ikke|kaster opp med vilje|renser meg|bulimi|anoreksi)\b/i,
+  // Engelske varianter (elever kan bytte språk)
+  /\b(kill myself|want to die|end my life|self[- ]?harm|suicide|suicidal)\b/i,
+  /\b(don'?t want to (?:be here|live|exist)|wanna die|rather be dead)\b/i,
+  /\b(sh|s\/h|sewerslide|sewer slide)\b/i,
 ];
 
 const CRISIS_RESPONSE = `Jeg forstår at du har det vanskelig. Det finnes mennesker som kan hjelpe deg nå:
 - 116 111 — Alarmtelefonen for barn og unge (gratis, døgnåpent)
 - 116 123 — Mental Helse hjelpetelefonen
 - ung.no/radogrett — Anonym chat med fagpersoner
+- rfrsk.no — ROS (Rådgivning om spiseforstyrrelser)
 Snakk med helsesykepleier eller en voksen du stoler på. Du er ikke alene.`;
 
-function detectCrisis(text: string): boolean {
-  return CRISIS_PATTERNS.some((p) => p.test(text));
+const db = admin.firestore();
+
+function detectCrisis(text: string, userId?: string): boolean {
+  const matched = CRISIS_PATTERNS.some((p) => p.test(text));
+  if (matched) {
+    // Logg krise-treff for monitorering (uten brukerens tekst — GDPR)
+    db.collection("crisisAlerts").add({
+      userId: userId ?? "anonymous",
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      patternMatched: true,
+    }).catch((err) => { console.error("Feil ved krise-logging:", err); });
+  }
+  return matched;
 }
 
 const PII_PATTERNS: Array<{ name: string; pattern: RegExp }> = [
@@ -111,7 +135,6 @@ function estimateCost(inputTokens: number, outputTokens: number) {
 }
 
 // ─── Firestore cache ──────────────────────────────────────────────────────────
-const db = admin.firestore();
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 timer
 
 async function getL2Cache(clusterId: string, contentType: string): Promise<string | null> {
@@ -255,14 +278,7 @@ const serverChat = withValidation(chatSchema, async ({ user, data, res }) => {
   }
 
   // Safety: Krisedeteksjon — bypass LLM med predefinert svar
-  if (detectCrisis(message)) {
-    // Logg kriseflagg (kun metadata, ikke innhold — GDPR)
-    db.collection("llmLogs").add({
-      userId: user.uid,
-      feature: "chat",
-      crisisDetected: true,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    }).catch(() => {});
+  if (detectCrisis(message, user.uid)) {
     success(res, { reply: CRISIS_RESPONSE, usage: { inputTokens: 0, outputTokens: 0, costNok: 0 } });
     return;
   }
