@@ -183,7 +183,7 @@ async function callGemini(
     costNok,
     latencyMs,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  }).catch(() => {/* logging skal ikke stoppe svaret */});
+  }).catch((err) => { console.error("Feil ved LLM-logging:", err); });
 
   return { text, inputTokens, outputTokens, costNok };
 }

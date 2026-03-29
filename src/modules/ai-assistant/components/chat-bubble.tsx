@@ -55,6 +55,18 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
                 <div className="prose-sm prose-neutral dark:prose-invert max-w-none [&_pre]:rounded-lg [&_pre]:bg-background/50 [&_pre]:p-2.5 [&_pre]:font-mono [&_pre]:text-xs [&_code]:rounded-md [&_code]:bg-background/50 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-xs [&_p]:m-0 [&_p]:leading-relaxed [&_ul]:m-0 [&_ul]:pl-4 [&_ol]:m-0 [&_ol]:pl-4 [&_li]:m-0">
                   <Markdown
                   allowedElements={["p", "br", "strong", "em", "ul", "ol", "li", "code", "pre", "blockquote", "h1", "h2", "h3", "a", "span"]}
+                  skipHtml={true}
+                  components={{
+                    a: ({ href, children }) => (
+                      <a
+                        href={href?.startsWith("http") ? href : undefined}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {children}
+                      </a>
+                    ),
+                  }}
                 >{message.content}</Markdown>
                 </div>
               ) : null}
