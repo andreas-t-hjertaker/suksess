@@ -12,6 +12,8 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
+import { parseDocsWithId } from "@/lib/firebase/parse-doc";
+import { GradeSchema } from "@/types/schemas";
 import { useAuth } from "@/hooks/use-auth";
 import type { Grade } from "@/types/domain";
 
@@ -35,9 +37,7 @@ export function useGrades() {
     );
 
     const unsub = onSnapshot(q, (snap) => {
-      setGrades(
-        snap.docs.map((d) => ({ id: d.id, ...(d.data() as Grade) }))
-      );
+      setGrades(parseDocsWithId(snap.docs, GradeSchema) as GradeWithId[]);
       setLoading(false);
     });
 

@@ -11,6 +11,8 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
+import { parseDoc } from "@/lib/firebase/parse-doc";
+import { XpDocSchema } from "@/types/schemas";
 import { useAuth } from "@/hooks/use-auth";
 import {
   getLevelForXp,
@@ -54,7 +56,7 @@ export function useXp() {
       doc(db, "users", firebaseUser.uid, "gamification", "xp"),
       (snap) => {
         if (snap.exists()) {
-          setXpDoc(snap.data() as XpDoc);
+          setXpDoc(parseDoc(snap, XpDocSchema) as XpDoc ?? { totalXp: 0, earnedAchievements: [], streak: 0, lastLoginDate: null, updatedAt: null });
         } else {
           setXpDoc({ totalXp: 0, earnedAchievements: [], streak: 0, lastLoginDate: null, updatedAt: null });
         }
@@ -91,7 +93,7 @@ export function useXp() {
       if (!achievement) return;
 
       const ref = doc(db, "users", firebaseUser.uid, "gamification", "xp");
-      const current = (await getDoc(ref)).data() as XpDoc | undefined;
+      const current = parseDoc(await getDoc(ref), XpDocSchema) as XpDoc | undefined;
       const already = current?.earnedAchievements ?? [];
 
       // Sjekk mot fersk Firestore-data for å unngå duplikater
@@ -116,7 +118,7 @@ export function useXp() {
     const today = new Date().toISOString().split("T")[0];
     const ref = doc(db, "users", firebaseUser.uid, "gamification", "xp");
     const snap = await getDoc(ref);
-    const data = snap.data() as XpDoc | undefined;
+    const data = parseDoc(snap, XpDocSchema) as XpDoc | undefined;
 
     if (data?.lastLoginDate === today) return; // Allerede sjekket inn i dag
 
