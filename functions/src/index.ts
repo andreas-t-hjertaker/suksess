@@ -151,7 +151,12 @@ const createPortal = withAuth(async ({ user, res, req }) => {
 /** POST /stripe/webhook — Stripe webhook-handler (offentlig, men verifisert) */
 const handleWebhook = async ({ req, res }: RouteContext) => {
   const sig = req.headers["stripe-signature"] as string;
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    console.error("STRIPE_WEBHOOK_SECRET er ikke konfigurert");
+    fail(res, "Webhook-konfigurasjon mangler", 500);
+    return;
+  }
 
   let event: Stripe.Event;
   try {

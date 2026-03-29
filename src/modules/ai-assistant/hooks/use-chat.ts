@@ -30,6 +30,7 @@ export function useChatSession(
   const chatRef = useRef<FirebaseChatSession | null>(null);
   const contextRef = useRef(context);
   const conversationIdRef = useRef<string | null>(null);
+  const creatingConversationRef = useRef<Promise<string> | null>(null);
 
   // Debounced Firestore-persistering etter hver melding
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -41,13 +42,18 @@ export function useChatSession(
     persistTimerRef.current = setTimeout(async () => {
       try {
         if (!conversationIdRef.current) {
-          const firstUser = msgs.find((m) => m.role === "user");
-          if (!firstUser) return;
-          conversationIdRef.current = await createConversation(uid, firstUser.content);
+          // Beskytt mot race condition ved raske meldinger
+          if (!creatingConversationRef.current) {
+            const firstUser = msgs.find((m) => m.role === "user");
+            if (!firstUser) return;
+            creatingConversationRef.current = createConversation(uid, firstUser.content);
+          }
+          conversationIdRef.current = await creatingConversationRef.current;
+          creatingConversationRef.current = null;
         }
         await saveConversationMessages(uid, conversationIdRef.current, msgs);
       } catch {
-        // Silently fail — logging er sekundært til brukeropplevelse
+        creatingConversationRef.current = null;
       }
     }, 1500);
   }
