@@ -14,6 +14,8 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "./firestore";
+import { parseDoc } from "./parse-doc";
+import { UserDocSchema, UserProfileSchema } from "@/types/schemas";
 import type { UserDoc, UserProfile, TestResult, Grade, Conversation } from "@/types/domain";
 
 // ---------------------------------------------------------------------------
@@ -22,8 +24,7 @@ import type { UserDoc, UserProfile, TestResult, Grade, Conversation } from "@/ty
 
 export async function getUserDoc(userId: string): Promise<UserDoc | null> {
   const snap = await getDoc(doc(db, "users", userId));
-  if (!snap.exists()) return null;
-  return snap.data() as UserDoc;
+  return parseDoc(snap, UserDocSchema) as UserDoc | null;
 }
 
 export async function createUserDoc(
@@ -52,7 +53,7 @@ export function subscribeToUserDoc(
   callback: (user: UserDoc | null) => void
 ): Unsubscribe {
   return onSnapshot(doc(db, "users", userId), (snap) => {
-    callback(snap.exists() ? (snap.data() as UserDoc) : null);
+    callback(parseDoc(snap, UserDocSchema) as UserDoc | null);
   });
 }
 
@@ -62,8 +63,7 @@ export function subscribeToUserDoc(
 
 export async function getUserProfile(userId: string): Promise<UserProfile | null> {
   const snap = await getDoc(doc(db, "profiles", userId));
-  if (!snap.exists()) return null;
-  return snap.data() as UserProfile;
+  return parseDoc(snap, UserProfileSchema) as UserProfile | null;
 }
 
 export async function saveUserProfile(
@@ -86,7 +86,7 @@ export function subscribeToUserProfile(
   callback: (profile: UserProfile | null) => void
 ): Unsubscribe {
   return onSnapshot(doc(db, "profiles", userId), (snap) => {
-    callback(snap.exists() ? (snap.data() as UserProfile) : null);
+    callback(parseDoc(snap, UserProfileSchema) as UserProfile | null);
   });
 }
 
