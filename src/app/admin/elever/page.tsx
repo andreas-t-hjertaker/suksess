@@ -4,7 +4,7 @@
  * Rådgiverportal: Elevliste med frafallsrisiko og oppfølgingsbehov (#54)
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import {
   collection,
@@ -56,12 +56,8 @@ export default function ElevListePage() {
   const [search, setSearch] = useState("");
   const [riskFilter, setRiskFilter] = useState<DropoutRiskLevel | "all">("all");
 
-  useEffect(() => {
+  const loadStudents = useCallback(async () => {
     if (!user) return;
-    loadStudents();
-  }, [user]);
-
-  async function loadStudents() {
     setLoading(true);
     try {
       // Hent brukere i samme tenant
@@ -94,7 +90,11 @@ export default function ElevListePage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [user]);
+
+  useEffect(() => {
+    loadStudents();
+  }, [loadStudents]);
 
   const filtered = useMemo(() => {
     let result = students;

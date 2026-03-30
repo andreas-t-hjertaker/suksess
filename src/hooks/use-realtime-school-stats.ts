@@ -24,6 +24,7 @@ export type SchoolStatsState = {
  */
 export function useRealtimeSchoolStats(): SchoolStatsState {
   const { firebaseUser } = useAuth();
+  const tenantId = (firebaseUser as { tenantId?: string } | null)?.tenantId ?? null;
   const [state, setState] = useState<SchoolStatsState>({
     stats: null,
     loading: true,
@@ -31,7 +32,6 @@ export function useRealtimeSchoolStats(): SchoolStatsState {
   });
 
   useEffect(() => {
-    const tenantId = (firebaseUser as { tenantId?: string } | null)?.tenantId;
     if (!tenantId) {
       setState({ stats: null, loading: false, error: null });
       return;
@@ -54,7 +54,7 @@ export function useRealtimeSchoolStats(): SchoolStatsState {
     );
 
     return unsub;
-  }, [(firebaseUser as { tenantId?: string } | null)?.tenantId]);
+  }, [tenantId]);
 
   return state;
 }
