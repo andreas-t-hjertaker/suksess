@@ -72,6 +72,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="nb" suppressHydrationWarning>
+      <head>
+        <meta
+          httpEquiv="Content-Security-Policy"
+          content="default-src 'self'; script-src 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com https://www.google.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.weaviate.network wss://*.firebaseio.com https://europe-west1-suksess-842ed.cloudfunctions.net https://firebaseinstallations.googleapis.com; frame-src 'self' https://*.firebaseapp.com https://js.stripe.com https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self'"
+        />
+      </head>
       <body
         className={`${plusJakartaSans.variable} ${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
