@@ -13,16 +13,34 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogOut } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { AiAssistant } from "@/modules/ai-assistant";
+import dynamic from "next/dynamic";
 import { NotificationBell } from "@/components/notification-bell";
 import { useImplicitProfiling } from "@/hooks/use-implicit-profiling";
-import { OnboardingStepper } from "@/components/onboarding-stepper";
 import { PageTransition } from "@/components/motion";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { CommandPalette } from "@/components/command-palette";
 import { ScrollToTop } from "@/components/scroll-to-top";
-import { LevelUpOverlay } from "@/components/level-up-overlay";
-import { BadgeToastListener } from "@/components/badge-toast";
+
+// Lazy-loaded komponenter — reduserer initial bundle
+const AiAssistant = dynamic(
+  () => import("@/modules/ai-assistant").then((m) => ({ default: m.AiAssistant })),
+  { ssr: false }
+);
+const OnboardingStepper = dynamic(
+  () => import("@/components/onboarding-stepper").then((m) => ({ default: m.OnboardingStepper })),
+  { ssr: false }
+);
+const CommandPalette = dynamic(
+  () => import("@/components/command-palette").then((m) => ({ default: m.CommandPalette })),
+  { ssr: false }
+);
+const LevelUpOverlay = dynamic(
+  () => import("@/components/level-up-overlay").then((m) => ({ default: m.LevelUpOverlay })),
+  { ssr: false }
+);
+const BadgeToastListener = dynamic(
+  () => import("@/components/badge-toast").then((m) => ({ default: m.BadgeToastListener })),
+  { ssr: false }
+);
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();

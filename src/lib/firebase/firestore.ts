@@ -1,5 +1,6 @@
 import {
   getFirestore,
+  enableMultiTabIndexedDbPersistence,
   collection,
   doc,
   getDocs,
@@ -22,6 +23,13 @@ import {
 import { app } from "./config";
 
 export const db = getFirestore(app);
+
+// Aktiver offline persistence for raskere lasting og offline-støtte
+if (typeof window !== "undefined") {
+  enableMultiTabIndexedDbPersistence(db).catch(() => {
+    // Feiler stille hvis nettleseren ikke støtter det eller annen tab allerede har det
+  });
+}
 
 // --- Eksisterende hjelpefunksjoner ---
 

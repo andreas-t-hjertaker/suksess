@@ -5,6 +5,7 @@ import {
   collection,
   query,
   orderBy,
+  limit,
   onSnapshot,
   doc,
   deleteDoc,
@@ -33,7 +34,8 @@ export function useGrades() {
 
     const q = query(
       collection(db, "users", firebaseUser.uid, "grades"),
-      orderBy("year", "desc")
+      orderBy("year", "desc"),
+      limit(100)
     );
 
     const unsub = onSnapshot(q, (snap) => {
