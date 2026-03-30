@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  turbopack: {
+    root: ".",
+  },
   // Typescript og ESLint sjekkes i CI
   typescript: {
     ignoreBuildErrors: false,
