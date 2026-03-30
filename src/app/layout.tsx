@@ -12,6 +12,7 @@ import { PersonalityProvider } from "@/components/personality-provider";
 import { SkipLink } from "@/components/skip-link";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { AppCheckProvider } from "@/components/app-check-provider";
+import { ErrorReporter } from "@/components/error-reporter";
 
 const plusJakartaSans = localFont({
   src: [
@@ -89,6 +90,7 @@ export default function RootLayout({
         />
         <ServiceWorkerRegistration />
         <AppCheckProvider />
+        <ErrorReporter />
         <ThemeProvider>
           <AuthProvider>
             <PersonalityProvider>
