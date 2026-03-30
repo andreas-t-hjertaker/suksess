@@ -12,10 +12,15 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-  throw new Error(
-    "Firebase-konfigurasjon mangler. Sett NEXT_PUBLIC_FIREBASE_API_KEY og NEXT_PUBLIC_FIREBASE_PROJECT_ID i .env.local"
-  );
+// Ved build-time (SSG) er env vars ikke tilgjengelige — bruk placeholder
+// som aldri blir brukt runtime (klient-side har alltid env vars satt)
+const isBuildTime =
+  typeof window === "undefined" &&
+  (!firebaseConfig.apiKey || !firebaseConfig.projectId);
+
+if (isBuildTime) {
+  firebaseConfig.apiKey = "build-placeholder";
+  firebaseConfig.projectId = "build-placeholder";
 }
 
 // Unngå re-initialisering ved hot reload

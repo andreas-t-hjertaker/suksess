@@ -10,6 +10,15 @@ admin.initializeApp();
 
 const db = admin.firestore();
 
+// Tillatte CORS-origins (produksjon + dev)
+const ALLOWED_ORIGINS = [
+  "https://suksess.no",
+  "https://www.suksess.no",
+  "https://suksess-842ed.web.app",
+  "https://suksess-842ed.firebaseapp.com",
+  /^http:\/\/localhost(:\d+)?$/,
+];
+
 // ============================================================
 // Zod-skjemaer
 // ============================================================
@@ -28,11 +37,11 @@ const getRoot = ({ res }: RouteContext) => {
   success(res, { message: "Suksess API", version: "1.0.0" });
 };
 
-/** GET /collections — List Firestore-samlinger (offentlig) */
-const getCollections = async ({ res }: RouteContext) => {
+/** GET /collections — List Firestore-samlinger (kun admin) */
+const getCollections = withAdmin(async ({ res }) => {
   const collections = await db.listCollections();
   success(res, { collections: collections.map((c) => c.id) });
-};
+});
 
 /** GET /me — Brukerinfo (krever auth) */
 const getMe = withAuth(async ({ user, res }) => {
@@ -727,7 +736,7 @@ const routes: Route[] = [
  * Health check / API-status
  */
 export const health = onRequest(
-  { region: "europe-west1", cors: true },
+  { region: "europe-west1", cors: ALLOWED_ORIGINS },
   (_req, res) => {
     res.json({
       status: "ok",
@@ -746,7 +755,7 @@ export const health = onRequest(
  * Hoved-API med stibasert ruting og middleware
  */
 export const api = onRequest(
-  { region: "europe-west1", cors: true, invoker: "public" },
+  { region: "europe-west1", cors: ALLOWED_ORIGINS, invoker: "public" },
   async (req, res) => {
     // Rate limiting
     if (!apiRateLimit({ req, res })) return;

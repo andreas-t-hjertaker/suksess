@@ -22,6 +22,15 @@ import { withAdmin } from "./middleware";
 
 const db = admin.firestore();
 
+// Tillatte CORS-origins (produksjon + dev)
+const ALLOWED_ORIGINS = [
+  "https://suksess.no",
+  "https://www.suksess.no",
+  "https://suksess-842ed.web.app",
+  "https://suksess-842ed.firebaseapp.com",
+  /^http:\/\/localhost(:\d+)?$/,
+];
+
 // Weaviate API-nøkkel fra Firebase Secret Manager
 const WEAVIATE_API_KEY = defineSecret("WEAVIATE_API_KEY");
 const WEAVIATE_URL = defineSecret("WEAVIATE_URL");
@@ -211,7 +220,7 @@ export const weaviateIndexScheduled = onSchedule(
 export const weaviateSearch = onRequest(
   {
     region: "europe-west1",
-    cors: true,
+    cors: ALLOWED_ORIGINS,
     invoker: "public",
     secrets: [WEAVIATE_API_KEY, WEAVIATE_URL],
   },

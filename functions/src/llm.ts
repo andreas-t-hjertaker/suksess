@@ -13,6 +13,15 @@ import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
 import { withValidation, success, fail } from "./middleware";
 import { z } from "zod";
+
+// Tillatte CORS-origins (produksjon + dev)
+const ALLOWED_ORIGINS = [
+  "https://suksess.no",
+  "https://www.suksess.no",
+  "https://suksess-842ed.web.app",
+  "https://suksess-842ed.firebaseapp.com",
+  /^http:\/\/localhost(:\d+)?$/,
+];
 import { VertexAI, HarmCategory, HarmBlockThreshold } from "@google-cloud/vertexai";
 
 // ─── Vertex AI (server-side, europe-west1) ───────────────────────────────────
@@ -321,7 +330,7 @@ const serverChat = withValidation(chatSchema, async ({ user, data, res }) => {
 export const llmApi = onRequest(
   {
     region: "europe-west1",
-    cors: true,
+    cors: ALLOWED_ORIGINS,
     invoker: "public",
     memory: "512MiB",
     timeoutSeconds: 60,
