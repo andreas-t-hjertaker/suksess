@@ -461,13 +461,27 @@ const disableAdminUser = withAdmin(async ({ req, res }) => {
   success(res, { uid, disabled: !!disabled });
 });
 
-/** DELETE /admin/users/:uid — Slett bruker og all data */
-const deleteAdminUser = withAdmin(async ({ req, res }) => {
+/** DELETE /admin/users/:uid — Slett bruker og all data (kun superadmin) */
+const deleteAdminUser = withAdmin(async ({ user, req, res }) => {
+  // Kun superadmin kan slette brukere
+  const callerRecord = await admin.auth().getUser(user.uid);
+  const callerRole = callerRecord.customClaims?.role;
+  if (callerRole !== "superadmin") {
+    fail(res, "Kun superadmin kan slette brukere", 403);
+    return;
+  }
+
   const parts = req.path.split("/");
   const uid = parts[parts.length - 1];
 
   if (!uid) {
     fail(res, "uid er påkrevd");
+    return;
+  }
+
+  // Forhindre at man sletter seg selv
+  if (uid === user.uid) {
+    fail(res, "Du kan ikke slette din egen konto via admin", 400);
     return;
   }
 

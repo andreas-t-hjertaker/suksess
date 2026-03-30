@@ -135,33 +135,58 @@ type RateLimitStore = {
   daily: number[];
 };
 
-const rateLimitStore: RateLimitStore = { hourly: [], daily: [] };
+const RATE_LIMIT_KEY = "suksess_rate_limit";
+
+function loadRateLimitStore(): RateLimitStore {
+  if (typeof window === "undefined") return { hourly: [], daily: [] };
+  try {
+    const stored = localStorage.getItem(RATE_LIMIT_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {
+    // localStorage utilgjengelig eller korrupt
+  }
+  return { hourly: [], daily: [] };
+}
+
+function saveRateLimitStore(store: RateLimitStore): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(store));
+  } catch {
+    // localStorage utilgjengelig
+  }
+}
 
 export function checkRateLimit(): { allowed: boolean; message: string | null } {
   const now = Date.now();
   const oneHourAgo = now - 60 * 60 * 1000;
   const oneDayAgo = now - 24 * 60 * 60 * 1000;
 
-  // Rens gamle timestamps
-  rateLimitStore.hourly = rateLimitStore.hourly.filter((t) => t > oneHourAgo);
-  rateLimitStore.daily = rateLimitStore.daily.filter((t) => t > oneDayAgo);
+  const store = loadRateLimitStore();
 
-  if (rateLimitStore.hourly.length >= MESSAGE_LIMIT_PER_HOUR) {
+  // Rens gamle timestamps
+  store.hourly = store.hourly.filter((t) => t > oneHourAgo);
+  store.daily = store.daily.filter((t) => t > oneDayAgo);
+
+  if (store.hourly.length >= MESSAGE_LIMIT_PER_HOUR) {
+    saveRateLimitStore(store);
     return {
       allowed: false,
       message: `Du har nådd grensen på ${MESSAGE_LIMIT_PER_HOUR} meldinger per time. Prøv igjen litt senere.`,
     };
   }
 
-  if (rateLimitStore.daily.length >= MESSAGE_LIMIT_PER_DAY) {
+  if (store.daily.length >= MESSAGE_LIMIT_PER_DAY) {
+    saveRateLimitStore(store);
     return {
       allowed: false,
       message: `Du har nådd grensen på ${MESSAGE_LIMIT_PER_DAY} meldinger per dag. Prøv igjen i morgen.`,
     };
   }
 
-  rateLimitStore.hourly.push(now);
-  rateLimitStore.daily.push(now);
+  store.hourly.push(now);
+  store.daily.push(now);
+  saveRateLimitStore(store);
   return { allowed: true, message: null };
 }
 
