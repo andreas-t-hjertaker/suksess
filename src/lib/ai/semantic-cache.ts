@@ -30,7 +30,7 @@ import { db } from "@/lib/firebase/firestore";
 
 /** Generer 3-gram-sett fra en streng */
 function ngrams(text: string, n = 3): Set<string> {
-  const normalized = text.toLowerCase().replace(/[^a-zæøå0-9\s]/g, "").trim();
+  const normalized = text.toLowerCase().replace(/[^a-zæøå0-9\s+#.]/g, "").trim();
   const grams = new Set<string>();
   for (let i = 0; i <= normalized.length - n; i++) {
     grams.add(normalized.slice(i, i + n));

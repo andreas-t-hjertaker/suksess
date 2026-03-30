@@ -44,12 +44,20 @@ export type CacheEntry = {
 // Nøkkel-hashing (enkel, ikke kryptografisk)
 // ---------------------------------------------------------------------------
 
-export function hashCacheKey(input: string): string {
+export async function hashCacheKey(input: string): Promise<string> {
+  if (typeof crypto !== "undefined" && crypto.subtle) {
+    const encoded = new TextEncoder().encode(input);
+    const buffer = await crypto.subtle.digest("SHA-256", encoded);
+    return Array.from(new Uint8Array(buffer))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+  }
+  // Fallback for miljøer uten crypto.subtle
   let hash = 0;
   for (let i = 0; i < input.length; i++) {
     const char = input.charCodeAt(i);
     hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32bit integer
+    hash = hash & hash;
   }
   return Math.abs(hash).toString(36);
 }
@@ -206,7 +214,7 @@ export async function getCachedContent(
   clusterId?: string | null,
   contentType?: string
 ): Promise<string | null> {
-  const key = hashCacheKey(prompt);
+  const key = await hashCacheKey(prompt);
 
   // L3 er raskest — sjekk først
   const l3 = getL3Cache(key);
@@ -239,7 +247,7 @@ export async function cacheContent(
   content: string,
   level: CacheLevel = 3
 ): Promise<void> {
-  const key = hashCacheKey(prompt);
+  const key = await hashCacheKey(prompt);
 
   // Alltid cache i L3
   setL3Cache(key, content);

@@ -54,6 +54,7 @@ export async function saveConversationMessages(
 ): Promise<void> {
   const ref = doc(db, "users", userId, "conversations", conversationId);
   const serialized = messages.map((m) => ({
+    id: m.id,
     role: m.role,
     content: m.content,
     timestamp: m.timestamp?.toISOString() ?? new Date().toISOString(),
@@ -76,13 +77,14 @@ export async function getConversationMessages(
 
   const data = snap.data();
   const messages = (data.messages ?? []) as Array<{
+    id?: string;
     role: "user" | "assistant";
     content: string;
     timestamp?: string;
   }>;
 
   return messages.map((m, i) => ({
-    id: `restored_${i}`,
+    id: m.id ?? `restored_${i}`,
     role: m.role,
     content: m.content,
     timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
