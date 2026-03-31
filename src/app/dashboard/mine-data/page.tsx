@@ -51,8 +51,12 @@ async function exportUserData(userId: string) {
     bruker: `users/${userId}`,
   };
 
-  // Subcollections
-  const subcols = ["grades", "testResults", "conversations", "notifications", "gamification", "studier", "jobbmatch", "soknadscoach"];
+  // Subcollections under users/{userId}
+  const subcols = [
+    "grades", "testResults", "conversations", "notifications",
+    "gamification", "achievements", "studier", "jobbmatch",
+    "soknadscoach", "cv", "documents",
+  ];
 
   for (const [key, path] of Object.entries(paths)) {
     const snap = await getDoc(doc(db, path));
@@ -60,8 +64,25 @@ async function exportUserData(userId: string) {
   }
 
   for (const col of subcols) {
-    const snaps = await getDocs(query(collection(db, "users", userId, col)));
-    result[col] = snaps.docs.map((d) => ({ id: d.id, ...d.data() }));
+    try {
+      const snaps = await getDocs(query(collection(db, "users", userId, col)));
+      if (!snaps.empty) {
+        result[col] = snaps.docs.map((d) => ({ id: d.id, ...d.data() }));
+      }
+    } catch {
+      // Subcollection finnes kanskje ikke
+    }
+  }
+
+  // Hent AI-beslutningslogg og feedback (GDPR Art. 15 — innsyn i automatiserte avgjørelser)
+  try {
+    const feedbackSnaps = await getDocs(query(collection(db, "chatFeedback")));
+    const userFeedback = feedbackSnaps.docs
+      .filter((d) => d.data().userIdHash) // Anonymisert — kan ikke filtreres per bruker uten hash
+      .map((d) => ({ id: d.id, ...d.data() }));
+    if (userFeedback.length > 0) result["chatFeedback"] = userFeedback;
+  } catch {
+    // Collection finnes kanskje ikke
   }
 
   return result;
@@ -70,7 +91,8 @@ async function exportUserData(userId: string) {
 async function deleteAllUserData(userId: string) {
   const subcols = [
     "grades", "testResults", "conversations", "apiKeys/keys",
-    "notifications", "gamification", "studier", "jobbmatch", "soknadscoach", "cv",
+    "notifications", "gamification", "achievements", "studier",
+    "jobbmatch", "soknadscoach", "cv", "documents",
   ];
 
   for (const sub of subcols) {
@@ -143,6 +165,18 @@ const DATA_LAYERS = [
     title: "Søknadscoach og jobbmatch",
     desc: "Favorittmarkerte studieprogram og stillinger",
     collection: "soknadscoach/jobbmatch (subcollections)",
+  },
+  {
+    icon: MessageCircle,
+    title: "AI-feedback",
+    desc: "Dine tilbakemeldinger på AI-svar (thumbs up/down, rapporter feil)",
+    collection: "chatFeedback",
+  },
+  {
+    icon: ShieldCheck,
+    title: "AI-beslutningslogg",
+    desc: "Logg over AI-anbefalinger gjort for deg (EU AI Act Art. 12)",
+    collection: "aiDecisionLog",
   },
 ];
 
