@@ -9,8 +9,8 @@
 
 const CRISIS_PATTERNS = [
   // Selvmordstanker / selvskading — inkl. norske bøyningsformer og ungdomsslang
-  /\b(ta livet mitt|ta mitt eget liv|vil dø|vil ikke leve|selvmord(?:e[t]?|ene)?|suicid(?:al|e)?)\b/i,
-  /\b(kutte meg|skade meg selv|selvskading|cutting|kutta meg|skadet meg)\b/i,
+  /\b(ta livet mitt|ta mitt eget liv|vil dø|vil ikke leve|selvmord(?:e[t]?|ene)?|suicid(?:al|e)?)/i,
+  /\b(kutte(?:r)? meg|skade meg selv|selvskading|cutting|kutta meg|skadet meg)\b/i,
   /\b(orker ikke mer|gir opp alt|ingen vits å leve|hva er vitsen|ferdig med alt)\b/i,
   /\b(vil forsvinne|vil bare sove for alltid|håper jeg ikke våkner|vil ikke være her)\b/i,
   // Indirekte uttrykk som ungdom bruker
