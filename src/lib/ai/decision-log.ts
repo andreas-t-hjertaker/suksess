@@ -131,3 +131,52 @@ export async function reportAiError(params: {
     reason: stripPiiAndTruncate(params.reason),
   } satisfies AiErrorReport);
 }
+
+// ---------------------------------------------------------------------------
+// Chat-feedback (thumbs up/down) — Issue #105
+// ---------------------------------------------------------------------------
+
+const CHAT_FEEDBACK_COLLECTION = "chatFeedback";
+
+export type FeedbackRating = "positive" | "negative";
+export type FeedbackReason =
+  | "feil_info"
+  | "ikke_relevant"
+  | "uforstaelig"
+  | "annet";
+
+export interface ChatFeedbackEntry {
+  userIdHash: string;
+  timestamp: ReturnType<typeof serverTimestamp>;
+  messageId: string;
+  rating: FeedbackRating;
+  reason: FeedbackReason | null;
+  comment: string | null;
+}
+
+/**
+ * Lagre feedback (thumbs up/down) på en AI-chatmelding.
+ * Brukes til iterativ forbedring av AI-kvalitet.
+ */
+export async function submitChatFeedback(params: {
+  userId: string;
+  messageId: string;
+  rating: FeedbackRating;
+  reason?: FeedbackReason;
+  comment?: string;
+}): Promise<void> {
+  try {
+    const userIdHash = await hashUserId(params.userId);
+
+    await addDoc(collection(db, CHAT_FEEDBACK_COLLECTION), {
+      userIdHash,
+      timestamp: serverTimestamp(),
+      messageId: params.messageId,
+      rating: params.rating,
+      reason: params.reason ?? null,
+      comment: params.comment ? stripPiiAndTruncate(params.comment, 300) : null,
+    } satisfies ChatFeedbackEntry);
+  } catch {
+    console.warn("[Chat Feedback] Kunne ikke lagre feedback");
+  }
+}

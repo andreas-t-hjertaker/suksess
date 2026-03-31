@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Bot, Flag } from "lucide-react";
+import { Bot, Flag, ThumbsUp, ThumbsDown } from "lucide-react";
 import Markdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { reportAiError } from "@/lib/ai/decision-log";
+import { reportAiError, submitChatFeedback, type FeedbackReason } from "@/lib/ai/decision-log";
 import type { ChatMessage } from "../types";
 
 function ReportButton({
@@ -83,6 +83,103 @@ function ReportButton({
       <Flag className="h-2.5 w-2.5" aria-hidden="true" />
       Rapporter feil
     </button>
+  );
+}
+
+const NEGATIVE_REASONS: { value: FeedbackReason; label: string }[] = [
+  { value: "feil_info", label: "Feil informasjon" },
+  { value: "ikke_relevant", label: "Ikke relevant" },
+  { value: "uforstaelig", label: "Uforståelig" },
+  { value: "annet", label: "Annet" },
+];
+
+function FeedbackButtons({
+  message,
+  userId,
+}: {
+  message: ChatMessage;
+  userId?: string;
+}) {
+  const [rating, setRating] = useState<"positive" | "negative" | null>(null);
+  const [showReasons, setShowReasons] = useState(false);
+
+  const handlePositive = useCallback(async () => {
+    if (!userId || rating) return;
+    setRating("positive");
+    await submitChatFeedback({
+      userId,
+      messageId: message.id,
+      rating: "positive",
+    });
+  }, [userId, rating, message.id]);
+
+  const handleNegative = useCallback(() => {
+    if (!userId || rating) return;
+    setShowReasons(true);
+  }, [userId, rating]);
+
+  const handleNegativeWithReason = useCallback(
+    async (reason: FeedbackReason) => {
+      if (!userId) return;
+      setRating("negative");
+      setShowReasons(false);
+      await submitChatFeedback({
+        userId,
+        messageId: message.id,
+        rating: "negative",
+        reason,
+      });
+    },
+    [userId, message.id]
+  );
+
+  if (rating) {
+    return (
+      <span className="text-[10px] text-muted-foreground">
+        {rating === "positive" ? "👍 Takk!" : "👎 Takk for tilbakemeldingen"}
+      </span>
+    );
+  }
+
+  if (showReasons) {
+    return (
+      <div className="flex flex-wrap gap-1">
+        {NEGATIVE_REASONS.map((r) => (
+          <button
+            key={r.value}
+            className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            onClick={() => handleNegativeWithReason(r.value)}
+          >
+            {r.label}
+          </button>
+        ))}
+        <button
+          className="text-[10px] text-muted-foreground hover:text-foreground"
+          onClick={() => setShowReasons(false)}
+        >
+          Avbryt
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        className="inline-flex items-center justify-center h-5 w-5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        onClick={handlePositive}
+        aria-label="Nyttig svar"
+      >
+        <ThumbsUp className="h-2.5 w-2.5" aria-hidden="true" />
+      </button>
+      <button
+        className="inline-flex items-center justify-center h-5 w-5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        onClick={handleNegative}
+        aria-label="Ikke nyttig svar"
+      >
+        <ThumbsDown className="h-2.5 w-2.5" aria-hidden="true" />
+      </button>
+    </div>
   );
 }
 
@@ -182,6 +279,8 @@ export function ChatBubble({
         {/* Handlinger og tidsstempel under AI-meldinger */}
         {!isUser && !message.streaming && message.content && (
           <div className="flex items-center gap-2 px-1">
+            <FeedbackButtons message={message} userId={userId} />
+            <span className="text-muted-foreground/30" aria-hidden="true">·</span>
             <ReportButton message={message} userId={userId} />
           </div>
         )}
