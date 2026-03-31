@@ -725,8 +725,9 @@ export function OnboardingStepper() {
                 </Button>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Visningsnavn</label>
+                <label htmlFor="display-name" className="text-sm font-medium">Visningsnavn</label>
                 <Input
+                  id="display-name"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   placeholder="Ditt navn"

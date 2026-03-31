@@ -180,16 +180,18 @@ export default function CounselorOnboardingPage() {
                 </div>
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <label className="text-sm font-medium">Skolens navn <span className="text-destructive">*</span></label>
+                    <label htmlFor="school-name" className="text-sm font-medium">Skolens navn <span className="text-destructive">*</span></label>
                     <Input
+                      id="school-name"
                       value={schoolName}
                       onChange={(e) => setSchoolName(e.target.value)}
                       placeholder="f.eks. Akershus videregående skole"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-sm font-medium">Organisasjonsnummer</label>
+                    <label htmlFor="org-number" className="text-sm font-medium">Organisasjonsnummer</label>
                     <Input
+                      id="org-number"
                       value={orgNumber}
                       onChange={(e) => setOrgNumber(e.target.value)}
                       placeholder="9 siffer"
@@ -197,8 +199,9 @@ export default function CounselorOnboardingPage() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-sm font-medium">Fylke</label>
+                    <label htmlFor="county" className="text-sm font-medium">Fylke</label>
                     <Input
+                      id="county"
                       value={county}
                       onChange={(e) => setCounty(e.target.value)}
                       placeholder="f.eks. Akershus"
@@ -242,10 +245,11 @@ export default function CounselorOnboardingPage() {
                 </div>
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <label className="text-sm font-medium">
+                    <label htmlFor="dpa-signer-name" className="text-sm font-medium">
                       Fullt navn på undertegner <span className="text-destructive">*</span>
                     </label>
                     <Input
+                      id="dpa-signer-name"
                       value={dpaSignerName}
                       onChange={(e) => setDpaSignerName(e.target.value)}
                       placeholder="Ditt fulle navn"
@@ -281,8 +285,9 @@ export default function CounselorOnboardingPage() {
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">E-postadresser (én per linje)</label>
+                  <label htmlFor="invite-emails" className="text-sm font-medium">E-postadresser (én per linje)</label>
                   <textarea
+                    id="invite-emails"
                     value={inviteEmails}
                     onChange={(e) => setInviteEmails(e.target.value)}
                     placeholder={"rådgiver1@skole.no\nrådgiver2@skole.no"}

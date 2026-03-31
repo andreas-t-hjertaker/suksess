@@ -415,16 +415,18 @@ function CvPage() {
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">Navn</label>
+                  <label htmlFor="cv-name" className="text-xs font-medium text-muted-foreground">Navn</label>
                   <Input
+                    id="cv-name"
                     value={cv.name}
                     onChange={(e) => set("name", e.target.value)}
                     placeholder="Ola Nordmann"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">Sted</label>
+                  <label htmlFor="cv-location" className="text-xs font-medium text-muted-foreground">Sted</label>
                   <Input
+                    id="cv-location"
                     value={cv.location}
                     onChange={(e) => set("location", e.target.value)}
                     placeholder="Oslo"
@@ -432,8 +434,9 @@ function CvPage() {
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">E-post</label>
+                <label htmlFor="cv-email" className="text-xs font-medium text-muted-foreground">E-post</label>
                 <Input
+                  id="cv-email"
                   type="email"
                   value={cv.email}
                   onChange={(e) => set("email", e.target.value)}
@@ -442,16 +445,18 @@ function CvPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">Telefon</label>
+                  <label htmlFor="cv-phone" className="text-xs font-medium text-muted-foreground">Telefon</label>
                   <Input
+                    id="cv-phone"
                     value={cv.phone}
                     onChange={(e) => set("phone", e.target.value)}
                     placeholder="+47 000 00 000"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-muted-foreground">Nettside / LinkedIn</label>
+                  <label htmlFor="cv-website" className="text-xs font-medium text-muted-foreground">Nettside / LinkedIn</label>
                   <Input
+                    id="cv-website"
                     value={cv.website}
                     onChange={(e) => set("website", e.target.value)}
                     placeholder="linkedin.com/in/ola"
@@ -567,10 +572,11 @@ function CvPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">
+                <label htmlFor="cv-experience" className="text-xs font-medium text-muted-foreground">
                   Erfaring (deltidsjobb, frivillig, verv)
                 </label>
                 <Textarea
+                  id="cv-experience"
                   value={cv.extraExperience}
                   onChange={(e) => set("extraExperience", e.target.value)}
                   placeholder={`Eks:\nKasserer, Rema 1000 – 2023–nå\nTrener, Hasle-Løren idrettslag – 2022–nå`}
@@ -579,10 +585,11 @@ function CvPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">
+                <label htmlFor="cv-education" className="text-xs font-medium text-muted-foreground">
                   Utdanning (kurs, sertifiseringer)
                 </label>
                 <Textarea
+                  id="cv-education"
                   value={cv.extraEducation}
                   onChange={(e) => set("extraEducation", e.target.value)}
                   placeholder={`Eks:\nVideregående, Rud VGS – 2022–nå (Studiespesialisering)`}
@@ -591,8 +598,9 @@ function CvPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Språk</label>
+                <label htmlFor="cv-languages" className="text-xs font-medium text-muted-foreground">Språk</label>
                 <Input
+                  id="cv-languages"
                   value={cv.languages}
                   onChange={(e) => set("languages", e.target.value)}
                   placeholder="Norsk (morsmål), Engelsk (flytende)"

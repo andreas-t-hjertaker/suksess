@@ -40,7 +40,7 @@ const EXAMPLE_MENTORS = [
 ];
 
 export default function MentoringPage() {
-  const [hasMatch, setHasMatch] = useState(false);
+  const [hasMatch, _setHasMatch] = useState(false);
 
   return (
     <div className="space-y-8">

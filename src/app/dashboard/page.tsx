@@ -226,6 +226,7 @@ export default function DashboardPage() {
             <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 ring-2 ring-primary/20">
                 {user?.photoURL ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={user.photoURL}
                     alt=""

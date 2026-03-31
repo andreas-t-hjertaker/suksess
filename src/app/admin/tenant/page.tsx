@@ -221,8 +221,9 @@ export default function TenantAdminPage() {
               </div>
             </div>
             <div className="space-y-1.5">
+              {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
               <label id="tenant-plan-label" className="text-sm font-medium">Plan</label>
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2 flex-wrap" role="group" aria-labelledby="tenant-plan-label">
                 {(["pilot", "school", "municipality"] as const).map((p) => (
                   <button
                     key={p}

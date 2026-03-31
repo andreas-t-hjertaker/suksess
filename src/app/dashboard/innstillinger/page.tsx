@@ -268,8 +268,8 @@ export default function InnstillingerPage() {
               />
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">E-post</label>
-                <Input value={user?.email || ""} disabled />
+                <label htmlFor="settings-email" className="text-sm font-medium">E-post</label>
+                <Input id="settings-email" value={user?.email || ""} disabled />
               </div>
 
               <Button
