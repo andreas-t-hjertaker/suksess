@@ -16,9 +16,10 @@ type ChatMessagesProps = {
   messages: ChatMessage[];
   welcomeMessage: string;
   onSendSuggestion?: (text: string) => void;
+  userId?: string;
 };
 
-export function ChatMessages({ messages, welcomeMessage, onSendSuggestion }: ChatMessagesProps) {
+export function ChatMessages({ messages, welcomeMessage, onSendSuggestion, userId }: ChatMessagesProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,7 +63,7 @@ export function ChatMessages({ messages, welcomeMessage, onSendSuggestion }: Cha
       aria-label="AI-chat samtale"
     >
       {messages.map((msg) => (
-        <ChatBubble key={msg.id} message={msg} />
+        <ChatBubble key={msg.id} message={msg} userId={userId} />
       ))}
       <div ref={bottomRef} aria-hidden="true" />
     </div>

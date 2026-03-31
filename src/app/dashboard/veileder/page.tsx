@@ -249,6 +249,7 @@ function VeilederPage() {
           <ChatMessages
             messages={messages}
             welcomeMessage="Hei! Jeg er din personlige veileder. Hva vil du snakke om?"
+            userId={user?.uid}
           />
         )}
       </div>

@@ -125,7 +125,7 @@ export function AiAssistant(config?: ChatConfig) {
           )}
 
           {/* Meldinger */}
-          <ChatMessages messages={messages} welcomeMessage={welcomeMessage} onSendSuggestion={handleSend} />
+          <ChatMessages messages={messages} welcomeMessage={welcomeMessage} onSendSuggestion={handleSend} userId={user?.uid} />
 
           {/* Inndata */}
           <ChatInput

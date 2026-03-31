@@ -1,12 +1,98 @@
 "use client";
 
-import { useState } from "react";
-import { Bot } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Bot, Flag } from "lucide-react";
 import Markdown from "react-markdown";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { reportAiError } from "@/lib/ai/decision-log";
 import type { ChatMessage } from "../types";
 
-export function ChatBubble({ message }: { message: ChatMessage }) {
+function ReportButton({
+  message,
+  userId,
+}: {
+  message: ChatMessage;
+  userId?: string;
+}) {
+  const [state, setState] = useState<"idle" | "open" | "sent">("idle");
+  const [reason, setReason] = useState("");
+
+  const handleSubmit = useCallback(async () => {
+    if (!reason.trim() || !userId) return;
+    try {
+      await reportAiError({
+        userId,
+        messageId: message.id,
+        messageContent: message.content,
+        reason: reason.trim(),
+      });
+      setState("sent");
+    } catch {
+      // Silently fail — ikke blokkér bruker
+    }
+  }, [reason, userId, message.id, message.content]);
+
+  if (state === "sent") {
+    return (
+      <span className="text-[10px] text-muted-foreground">
+        Takk for tilbakemeldingen!
+      </span>
+    );
+  }
+
+  if (state === "open") {
+    return (
+      <div className="flex flex-col gap-1 mt-1">
+        <textarea
+          className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          placeholder="Beskriv hva som var feil..."
+          rows={2}
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          maxLength={500}
+        />
+        <div className="flex gap-1">
+          <button
+            className="rounded-md bg-primary px-2 py-0.5 text-[10px] text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            onClick={handleSubmit}
+            disabled={!reason.trim()}
+          >
+            Send
+          </button>
+          <button
+            className="rounded-md px-2 py-0.5 text-[10px] text-muted-foreground hover:text-foreground"
+            onClick={() => {
+              setState("idle");
+              setReason("");
+            }}
+          >
+            Avbryt
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+      onClick={() => setState("open")}
+      aria-label="Rapporter feil i dette svaret"
+    >
+      <Flag className="h-2.5 w-2.5" aria-hidden="true" />
+      Rapporter feil
+    </button>
+  );
+}
+
+export function ChatBubble({
+  message,
+  userId,
+}: {
+  message: ChatMessage;
+  userId?: string;
+}) {
   const [showTime, setShowTime] = useState(false);
   const isUser = message.role === "user";
 
@@ -39,6 +125,18 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
       )}
 
       <div className="flex flex-col gap-0.5" style={{ maxWidth: "80%" }}>
+        {/* AI-generert merking (EU AI Act) */}
+        {!isUser && (
+          <div className="flex items-center gap-1.5 px-1">
+            <Badge
+              variant="outline"
+              className="text-[9px] px-1.5 py-0 h-4 font-normal text-muted-foreground border-muted-foreground/30"
+            >
+              AI-generert
+            </Badge>
+          </div>
+        )}
+
         <div
           className={cn(
             "px-3.5 py-2.5 text-sm leading-relaxed",
@@ -80,6 +178,21 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
             </>
           )}
         </div>
+
+        {/* Handlinger og tidsstempel under AI-meldinger */}
+        {!isUser && !message.streaming && message.content && (
+          <div className="flex items-center gap-2 px-1">
+            <ReportButton message={message} userId={userId} />
+          </div>
+        )}
+
+        {/* Ansvarsfraskrivelse på AI-svar med karriereinnhold */}
+        {!isUser && !message.streaming && message.content && (
+          <p className="px-1 text-[9px] leading-tight text-muted-foreground/70 mt-0.5">
+            AI-generert innhold. For viktige valg, snakk med en rådgiver.
+          </p>
+        )}
+
         {showTime && (
           <span className={cn("px-1 text-[10px] text-muted-foreground", isUser ? "text-right" : "text-left")} aria-hidden="true">
             {time}
