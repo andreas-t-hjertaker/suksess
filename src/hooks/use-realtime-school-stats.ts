@@ -9,7 +9,9 @@
 import { useState, useEffect } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
+import { parseDoc } from "@/lib/firebase/parse-doc";
 import { useAuth } from "@/hooks/use-auth";
+import { SchoolStatsDocumentSchema } from "@/types/schemas";
 import type { SchoolStatsDocument } from "@/lib/firebase/firestore-types";
 
 export type SchoolStatsState = {
@@ -41,8 +43,9 @@ export function useRealtimeSchoolStats(): SchoolStatsState {
     const unsub = onSnapshot(
       ref,
       (snap) => {
-        if (snap.exists()) {
-          setState({ stats: snap.data() as SchoolStatsDocument, loading: false, error: null });
+        const parsed = parseDoc(snap, SchoolStatsDocumentSchema) as SchoolStatsDocument | null;
+        if (parsed) {
+          setState({ stats: parsed, loading: false, error: null });
         } else {
           setState({ stats: null, loading: false, error: null });
         }

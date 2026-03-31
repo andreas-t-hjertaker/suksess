@@ -190,3 +190,36 @@ export const StudieprogramSOSchema = z.object({
   }).nullable(),
   url: z.string().nullable(),
 });
+
+// ---------------------------------------------------------------------------
+// SchoolStatsDocument — schoolStats/{tenantId}
+// ---------------------------------------------------------------------------
+
+export const SchoolStatsDocumentSchema = z.object({
+  tenantId: z.string(),
+  period: z.string(),
+  totalStudents: z.number(),
+  activeStudents7d: z.number(),
+  personalityTestCompletionRate: z.number(),
+  riasecDistribution: z.record(z.string(), z.number()),
+  clusterDistribution: z.record(z.string(), z.number()),
+  dropoutRiskOverview: z.object({
+    high: z.number(),
+    medium: z.number(),
+    low: z.number(),
+    unknown: z.number(),
+  }),
+  llmCostNok: z.number(),
+  updatedAt: firestoreTimestamp,
+});
+
+// ---------------------------------------------------------------------------
+// FeatureFlag — featureFlags/{flagId}
+// ---------------------------------------------------------------------------
+
+export const FeatureFlagSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  enabled: z.boolean(),
+  plans: z.array(z.string()),
+});

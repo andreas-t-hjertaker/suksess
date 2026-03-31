@@ -14,6 +14,8 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "./firestore";
+import { parseDoc } from "./parse-doc";
+import { UserProfileSchema } from "@/types/schemas";
 import type {
   UserDoc,
   UserProfile,
@@ -148,8 +150,7 @@ export async function getUserProfile(
   userId: string
 ): Promise<UserProfile | null> {
   const snap = await getDoc(doc(db, COLLECTIONS.PROFILES, userId));
-  if (!snap.exists()) return null;
-  return snap.data() as UserProfile;
+  return parseDoc(snap, UserProfileSchema) as UserProfile | null;
 }
 
 // ---------------------------------------------------------------------------

@@ -12,7 +12,9 @@
 import { useState, useEffect } from "react";
 import { doc, getDoc, collection, query, where, limit, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
+import { parseDocs } from "@/lib/firebase/parse-doc";
 import { useAuth } from "@/hooks/use-auth";
+import { StudieprogramSOSchema } from "@/types/schemas";
 import type { StudieprogramSO } from "@/lib/studiedata/utdanning-no-client";
 
 type StudiedataState = {
@@ -62,7 +64,7 @@ export function useStudiedata(): StudiedataState {
           limit(20)
         );
         const snap = await getDocs(q);
-        const programs = snap.docs.map((d) => d.data() as StudieprogramSO);
+        const programs = parseDocs(snap.docs, StudieprogramSOSchema) as StudieprogramSO[];
 
         setState({ programs, loading: false, error: null });
       } catch (err) {

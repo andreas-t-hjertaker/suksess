@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
+import { parseDocsWithId } from "@/lib/firebase/parse-doc";
+import { FeatureFlagSchema } from "@/types/schemas";
 
 type FeatureFlag = {
   id: string;
@@ -18,7 +20,7 @@ export function useFeatureFlags() {
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "featureFlags"), (snap) => {
-      setFlags(snap.docs.map((d) => ({ id: d.id, ...d.data() } as FeatureFlag)));
+      setFlags(parseDocsWithId(snap.docs, FeatureFlagSchema) as FeatureFlag[]);
       setLoading(false);
     });
     return unsub;
