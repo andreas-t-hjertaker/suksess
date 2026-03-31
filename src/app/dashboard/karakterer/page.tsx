@@ -5,9 +5,12 @@ import { useGrades } from "@/hooks/use-grades";
 import { useXp } from "@/hooks/use-xp";
 import {
   calculateGradePoints,
+  calculateDualSystemPoints,
+  getAdmissionSystem,
   simulateGradeChange,
   STUDY_PROGRAMS,
   type StudyProgramEntry,
+  type AdmissionSystem,
 } from "@/lib/grades/calculator";
 import { Button } from "@/components/ui/button";
 import { showToast } from "@/lib/toast";
@@ -69,10 +72,19 @@ export default function KaraktererPage() {
   // Studiesøk
   const [search, setSearch] = useState("");
 
+  // SO-reform: avgangskull og aktivt system (Issue #114)
+  const [graduationYear, setGraduationYear] = useState<number>(CURRENT_YEAR + 1);
+  const activeSystem: AdmissionSystem = getAdmissionSystem(graduationYear);
+  const [showBothSystems, setShowBothSystems] = useState(false);
+
   // ---------------------------------------------------------------------------
   // Beregnede verdier
   // ---------------------------------------------------------------------------
   const points = useMemo(() => calculateGradePoints(grades), [grades]);
+  const dualPoints = useMemo(
+    () => calculateDualSystemPoints(grades, activeSystem),
+    [grades, activeSystem]
+  );
 
   const simPoints = useMemo(() => {
     if (!simSubject) return null;
@@ -96,7 +108,7 @@ export default function KaraktererPage() {
 
   // Kategoriser studier
   const { reachable, almostReachable, outOfReach } = useMemo(() => {
-    const tp = points.totalPoints;
+    const tp = dualPoints.activeTotal;
     return {
       reachable: filteredPrograms.filter((p) => tp >= p.requiredPoints),
       almostReachable: filteredPrograms.filter(
@@ -104,7 +116,7 @@ export default function KaraktererPage() {
       ),
       outOfReach: filteredPrograms.filter((p) => tp < p.requiredPoints - 5),
     };
-  }, [filteredPrograms, points.totalPoints]);
+  }, [filteredPrograms, dualPoints.activeTotal]);
 
   // ---------------------------------------------------------------------------
   // Handlinger
@@ -154,6 +166,35 @@ export default function KaraktererPage() {
         </p>
       </div>
 
+      {/* SO-reform: Avgangskull-velger (Issue #114) */}
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/40 px-4 py-3">
+        <span className="text-sm font-medium">Planlagt avgangskull:</span>
+        <div className="flex gap-2">
+          {[CURRENT_YEAR, CURRENT_YEAR + 1, CURRENT_YEAR + 2, CURRENT_YEAR + 3].map((yr) => (
+            <button
+              key={yr}
+              onClick={() => setGraduationYear(yr)}
+              className={cn(
+                "rounded-md px-3 py-1 text-sm font-medium transition-colors",
+                graduationYear === yr
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background border hover:bg-muted"
+              )}
+            >
+              {yr}
+            </button>
+          ))}
+        </div>
+        <Badge variant={activeSystem === "reform-2028" ? "default" : "secondary"} className="ml-auto">
+          {activeSystem === "reform-2028" ? "🆕 Reform 2028" : "📋 Gjeldende system"}
+        </Badge>
+        {activeSystem === "reform-2028" && (
+          <p className="w-full text-xs text-muted-foreground">
+            Nytt system: maks 4 tilleggspoeng (kun realfag + militærtjeneste). Alderspoeng og folkehøgskolepoeng er fjernet.
+          </p>
+        )}
+      </div>
+
       {/* Poeng-oversikt */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <PointCard
@@ -171,16 +212,47 @@ export default function KaraktererPage() {
         <PointCard
           icon={FlaskConical}
           label="Realfagspoeng"
-          value={`+${points.sciencePoints}`}
+          value={`+${dualPoints.sciencePoints}`}
           sub="Maks 4 poeng"
         />
         <PointCard
           icon={TrendingUp}
           label="Totalt"
-          value={points.totalPoints > 0 ? points.totalPoints.toFixed(1) : "—"}
-          sub="Med tilleggspoeng"
+          value={dualPoints.activeTotal > 0 ? dualPoints.activeTotal.toFixed(1) : "—"}
+          sub={activeSystem === "reform-2028" ? "Reform 2028 (maks 64p)" : "Med tilleggspoeng (maks 74p)"}
           highlight
         />
+      </div>
+
+      {/* Sammenligning begge systemer */}
+      <div className="rounded-lg border p-4 space-y-2">
+        <button
+          onClick={() => setShowBothSystems((v) => !v)}
+          className="flex w-full items-center justify-between text-sm font-medium hover:text-primary transition-colors"
+        >
+          <span>Sammenlign begge opptakssystemer</span>
+          <span className="text-muted-foreground">{showBothSystems ? "▲ Skjul" : "▼ Vis"}</span>
+        </button>
+        {showBothSystems && (
+          <div className="grid gap-3 sm:grid-cols-2 pt-2">
+            <div className={cn("rounded-lg border p-3 space-y-1", activeSystem === "legacy" && "border-primary bg-primary/5")}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Gjeldende system (→ 2027) {activeSystem === "legacy" && "✓ Ditt system"}
+              </p>
+              <p className="text-2xl font-bold">{dualPoints.totalLegacy.toFixed(1)}</p>
+              <p className="text-xs text-muted-foreground">Realfag: +{dualPoints.legacy.sciencePoints} · Alder: +{dualPoints.legacy.agePoints} · Militær: +{dualPoints.legacy.military} · Folkehøgskole: +{dualPoints.legacy.folkHighSchool}</p>
+              <p className="text-xs text-muted-foreground">Maks 14 tilleggspoeng</p>
+            </div>
+            <div className={cn("rounded-lg border p-3 space-y-1", activeSystem === "reform-2028" && "border-primary bg-primary/5")}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Reform 2028 (→) {activeSystem === "reform-2028" && "✓ Ditt system"}
+              </p>
+              <p className="text-2xl font-bold">{dualPoints.totalReform.toFixed(1)}</p>
+              <p className="text-xs text-muted-foreground">Realfag: +{dualPoints.reform.sciencePoints} · Militær: +{dualPoints.reform.military}</p>
+              <p className="text-xs text-muted-foreground">Maks 4 tilleggspoeng — alderspoeng og folkehøgskolepoeng fjernet</p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -395,7 +467,7 @@ export default function KaraktererPage() {
                       <div>
                         <p className="text-xs text-muted-foreground">Totalt</p>
                         <p className="text-lg font-bold text-primary">{simPoints.totalPoints.toFixed(1)}</p>
-                        <Delta current={points.totalPoints} simulated={simPoints.totalPoints} decimals={1} />
+                        <Delta current={dualPoints.activeTotal} simulated={simPoints.totalPoints} decimals={1} />
                       </div>
                     </div>
                   </div>
@@ -418,7 +490,7 @@ export default function KaraktererPage() {
             <div>
               <CardTitle className="text-base">Studiemuligheter</CardTitle>
               <CardDescription>
-                Basert på {points.totalPoints.toFixed(1)} SO-poeng (inkl. tilleggspoeng)
+                Basert på {dualPoints.activeTotal.toFixed(1)} SO-poeng ({activeSystem === "reform-2028" ? "Reform 2028" : "Gjeldende system"})
               </CardDescription>
             </div>
             <div className="relative w-64">
@@ -433,7 +505,7 @@ export default function KaraktererPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {points.totalPoints === 0 && (
+          {dualPoints.activeTotal === 0 && (
             <p className="text-sm text-muted-foreground">
               Registrer karakterer for å se hvilke studier du kan komme inn på.
             </p>
@@ -444,7 +516,7 @@ export default function KaraktererPage() {
               title="Du kan komme inn"
               variant="success"
               programs={reachable}
-              userPoints={points.totalPoints}
+              userPoints={dualPoints.activeTotal}
             />
           )}
 
@@ -453,7 +525,7 @@ export default function KaraktererPage() {
               title="Nær grensen (< 5 poeng)"
               variant="warning"
               programs={almostReachable}
-              userPoints={points.totalPoints}
+              userPoints={dualPoints.activeTotal}
             />
           )}
 
@@ -462,7 +534,7 @@ export default function KaraktererPage() {
               title="Trenger flere poeng"
               variant="neutral"
               programs={outOfReach}
-              userPoints={points.totalPoints}
+              userPoints={dualPoints.activeTotal}
             />
           )}
         </CardContent>

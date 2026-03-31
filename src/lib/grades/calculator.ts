@@ -1,18 +1,148 @@
 /**
  * Poengkalkulator for norsk VGS og Samordna opptak.
  *
- * Regler:
- * - Grunnskolepoeng: gjennomsnitt × 10 (maks 60)
- * - 23/5-regelen: 23 år + 5 års yrkespraksis
- * - Realfagspoeng: R2 → 3p, R1/T → 1p, Fy2/Ky2/Bi2/Ge2 → 2p, Fy1/Ky1/... → 1p
- * - Tilleggspoeng: fremmedspråk nivå 2 → 0.5p, fremmedspråk nivå 3 → 1p
+ * Støtter to systemer parallelt (Issue #114):
  *
- * Kilde: Samordna opptak, Udir
+ * legacy (→ avgangskull 2027):
+ * - Grunnskolepoeng: gjennomsnitt × 10 (maks 60)
+ * - Realfagspoeng: maks 4p
+ * - Alderspoeng: 2p/år, maks 8p
+ * - Folkehøgskolepoeng: 2p
+ * - Militærtjeneste: 2p
+ * - Kjønnspoeng (programspesifikke)
+ * - 23/5-regelen
+ * - Førstegangsvitnemålskvote: 50% (≤21 år)
+ *
+ * reform-2028 (→ avgangskull 2028+, vedtatt mars 2026):
+ * - Grunnskolepoeng: uendret
+ * - Maks tilleggspoeng: 4p (kun realfag + militærtjeneste)
+ * - Alderspoeng: FJERNET
+ * - Folkehøgskolepoeng: FJERNET
+ * - Kjønnspoeng: FJERNET
+ * - Militærtjeneste: beholdes (inntil 2p)
+ * - 23/6-regelen (6 studiekompetansefag, ikke 5 år arbeid)
+ * - Førstegangsvitnemålskvote: 70% (≤23 år)
+ * - Kilde: regjeringen.no mars 2026
+ *
+ * Kilde: Samordna opptak, Udir, regjeringen.no
  */
 
 import type { Grade } from "@/types/domain";
 
 export type GradeWithId = Grade & { id: string };
+
+// ---------------------------------------------------------------------------
+// Samordna Opptak: Dual system support (Issue #114)
+// ---------------------------------------------------------------------------
+
+/**
+ * "legacy"    = gjeldende system, avgangskull ≤ 2027
+ * "reform-2028" = nytt system vedtatt mars 2026, avgangskull ≥ 2028
+ */
+export type AdmissionSystem = "legacy" | "reform-2028";
+
+/**
+ * Bestem opptakssystem basert på planlagt avgangskull.
+ * Elever som fullfører VGS i 2028 eller senere bruker det nye systemet.
+ */
+export function getAdmissionSystem(graduationYear: number): AdmissionSystem {
+  return graduationYear >= 2028 ? "reform-2028" : "legacy";
+}
+
+export type BonusPointsLegacy = {
+  sciencePoints: number;    // Realfagspoeng (maks 4)
+  agePoints: number;        // Alderspoeng (2p/år, maks 8)
+  folkHighSchool: number;   // Folkehøgskole (2p)
+  military: number;         // Militærtjeneste (2p)
+  total: number;            // Sum (maks 14)
+};
+
+export type BonusPointsReform = {
+  sciencePoints: number;    // Realfagspoeng (maks 4) — beholdt
+  military: number;         // Militærtjeneste (maks 2) — beholdt
+  total: number;            // Sum (maks 4)
+  // Alderspoeng, folkehøgskole og kjønnspoeng er fjernet
+};
+
+/**
+ * Beregn tilleggspoeng for legacy-systemet (avgangskull ≤ 2027).
+ */
+export function calculateBonusPointsLegacy(
+  sciencePoints: number,
+  opts: { age?: number; folkHighSchool?: boolean; military?: boolean } = {}
+): BonusPointsLegacy {
+  const sp = Math.min(sciencePoints, 4);
+  const agePoints = opts.age ? Math.min(Math.max(0, (opts.age - 19) * 2), 8) : 0;
+  const folkHighSchool = opts.folkHighSchool ? 2 : 0;
+  const military = opts.military ? 2 : 0;
+  return {
+    sciencePoints: sp,
+    agePoints,
+    folkHighSchool,
+    military,
+    total: Math.min(sp + agePoints + folkHighSchool + military, 14),
+  };
+}
+
+/**
+ * Beregn tilleggspoeng for reform-systemet (avgangskull ≥ 2028).
+ * Maks 4 tilleggspoeng — kun realfag og militærtjeneste gjelder.
+ */
+export function calculateBonusPointsReform(
+  sciencePoints: number,
+  opts: { military?: boolean } = {}
+): BonusPointsReform {
+  const sp = Math.min(sciencePoints, 4);
+  const military = opts.military ? 2 : 0;
+  return {
+    sciencePoints: sp,
+    military,
+    total: Math.min(sp + military, 4),
+  };
+}
+
+export type DualSystemPoints = {
+  quotaPoints: number;       // Karakterpoeng (uendret)
+  sciencePoints: number;     // Realfagspoeng
+  legacy: BonusPointsLegacy;
+  reform: BonusPointsReform;
+  /** Totalt for legacy-system */
+  totalLegacy: number;
+  /** Totalt for reform-systemet */
+  totalReform: number;
+  activeSystem: AdmissionSystem;
+  activeTotal: number;
+};
+
+/**
+ * Beregn poeng for begge systemer parallelt.
+ * Viser begge uavhengig av aktivt system, slik at elever kan sammenligne.
+ */
+export function calculateDualSystemPoints(
+  grades: GradeWithId[],
+  activeSystem: AdmissionSystem,
+  opts: {
+    age?: number;
+    folkHighSchool?: boolean;
+    military?: boolean;
+  } = {}
+): DualSystemPoints {
+  const base = calculateGradePoints(grades);
+  const legacy = calculateBonusPointsLegacy(base.sciencePoints, opts);
+  const reform = calculateBonusPointsReform(base.sciencePoints, { military: opts.military });
+  const totalLegacy = Math.min(base.quotaPoints + legacy.total, 74);
+  const totalReform = Math.min(base.quotaPoints + reform.total, 64);
+  return {
+    quotaPoints: base.quotaPoints,
+    sciencePoints: base.sciencePoints,
+    legacy,
+    reform,
+    totalLegacy,
+    totalReform,
+    activeSystem,
+    activeTotal: activeSystem === "reform-2028" ? totalReform : totalLegacy,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Fagkode → realfagspoeng-mapping (utvalg)
