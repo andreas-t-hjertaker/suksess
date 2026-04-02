@@ -23,12 +23,15 @@ const makeGrade = (
   fagkode?: string
 ): GradeWithId => ({
   id: subject,
+  userId: "test-user",
   subject,
   grade,
   term: "ht",
   year: 2024,
   programSubjectId: null,
   fagkode: fagkode ?? null,
+  createdAt: null,
+  updatedAt: null,
 });
 
 const SAMPLE_GRADES: GradeWithId[] = [
