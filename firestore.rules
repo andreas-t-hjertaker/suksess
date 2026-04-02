@@ -357,5 +357,36 @@ service cloud.firestore {
         request.resource.data.userId == request.auth.uid;
       allow update, delete: if false; // immutable audit trail
     }
+
+    // ---------------------------------------------------------------------------
+    // aiDecisionLogs/{logId} — EU AI Act Art. 12 loggføring (Issue #103)
+    // ---------------------------------------------------------------------------
+
+    match /aiDecisionLogs/{logId} {
+      allow read: if isSuperAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // immutable audit trail — 5 års oppbevaring
+    }
+
+    // ---------------------------------------------------------------------------
+    // humanOversightEvents/{eventId} — EU AI Act Art. 14 mennesketilsyn (#103)
+    // ---------------------------------------------------------------------------
+
+    match /humanOversightEvents/{eventId} {
+      allow read: if isCounselorOrAdmin();
+      allow create: if isAuthenticated();
+      allow update: if isCounselorOrAdmin(); // rådgiver kan markere som gjennomgått
+      allow delete: if false; // immutable
+    }
+
+    // ---------------------------------------------------------------------------
+    // errorLogs/{logId} — feillogging
+    // ---------------------------------------------------------------------------
+
+    match /errorLogs/{logId} {
+      allow read: if isSuperAdmin();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
   }
 }
