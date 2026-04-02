@@ -4,9 +4,16 @@ import { useState } from "react";
 import { Bot } from "lucide-react";
 import Markdown from "react-markdown";
 import { cn } from "@/lib/utils";
+import { AiFeedback } from "@/components/ai-feedback";
 import type { ChatMessage } from "../types";
 
-export function ChatBubble({ message }: { message: ChatMessage }) {
+type ChatBubbleProps = {
+  message: ChatMessage;
+  conversationId?: string;
+  userId?: string;
+};
+
+export function ChatBubble({ message, conversationId, userId }: ChatBubbleProps) {
   const [showTime, setShowTime] = useState(false);
   const isUser = message.role === "user";
 
@@ -84,6 +91,16 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
           <span className={cn("px-1 text-[10px] text-muted-foreground", isUser ? "text-right" : "text-left")} aria-hidden="true">
             {time}
           </span>
+        )}
+        {/* Tilbakemeldingssystem for AI-svar (Issue #105) */}
+        {!isUser && !message.streaming && conversationId && userId && (
+          <div className="mt-1 px-1">
+            <AiFeedback
+              messageId={message.id}
+              conversationId={conversationId}
+              userId={userId}
+            />
+          </div>
         )}
       </div>
     </div>
