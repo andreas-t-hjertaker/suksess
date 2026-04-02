@@ -34,6 +34,7 @@ import {
   Briefcase,
   BookOpen,
   GitBranch,
+  Target,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/use-admin";
 import { useLocale } from "@/hooks/use-locale";
@@ -55,6 +56,7 @@ const navItemDefs: NavItemDef[] = [
   { href: "/dashboard/analyse", labelKey: "analyse", icon: BarChart2 },
   { href: "/dashboard/soknadscoach", labelKey: "applicationCoach", icon: ClipboardList },
   { href: "/dashboard/jobbmatch", labelKey: "jobMatch", icon: Briefcase },
+  { href: "/dashboard/handlingsplan", labelKey: "actionPlan", icon: Target },
   { href: "/dashboard/studier", labelKey: "studies", icon: BookOpen },
   { href: "/dashboard/karakterer", labelKey: "grades", icon: GraduationCap },
   { href: "/dashboard/dokumenter", labelKey: "documents", icon: FileText },

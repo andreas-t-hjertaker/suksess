@@ -38,6 +38,7 @@ const NB_MESSAGES = {
     jobMatch: "Jobbmatch",
     studies: "Studiemestring",
     careerGraph: "Karrieregraf",
+    actionPlan: "Handlingsplan",
   },
   dashboard: {
     welcome: "Hei",
@@ -120,6 +121,7 @@ const NN_MESSAGES: Messages = {
     jobMatch: "Jobbtreff",
     studies: "Studiemeistring",
     careerGraph: "Karrierekart",
+    actionPlan: "Handlingsplan",
   },
   dashboard: {
     welcome: "Hei",
@@ -207,6 +209,7 @@ const SE_MESSAGES: Messages = {
     jobMatch: "Barggu oassálastin",
     studies: "Oahppomearkkašupmi",
     careerGraph: "Karrierra-gráfa",
+    actionPlan: "Doaibmaplána",
   },
   dashboard: {
     welcome: "Bures boahtin",
