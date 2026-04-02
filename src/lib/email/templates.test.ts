@@ -8,6 +8,8 @@ import {
   weeklyDigestEmail,
   dataExportReadyEmail,
   passwordResetEmail,
+  parentConsentRequestEmail,
+  parentInviteEmail,
 } from "./templates";
 
 describe("E-postmaler", () => {
@@ -97,5 +99,93 @@ describe("E-postmaler", () => {
     for (const t of templates) {
       expect(t.html).toContain("personvern");
     }
+  });
+});
+
+// ─── Foresatt-e-postmaler (#106) ─────────────────────────────────────────────
+
+describe("parentConsentRequestEmail (#106)", () => {
+  it("inneholder elevnavn og samtykke-URL", () => {
+    const email = parentConsentRequestEmail("Kari", "https://suksess.no/consent/abc123");
+    expect(email.subject).toContain("Samtykke");
+    expect(email.html).toContain("Kari");
+    expect(email.html).toContain("https://suksess.no/consent/abc123");
+    expect(email.text).toContain("Kari");
+    expect(email.text).toContain("https://suksess.no/consent/abc123");
+  });
+
+  it("nevner GDPR og under 16 år", () => {
+    const email = parentConsentRequestEmail("Ole", "https://example.com");
+    expect(email.html).toContain("under 16 år");
+    expect(email.html).toContain("GDPR");
+  });
+
+  it("beskriver hva foresatt godkjenner", () => {
+    const email = parentConsentRequestEmail("Ole", "https://example.com");
+    expect(email.html).toContain("personlighetstestresultater");
+    expect(email.html).toContain("AI-drevet karriereveiledning");
+    expect(email.html).toContain("rådgiver");
+  });
+
+  it("nevner 7 dagers gyldighet", () => {
+    const email = parentConsentRequestEmail("Ole", "https://example.com");
+    expect(email.html).toContain("7 dager");
+    expect(email.text).toContain("7 dager");
+  });
+
+  it("håndterer tomt elevnavn", () => {
+    const email = parentConsentRequestEmail("", "https://example.com");
+    expect(email.html).toContain("Eleven");
+    expect(email.html).not.toContain("Hei ");
+  });
+
+  it("har gyldig HTML-struktur", () => {
+    const email = parentConsentRequestEmail("Test", "https://example.com");
+    expect(email.html).toContain("<!DOCTYPE html>");
+    expect(email.html).toContain("</html>");
+    expect(email.subject.length).toBeGreaterThan(0);
+    expect(email.text.length).toBeGreaterThan(0);
+  });
+});
+
+describe("parentInviteEmail (#106)", () => {
+  it("inneholder elevnavn og formatert koblingskode", () => {
+    const email = parentInviteEmail("Kari", "ABC123");
+    expect(email.subject).toContain("Kari");
+    expect(email.html).toContain("ABC 123");
+    expect(email.text).toContain("ABC 123");
+  });
+
+  it("inneholder steg-for-steg instruksjoner", () => {
+    const email = parentInviteEmail("Ole", "XYZ789");
+    expect(email.html).toContain("suksess.no/login");
+    expect(email.html).toContain("Foresatt-portal");
+    expect(email.html).toContain("koblingskoden");
+  });
+
+  it("inneholder personvernnotis", () => {
+    const email = parentInviteEmail("Ole", "XYZ789");
+    expect(email.html).toContain("Personvern");
+    expect(email.html).toContain("aldri synlige for foresatte");
+  });
+
+  it("nevner 30 minutters gyldighet", () => {
+    const email = parentInviteEmail("Ole", "XYZ789");
+    expect(email.html).toContain("30 minutter");
+    expect(email.text).toContain("30 minutter");
+  });
+
+  it("håndterer tomt elevnavn", () => {
+    const email = parentInviteEmail("", "ABC123");
+    expect(email.html).toContain("Eleven");
+    expect(email.subject).toContain("Eleven");
+  });
+
+  it("har gyldig HTML-struktur", () => {
+    const email = parentInviteEmail("Test", "ABC123");
+    expect(email.html).toContain("<!DOCTYPE html>");
+    expect(email.html).toContain("</html>");
+    expect(email.subject.length).toBeGreaterThan(0);
+    expect(email.text.length).toBeGreaterThan(0);
   });
 });

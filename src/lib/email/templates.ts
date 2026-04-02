@@ -208,3 +208,69 @@ export function passwordResetEmail(name: string, resetUrl: string): EmailTemplat
     text: `Hei ${displayName}!\n\nTilbakestill passordet ditt: ${resetUrl}\n\nLenken utløper om 1 time.`,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Foresatt-samtykke (#106) — sendes til foresatt av elev under 16
+// ---------------------------------------------------------------------------
+
+export function parentConsentRequestEmail(
+  studentName: string,
+  consentUrl: string
+): EmailTemplate {
+  const displayName = studentName || "Eleven";
+  return {
+    subject: "Samtykke påkrevd — Suksess karriereveiledning",
+    html: baseLayout(`
+      <h1 style="margin:0 0 16px;font-size:22px">Samtykke for ${displayName}</h1>
+      <p style="line-height:1.6;color:#3f3f46">${displayName} har opprettet en konto på Suksess, en AI-drevet karriereveiledningsplattform for norske VGS-elever.</p>
+      <p style="line-height:1.6;color:#3f3f46">Siden eleven er under 16 år, krever norsk personopplysningslov (GDPR) samtykke fra foresatte for å behandle personopplysninger.</p>
+      <div style="background:#f4f4f5;border-radius:8px;padding:16px;margin:16px 0">
+        <p style="margin:0 0 8px;font-weight:600;font-size:14px">Hva du godkjenner:</p>
+        <ul style="margin:0;padding-left:20px;color:#3f3f46;font-size:14px;line-height:1.8">
+          <li>Lagring av personlighetstestresultater (Big Five, RIASEC)</li>
+          <li>AI-drevet karriereveiledning via chat</li>
+          <li>Deling av anonymisert profil med skolens rådgiver</li>
+        </ul>
+      </div>
+      <p style="line-height:1.6;color:#3f3f46">Du kan når som helst trekke samtykket tilbake via foresatt-portalen.</p>
+      ${button("Godkjenn samtykke", consentUrl)}
+      <p style="font-size:12px;color:#71717a;margin-top:24px">Denne lenken er gyldig i 7 dager. Hvis du ikke kjenner igjen denne forespørselen, kan du trygt ignorere den.</p>
+    `),
+    text: `Samtykke for ${displayName}\n\n${displayName} har opprettet en konto på Suksess.\n\nSiden eleven er under 16 år, krever GDPR samtykke fra foresatte.\n\nGodkjenn samtykke: ${consentUrl}\n\nLenken er gyldig i 7 dager.`,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Foresatt-invitasjon (#106) — sendes til foresatt med koblingskode
+// ---------------------------------------------------------------------------
+
+export function parentInviteEmail(
+  studentName: string,
+  inviteCode: string
+): EmailTemplate {
+  const displayName = studentName || "Eleven";
+  const formattedCode = `${inviteCode.slice(0, 3)} ${inviteCode.slice(3)}`;
+  return {
+    subject: `${displayName} har invitert deg til Suksess`,
+    html: baseLayout(`
+      <h1 style="margin:0 0 16px;font-size:22px">Foresatt-tilgang til Suksess</h1>
+      <p style="line-height:1.6;color:#3f3f46">${displayName} inviterer deg til å følge med på karriereutforskingen sin via Suksess sin foresatt-portal.</p>
+      <p style="line-height:1.6;color:#3f3f46">Bruk denne koblingskoden for å koble deg til elevens konto:</p>
+      <div style="background:#f4f4f5;border-radius:12px;padding:24px;margin:24px 0;text-align:center">
+        <span style="font-size:32px;font-weight:700;letter-spacing:8px;font-family:monospace;color:#18181b">${formattedCode}</span>
+      </div>
+      <p style="line-height:1.6;color:#3f3f46">Slik gjør du:</p>
+      <ol style="line-height:1.8;color:#3f3f46;padding-left:20px">
+        <li>Gå til <a href="https://suksess.no/login" style="color:#7c3aed">suksess.no/login</a> og logg inn</li>
+        <li>Naviger til <strong>Foresatt-portal</strong></li>
+        <li>Skriv inn koblingskoden over</li>
+      </ol>
+      ${button("Logg inn på Suksess", "https://suksess.no/login")}
+      <div style="background:#fef3c7;border-radius:8px;padding:12px 16px;margin:16px 0">
+        <p style="margin:0;font-size:13px;color:#92400e"><strong>Personvern:</strong> Du vil kun se overordnet fremdrift (XP, achievements, karrierer utforsket). AI-samtaler og detaljerte testresultater er aldri synlige for foresatte.</p>
+      </div>
+      <p style="font-size:12px;color:#71717a;margin-top:24px">Koden er gyldig i 30 minutter.</p>
+    `),
+    text: `${displayName} har invitert deg til Suksess\n\nKoblingskode: ${formattedCode}\n\n1. Gå til suksess.no/login og logg inn\n2. Naviger til Foresatt-portal\n3. Skriv inn koblingskoden\n\nKoden er gyldig i 30 minutter.`,
+  };
+}
