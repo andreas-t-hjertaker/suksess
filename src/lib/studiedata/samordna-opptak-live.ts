@@ -62,6 +62,9 @@ export function beregSjanse(
   poenggrense: number | null
 ): { sjanse: "god" | "usikker" | "lav" | "ukjent"; diff: number | null } {
   if (poenggrense === null) return { sjanse: "ukjent", diff: null };
+  if (!Number.isFinite(elevPoeng) || !Number.isFinite(poenggrense)) {
+    return { sjanse: "ukjent", diff: null };
+  }
 
   const diff = elevPoeng - poenggrense;
   if (diff >= 2) return { sjanse: "god", diff };

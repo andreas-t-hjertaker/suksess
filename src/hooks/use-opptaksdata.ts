@@ -86,10 +86,11 @@ export function useOpptaksdata(
     loading: true,
     error: null,
   });
-  const abortRef = useRef(false);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
-    abortRef.current = false;
+    const currentRequestId = ++requestIdRef.current;
+    const isStale = () => currentRequestId !== requestIdRef.current;
 
     async function load() {
       setState((s) => ({ ...s, loading: true, error: null }));
@@ -100,7 +101,7 @@ export function useOpptaksdata(
           ? await finnMatchendeStudieprogram(riasecKode, elevPoeng, 30)
           : [];
 
-        if (abortRef.current) return;
+        if (isStale()) return;
 
         if (matches.length > 0) {
           // Hent trenddata parallelt for topp 15 programmer
@@ -124,7 +125,7 @@ export function useOpptaksdata(
           });
 
           const trendResults = await Promise.all(trendPromises);
-          if (abortRef.current) return;
+          if (isStale()) return;
 
           const trendMap = new Map(trendResults.map((t) => [t.kode, t]));
 
@@ -171,7 +172,7 @@ export function useOpptaksdata(
         });
 
         const trendResults = await Promise.all(trendPromises);
-        if (abortRef.current) return;
+        if (isStale()) return;
 
         const trendMap = new Map(trendResults.map((t) => [t.kode, t]));
         const enriched = fb.map((p) => {
@@ -185,7 +186,7 @@ export function useOpptaksdata(
 
         setState({ programs: enriched, loading: false, error: null });
       } catch (err) {
-        if (abortRef.current) return;
+        if (isStale()) return;
 
         // Total fallback uten trender
         const fb = fallbackPrograms(elevPoeng);
@@ -200,7 +201,7 @@ export function useOpptaksdata(
     load();
 
     return () => {
-      abortRef.current = true;
+      // Ny request-ID ved neste effect-kjøring invaliderer pågående requests
     };
   }, [elevPoeng, riasecKode]);
 

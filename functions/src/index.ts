@@ -1103,7 +1103,7 @@ const listSchoolUsers = withTenantAdmin(async ({ tenantId, req, res }) => {
 });
 
 /** POST /school-admin/users/:uid/role — Sett rolle innen tenant */
-const setSchoolUserRole = withTenantAdmin(async ({ tenantId, req, res }) => {
+const setSchoolUserRole = withTenantAdmin(async ({ user, tenantId, req, res }) => {
   const parts = req.path.split("/");
   const uid = parts[parts.length - 2]; // /school-admin/users/:uid/role
   const { role } = req.body as { role?: string };
@@ -1121,6 +1121,8 @@ const setSchoolUserRole = withTenantAdmin(async ({ tenantId, req, res }) => {
     return;
   }
 
+  const oldRole = userDoc.data()?.role ?? "unknown";
+
   // Oppdater Firestore
   await db.collection("users").doc(uid).update({ role });
 
@@ -1129,11 +1131,22 @@ const setSchoolUserRole = withTenantAdmin(async ({ tenantId, req, res }) => {
   const currentClaims = currentUser.customClaims || {};
   await admin.auth().setCustomUserClaims(uid, { ...currentClaims, role });
 
+  // Audit-logg
+  await db.collection("consentAudit").add({
+    type: "role_change",
+    targetUid: uid,
+    changedBy: user.uid,
+    tenantId,
+    oldRole,
+    newRole: role,
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
   success(res, { uid, role });
 });
 
 /** POST /school-admin/users/:uid/disable — Deaktiver/aktiver bruker i tenant */
-const disableSchoolUser = withTenantAdmin(async ({ tenantId, req, res }) => {
+const disableSchoolUser = withTenantAdmin(async ({ user, tenantId, req, res }) => {
   const parts = req.path.split("/");
   const uid = parts[parts.length - 2]; // /school-admin/users/:uid/disable
   const { disabled } = req.body as { disabled?: boolean };
@@ -1149,6 +1162,15 @@ const disableSchoolUser = withTenantAdmin(async ({ tenantId, req, res }) => {
 
   await admin.auth().updateUser(uid, { disabled: !!disabled });
   await db.collection("users").doc(uid).update({ disabled: !!disabled });
+
+  // Audit-logg
+  await db.collection("consentAudit").add({
+    type: disabled ? "user_disabled" : "user_enabled",
+    targetUid: uid,
+    changedBy: user.uid,
+    tenantId,
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+  });
 
   success(res, { uid, disabled: !!disabled });
 });
@@ -1369,11 +1391,17 @@ const getSchoolGdprConsents = withTenantAdmin(async ({ tenantId, res }) => {
     grantedAt: string | null;
   }[] = [];
 
-  // Hent samtykke for hver elev
-  for (const userDoc of usersSnap.docs) {
+  // Hent samtykke for alle elever parallelt (unngå N+1)
+  const consentSnaps = await Promise.all(
+    usersSnap.docs.map((userDoc) =>
+      db.collection("users").doc(userDoc.id).collection("consent").limit(1).get()
+    )
+  );
+
+  for (let i = 0; i < usersSnap.docs.length; i++) {
+    const userDoc = usersSnap.docs[i];
     const userData = userDoc.data();
-    const consentSnap = await db.collection("users").doc(userDoc.id)
-      .collection("consent").limit(1).get();
+    const consentSnap = consentSnaps[i];
 
     if (consentSnap.empty) {
       consents.push({
@@ -1425,20 +1453,31 @@ const exportSchoolGdprConsents = withTenantAdmin(async ({ tenantId, res }) => {
     "Navn,E-post,Samtykkestatus,Kategorier,Alderskategori,Foresatt-epost,Samtykke-dato",
   ];
 
-  for (const userDoc of usersSnap.docs) {
-    const userData = userDoc.data();
-    const consentSnap = await db.collection("users").doc(userDoc.id)
-      .collection("consent").limit(1).get();
+  // Hent samtykke parallelt (unngå N+1)
+  const consentSnaps = await Promise.all(
+    usersSnap.docs.map((userDoc) =>
+      db.collection("users").doc(userDoc.id).collection("consent").limit(1).get()
+    )
+  );
 
+  // CSV-sanitering: forhindre formelinjeksjon i Excel
+  const csvSafe = (val: string): string => {
+    if (/^[=+\-@\t\r]/.test(val)) return `'${val}`;
+    return val;
+  };
+
+  for (let i = 0; i < usersSnap.docs.length; i++) {
+    const userData = usersSnap.docs[i].data();
+    const consentSnap = consentSnaps[i];
     const c = consentSnap.empty ? null : consentSnap.docs[0].data();
 
     rows.push([
-      `"${(userData.displayName ?? "").replace(/"/g, '""')}"`,
-      userData.email ?? "",
-      c?.status ?? "pending",
-      `"${(c?.categories ?? []).join(", ")}"`,
-      c?.ageCategory ?? "unknown",
-      c?.parentEmail ?? "",
+      `"${csvSafe((userData.displayName ?? "").replace(/"/g, '""'))}"`,
+      `"${csvSafe((userData.email ?? "").replace(/"/g, '""'))}"`,
+      csvSafe(c?.status ?? "pending"),
+      `"${csvSafe((c?.categories ?? []).join(", "))}"`,
+      csvSafe(c?.ageCategory ?? "unknown"),
+      `"${csvSafe((c?.parentEmail ?? "").replace(/"/g, '""'))}"`,
       c?.grantedAt ?? "",
     ].join(","));
   }
