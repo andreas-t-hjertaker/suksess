@@ -17,6 +17,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
+import { ConversationSchema } from "@/types/schemas";
 import type { ChatMessage } from "../types";
 
 export type StoredConversation = {
@@ -75,6 +76,10 @@ export async function getConversationMessages(
   const snap = await getDoc(ref);
   if (!snap.exists()) return [];
 
+  const result = ConversationSchema.safeParse(snap.data());
+  if (!result.success) {
+    console.warn(`[getConversationMessages] Valideringsfeil:`, result.error);
+  }
   const data = snap.data();
   const messages = (data.messages ?? []) as Array<{
     id?: string;
@@ -111,14 +116,20 @@ export async function getRecentConversations(
     limit(maxCount)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => {
+  return snap.docs.reduce<StoredConversation[]>((acc, d) => {
+    const result = ConversationSchema.safeParse(d.data());
+    if (!result.success) {
+      console.warn(`[getRecentConversations] Valideringsfeil for ${d.ref.path}:`, result.error);
+      return acc;
+    }
     const data = d.data();
-    return {
+    acc.push({
       id: d.id,
-      title: data.title ?? "Samtale",
+      title: (data.title as string) ?? "Samtale",
       createdAt: data.createdAt?.toDate() ?? new Date(),
       lastMessageAt: data.lastMessageAt?.toDate() ?? new Date(),
-      messageCount: data.messageCount ?? 0,
-    };
-  });
+      messageCount: (data.messageCount as number) ?? 0,
+    });
+    return acc;
+  }, []);
 }

@@ -13,6 +13,7 @@ const eslintConfig = defineConfig([
       "jsx-a11y/aria-role": "error",
       "jsx-a11y/role-has-required-aria-props": "error",
       "jsx-a11y/label-has-associated-control": ["warn", {
+        assert: "either",
         controlComponents: ["Input", "Select", "Textarea"],
         depth: 3,
       }],

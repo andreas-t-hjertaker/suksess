@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
+import { FeatureFlagSchema } from "@/types/schemas";
 
 type FeatureFlag = {
   id: string;
@@ -18,7 +19,16 @@ export function useFeatureFlags() {
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "featureFlags"), (snap) => {
-      setFlags(snap.docs.map((d) => ({ id: d.id, ...d.data() } as FeatureFlag)));
+      const validated = snap.docs.reduce<FeatureFlag[]>((acc, d) => {
+        const result = FeatureFlagSchema.safeParse(d.data());
+        if (result.success) {
+          acc.push({ id: d.id, ...result.data });
+        } else {
+          console.warn(`[useFeatureFlags] Valideringsfeil for ${d.ref.path}:`, result.error);
+        }
+        return acc;
+      }, []);
+      setFlags(validated);
       setLoading(false);
     });
     return unsub;

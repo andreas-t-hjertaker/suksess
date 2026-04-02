@@ -10,6 +10,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { useRealtimeStudents } from "@/hooks/use-realtime-students";
+import { UserProfileSchema } from "@/types/schemas";
 import type { UserProfile, BigFiveScores, RiasecScores } from "@/types/domain";
 import type { DropoutRiskLevel } from "@/lib/risk/dropout-risk";
 import {
@@ -272,7 +273,13 @@ export default function RadgivereAdminPage() {
     setLoading(true);
     try {
       const snap = await getDocs(collection(db, "profiles"));
-      const data = snap.docs.map((d) => d.data() as UserProfile);
+      const data = snap.docs.reduce<UserProfile[]>((acc, d) => {
+        const result = UserProfileSchema.safeParse(d.data());
+        if (result.success) {
+          acc.push(result.data as unknown as UserProfile);
+        }
+        return acc;
+      }, []);
       setProfiles(data);
       setLastFetched(new Date());
     } finally {

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "./use-auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
+import { UserSubscriptionSchema } from "@/types/schemas";
 import type { UserSubscription } from "@/types";
 
 export function useSubscription() {
@@ -22,11 +23,17 @@ export function useSubscription() {
       doc(db, "subscriptions", user.uid),
       (snap) => {
         if (snap.exists()) {
-          const data = snap.data();
-          setSubscription({
-            ...data,
-            currentPeriodEnd: data.currentPeriodEnd?.toDate() ?? null,
-          } as UserSubscription);
+          const result = UserSubscriptionSchema.safeParse(snap.data());
+          if (result.success) {
+            const data = snap.data();
+            setSubscription({
+              ...result.data,
+              currentPeriodEnd: data.currentPeriodEnd?.toDate() ?? null,
+            } as UserSubscription);
+          } else {
+            console.warn(`[useSubscription] Valideringsfeil:`, result.error);
+            setSubscription(null);
+          }
         } else {
           setSubscription(null);
         }

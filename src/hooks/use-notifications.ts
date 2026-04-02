@@ -20,6 +20,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
+import { FirestoreNotifSchema } from "@/types/schemas";
 
 export type NotificationType =
   | "achievement"
@@ -38,10 +39,6 @@ export type Notification = {
   link?: string;
 };
 
-type FirestoreNotif = Omit<Notification, "id" | "createdAt"> & {
-  createdAt: { toDate?: () => Date } | null;
-};
-
 export function useNotifications() {
   const { firebaseUser } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -58,18 +55,24 @@ export function useNotifications() {
     const q = query(ref, orderBy("createdAt", "desc"), limit(30));
 
     const unsub = onSnapshot(q, (snap) => {
-      const items: Notification[] = snap.docs.map((d) => {
-        const data = d.data() as FirestoreNotif;
-        return {
+      const items: Notification[] = snap.docs.reduce<Notification[]>((acc, d) => {
+        const result = FirestoreNotifSchema.safeParse(d.data());
+        if (!result.success) {
+          console.warn(`[useNotifications] Valideringsfeil for ${d.ref.path}:`, result.error);
+          return acc;
+        }
+        const data = result.data;
+        acc.push({
           id: d.id,
           type: data.type,
           title: data.title,
           body: data.body,
           read: data.read ?? false,
-          createdAt: data.createdAt?.toDate?.() ?? null,
+          createdAt: (data.createdAt as { toDate?: () => Date } | null)?.toDate?.() ?? null,
           link: data.link,
-        };
-      });
+        });
+        return acc;
+      }, []);
       setNotifications(items);
       setLoading(false);
     });

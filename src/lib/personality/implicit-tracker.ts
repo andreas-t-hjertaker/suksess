@@ -99,7 +99,8 @@ export async function persistImplicitAdjustments(userId: string): Promise<void> 
     const snap = await getDoc(profileRef);
     if (!snap.exists()) return;
 
-    const profile = snap.data() as { bigFive: BigFiveScores };
+    const profile = snap.data() as { bigFive?: BigFiveScores };
+    if (!profile.bigFive) return;
     const current = profile.bigFive;
 
     const updated: BigFiveScores = {

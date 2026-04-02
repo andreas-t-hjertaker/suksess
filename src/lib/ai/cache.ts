@@ -25,6 +25,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
+import { CacheEntrySchema } from "@/types/schemas";
 
 // ---------------------------------------------------------------------------
 // Typer
@@ -77,7 +78,9 @@ export async function getL1Cache(
     const snap = await getDoc(ref);
     if (!snap.exists()) return null;
 
-    const data = snap.data() as CacheEntry;
+    const result = CacheEntrySchema.safeParse(snap.data());
+    if (!result.success) return null;
+    const data = result.data as unknown as CacheEntry;
     const createdAt = data.createdAt?.toDate?.() ?? null;
     if (!createdAt) return null;
 

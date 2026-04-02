@@ -10,6 +10,7 @@ import { useState, useEffect } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
+import { SchoolStatsSchema } from "@/types/schemas";
 import type { SchoolStatsDocument } from "@/lib/firebase/firestore-types";
 
 export type SchoolStatsState = {
@@ -42,7 +43,13 @@ export function useRealtimeSchoolStats(): SchoolStatsState {
       ref,
       (snap) => {
         if (snap.exists()) {
-          setState({ stats: snap.data() as SchoolStatsDocument, loading: false, error: null });
+          const result = SchoolStatsSchema.safeParse(snap.data());
+          if (result.success) {
+            setState({ stats: result.data as unknown as SchoolStatsDocument, loading: false, error: null });
+          } else {
+            console.warn(`[useRealtimeSchoolStats] Valideringsfeil:`, result.error);
+            setState({ stats: null, loading: false, error: null });
+          }
         } else {
           setState({ stats: null, loading: false, error: null });
         }

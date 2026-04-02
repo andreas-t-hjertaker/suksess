@@ -13,6 +13,7 @@ import { useState, useEffect } from "react";
 import { doc, getDoc, collection, query, where, limit, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
+import { StudieprogramSOSchema } from "@/types/schemas";
 import type { StudieprogramSO } from "@/lib/studiedata/utdanning-no-client";
 
 type StudiedataState = {
@@ -62,7 +63,15 @@ export function useStudiedata(): StudiedataState {
           limit(20)
         );
         const snap = await getDocs(q);
-        const programs = snap.docs.map((d) => d.data() as StudieprogramSO);
+        const programs = snap.docs.reduce<StudieprogramSO[]>((acc, d) => {
+          const result = StudieprogramSOSchema.safeParse(d.data());
+          if (result.success) {
+            acc.push(result.data as StudieprogramSO);
+          } else {
+            console.warn(`[useStudiedata] Valideringsfeil for ${d.ref.path}:`, result.error);
+          }
+          return acc;
+        }, []);
 
         setState({ programs, loading: false, error: null });
       } catch (err) {

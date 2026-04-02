@@ -15,6 +15,7 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +52,16 @@ type Tenant = {
   createdAt: { toDate?: () => Date } | null;
   active: boolean;
 };
+
+const TenantDocSchema = z.object({
+  name: z.string(),
+  slug: z.string(),
+  contactEmail: z.string(),
+  maxStudents: z.number(),
+  plan: z.enum(["pilot", "school", "municipality"]),
+  createdAt: z.object({ toDate: z.function() }).nullable().optional(),
+  active: z.boolean(),
+});
 
 const PLAN_LABELS: Record<Tenant["plan"], string> = {
   pilot: "Pilotskole (gratis)",
@@ -91,9 +102,16 @@ export default function TenantAdminPage() {
       const snap = await getDocs(
         query(collection(db, "tenants"), orderBy("createdAt", "desc"))
       );
-      setTenants(
-        snap.docs.map((d) => ({ id: d.id, ...d.data() } as Tenant))
-      );
+      const validated = snap.docs.reduce<Tenant[]>((acc, d) => {
+        const result = TenantDocSchema.safeParse(d.data());
+        if (result.success) {
+          acc.push({ id: d.id, ...result.data } as Tenant);
+        } else {
+          console.warn(`[TenantAdmin] Valideringsfeil for ${d.ref.path}:`, result.error);
+        }
+        return acc;
+      }, []);
+      setTenants(validated);
     } catch {
       showToast.error("Kunne ikke laste tenanter");
     } finally {
@@ -221,6 +239,7 @@ export default function TenantAdminPage() {
               </div>
             </div>
             <div className="space-y-1.5">
+              {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
               <label id="tenant-plan-label" className="text-sm font-medium">Plan</label>
               <div className="flex gap-2 flex-wrap">
                 {(["pilot", "school", "municipality"] as const).map((p) => (

@@ -31,6 +31,7 @@ import {
   User,
 } from "lucide-react";
 import { SlideIn, StaggerList, StaggerItem, AnimatedCounter } from "@/components/motion";
+import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/types/domain";
@@ -226,9 +227,11 @@ export default function DashboardPage() {
             <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/5 ring-2 ring-primary/20">
                 {user?.photoURL ? (
-                  <img
+                  <Image
                     src={user.photoURL}
                     alt=""
+                    width={64}
+                    height={64}
                     className="h-16 w-16 rounded-full object-cover"
                   />
                 ) : (

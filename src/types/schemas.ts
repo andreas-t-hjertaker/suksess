@@ -190,3 +190,115 @@ export const StudieprogramSOSchema = z.object({
   }).nullable(),
   url: z.string().nullable(),
 });
+
+// ---------------------------------------------------------------------------
+// TestResult — users/{userId}/testResults/{resultId}
+// ---------------------------------------------------------------------------
+
+export const TestResultSchema = z.object({
+  ...withFirestoreTimestamps,
+  userId: z.string(),
+  testType: TestTypeSchema,
+  rawAnswers: z.record(z.string(), z.number()),
+  scores: z.record(z.string(), z.number()),
+  completedAt: firestoreTimestamp,
+});
+
+// ---------------------------------------------------------------------------
+// Tenant — tenants/{tenantId}
+// ---------------------------------------------------------------------------
+
+export const TenantSchema = z.object({
+  ...withFirestoreTimestamps,
+  name: z.string(),
+  type: TenantTypeSchema,
+  feideOrgId: z.string().nullable(),
+  logoUrl: z.string().nullable(),
+  primaryColor: z.string().nullable(),
+  adminUids: z.array(z.string()),
+  active: z.boolean(),
+});
+
+// ---------------------------------------------------------------------------
+// GeneratedContent — generatedContent/{contentId}
+// ---------------------------------------------------------------------------
+
+export const GeneratedContentSchema = z.object({
+  ...withFirestoreTimestamps,
+  userId: z.string().nullable(),
+  type: GeneratedContentTypeSchema,
+  content: z.string(),
+  generatedAt: firestoreTimestamp,
+  expiresAt: firestoreTimestamp,
+  clusterId: z.string().nullable(),
+  model: z.string(),
+});
+
+// ---------------------------------------------------------------------------
+// Conversation — users/{userId}/conversations/{convId}
+// ---------------------------------------------------------------------------
+
+export const ChatMessageSchema = z.object({
+  role: MessageRoleSchema,
+  content: z.string(),
+  timestamp: z.unknown().optional(),
+  sources: z.array(z.string()).optional(),
+  id: z.string().optional(),
+});
+
+export const ConversationSchema = z.object({
+  title: z.string().nullable().optional(),
+  messages: z.array(ChatMessageSchema).optional(),
+  messageCount: z.number().optional(),
+  createdAt: firestoreTimestamp,
+  lastMessageAt: firestoreTimestamp,
+});
+
+// ---------------------------------------------------------------------------
+// FeatureFlag — featureFlags/{flagId}
+// ---------------------------------------------------------------------------
+
+export const FeatureFlagSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  enabled: z.boolean(),
+  plans: z.array(z.string()),
+});
+
+// ---------------------------------------------------------------------------
+// UserSubscription — subscriptions/{userId}
+// ---------------------------------------------------------------------------
+
+export const UserSubscriptionSchema = z.object({
+  stripeCustomerId: z.string(),
+  stripeSubscriptionId: z.string().nullable(),
+  stripePriceId: z.string().nullable(),
+  status: z.enum([
+    "active", "trialing", "past_due", "canceled",
+    "incomplete", "incomplete_expired", "unpaid", "paused", "none",
+  ]),
+  currentPeriodEnd: firestoreTimestamp,
+  cancelAtPeriodEnd: z.boolean(),
+});
+
+// ---------------------------------------------------------------------------
+// SchoolStats — schoolStats/{tenantId}
+// ---------------------------------------------------------------------------
+
+export const SchoolStatsSchema = z.object({
+  tenantId: z.string(),
+  period: z.string(),
+  totalStudents: z.number(),
+  activeStudents7d: z.number(),
+  personalityTestCompletionRate: z.number(),
+  riasecDistribution: z.record(z.string(), z.number()),
+  clusterDistribution: z.record(z.string(), z.number()),
+  dropoutRiskOverview: z.object({
+    high: z.number(),
+    medium: z.number(),
+    low: z.number(),
+    unknown: z.number(),
+  }),
+  llmCostNok: z.number(),
+  updatedAt: firestoreTimestamp,
+});

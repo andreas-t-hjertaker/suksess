@@ -283,8 +283,9 @@ export default function KaraktererPage() {
               <div className="flex gap-2">
                 {/* Karakter 1–6 */}
                 <div className="space-y-1">
+                  {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
                   <label className="text-xs text-muted-foreground">Karakter</label>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1" role="group" aria-label="Karakter">
                     {([1, 2, 3, 4, 5, 6] as const).map((g) => (
                       <button
                         key={g}
@@ -303,8 +304,9 @@ export default function KaraktererPage() {
                 </div>
                 {/* Termin */}
                 <div className="space-y-1">
+                  {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
                   <label className="text-xs text-muted-foreground">Termin</label>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1" role="group" aria-label="Termin">
                     {TERMS.map((t) => (
                       <button
                         key={t.value}
@@ -323,8 +325,9 @@ export default function KaraktererPage() {
                 </div>
                 {/* År */}
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">År</label>
+                  <label className="text-xs text-muted-foreground" htmlFor="grade-year">År</label>
                   <select
+                    id="grade-year"
                     value={newYear}
                     onChange={(e) => setNewYear(Number(e.target.value))}
                     className="h-8 rounded-md border border-border bg-background px-2 text-sm"
@@ -407,8 +410,9 @@ export default function KaraktererPage() {
             ) : (
               <>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Velg fag</label>
+                  <label className="text-sm font-medium" htmlFor="sim-subject">Velg fag</label>
                   <select
+                    id="sim-subject"
                     value={simSubject}
                     onChange={(e) => setSimSubject(e.target.value)}
                     className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
@@ -424,8 +428,9 @@ export default function KaraktererPage() {
 
                 {simSubject && (
                   <div className="space-y-2">
+                    {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
                     <label className="text-sm font-medium">Ny karakter</label>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1" role="group" aria-label="Ny karakter">
                       {([1, 2, 3, 4, 5, 6] as const).map((g) => (
                         <button
                           key={g}

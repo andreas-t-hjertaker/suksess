@@ -34,6 +34,7 @@ import {
   Inbox,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TestResultSchema } from "@/types/schemas";
 import type { TestType } from "@/types/domain";
 
 // ---------------------------------------------------------------------------
@@ -110,12 +111,21 @@ export default function DokumenterPage() {
         orderBy("completedAt", "desc")
       );
       const snap = await getDocs(q);
-      setRows(
-        snap.docs.map((d) => ({
-          id: d.id,
-          ...(d.data() as Omit<TestResultRow, "id">),
-        }))
-      );
+      const validated = snap.docs.reduce<TestResultRow[]>((acc, d) => {
+        const result = TestResultSchema.safeParse(d.data());
+        if (result.success) {
+          acc.push({
+            id: d.id,
+            testType: result.data.testType,
+            completedAt: d.data().completedAt ?? null,
+            scores: result.data.scores,
+          });
+        } else {
+          console.warn(`[Dokumenter] Valideringsfeil for ${d.ref.path}:`, result.error);
+        }
+        return acc;
+      }, []);
+      setRows(validated);
     } finally {
       setLoading(false);
     }

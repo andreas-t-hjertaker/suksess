@@ -109,10 +109,11 @@ export default function ForesattSamtykkePage() {
 
               <div className="space-y-3">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">
+                  <label className="text-sm font-medium" htmlFor="parent-email">
                     Foresattes e-postadresse <span className="text-destructive">*</span>
                   </label>
                   <Input
+                    id="parent-email"
                     type="email"
                     value={parentEmail}
                     onChange={(e) => setParentEmail(e.target.value)}
@@ -120,8 +121,9 @@ export default function ForesattSamtykkePage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium">Foresattes navn (valgfritt)</label>
+                  <label className="text-sm font-medium" htmlFor="parent-name">Foresattes navn (valgfritt)</label>
                   <Input
+                    id="parent-name"
                     value={parentName}
                     onChange={(e) => setParentName(e.target.value)}
                     placeholder="Fornavn Etternavn"
