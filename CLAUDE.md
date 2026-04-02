@@ -6,32 +6,31 @@ Suksess er en AI-drevet karriereveiledningsplattform for norske VGS-elever. Livs
 
 **Eier:** KETL (andreas-t-hjertaker)
 
-## Status (mars 2026)
+## Status (april 2026)
 
-**138 issues opprettet — 90 lukket, 27 åpne.** Deploy til produksjon 25. mars 2026 (Firebase Hosting + Cloud Functions).
+**150 issues opprettet — ~117 lukket, 33 åpne.** Deploy til produksjon 25. mars 2026 (Firebase Hosting + Cloud Functions).
 
-3 kodeauditer, 5 strategisk research, 3 UX-research, 1 B2B/produksjonsklar-research gjennomført.
+3 kodeauditer, 5 strategisk research, 3 UX-research, 1 B2B-research, 1 kodeaudit+sikkerhet-research gjennomført.
 
-### Åpne issues (27 stk)
+### Åpne issues (33 stk)
 
-#### MUST-HAVE (7 stk)
-- **#98** — Komponent- og integrasjonstester (React Testing Library)
-- **#103** — EU AI Act compliance: risikokategorisering, transparens, loggføring
-- **#109** — GDPR Art. 20 dataportabilitet
+#### MUST-HAVE (9 stk)
 - **#110** — Stripe: EHF/Peppol betalingsintegrasjon for B2B skolelisenser
-- **#114** — Samordna Opptak 2028-reform: ny poengberegning
-- **#117** — Gemini 2.5 migrasjon og File Search API evaluering
 - **#127** — B2B Skole-onboarding: self-service oppsett for skoler
 - **#128** — Ekte karrieredata: koble karrierestiutforsker til NAV/SSB/utdanning.no
 - **#134** — Skole self-service dashboard: lisensforvaltning og GDPR-oversikt
+- **#139** — Next.js Middleware: ruteautentisering og CSRF-beskyttelse
+- **#140** — Loading states og feilhåndtering: robusthet i alle dashboard-sider
+- **#141** — AI Chat-sikkerhet for mindreårige: påminnelser, sesjonslengde, guardrails
+- **#145** — Cloud Functions rate limiting: server-side bruker-basert
+- **#149** — Environment-konfigurasjon: .env.example, validering, secret management
 
-#### SHOULD-HAVE (14 stk)
+#### SHOULD-HAVE (20 stk)
 - **#102** — PWA offline-strategi (Service Worker)
 - **#105** — Tilbakemeldingssystem: elev-feedback på AI-svar
 - **#106** — Foresatt-portal: innsyn for foreldre
 - **#107** — Samordna Opptak live-data
 - **#111** — E-postintegrasjon (transaksjonelle e-poster)
-- **#113** — Zod-validering på Firestore reads
 - **#115** — Karrieredata-oppdatering (energiomstilling, AI/ML, bærekraft)
 - **#116** — PWA: offline-støtte med Serwist
 - **#129** — Jobbmatch med ekte stillinger fra NAV
@@ -41,11 +40,18 @@ Suksess er en AI-drevet karriereveiledningsplattform for norske VGS-elever. Livs
 - **#135** — Feide gruppe-synkronisering
 - **#136** — Tenant-basert feature flags
 - **#137** — Brukerstøtte: in-app hjelpesenter
+- **#142** — FINT-integrasjon: fylkeskommunal felleskomponent for elevdata
+- **#143** — Onboarding analytics: fullføringsrate, TTV, aktivering
+- **#144** — Søknadscoach: ekte trenddata fra Samordna Opptak
+- **#146** — Tilgjengelighet: ARIA-attributter og tastaturnavigasjon
+- **#148** — Dark mode: konsistent implementering + personalityzation
+- **#150** — Sikkerhetstesting: OWASP-scanning og penetrasjonstest
 
-#### NICE-TO-HAVE (3 stk)
+#### NICE-TO-HAVE (4 stk)
 - **#108** — Rådgiver-elev sanntidschat
 - **#132** — AI Intervjutrener
 - **#138** — Statusside og systemovervåking
+- **#147** — Nasjonal vitnemålsdatabase (NVB): automatisk karakterimport
 
 ### Lukkede issues (utvalg, nyeste)
 - **#112** — Fjern hardkodede Firebase-credentials ✅
