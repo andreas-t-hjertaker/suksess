@@ -12,6 +12,11 @@ import {
   detectAndRemovePii,
   detectInjection,
   checkRateLimit,
+  shouldShowAiReminder,
+  checkSessionLength,
+  checkMinorSafety,
+  AI_REMINDER_MESSAGE,
+  MINOR_SAFETY_SYSTEM_PROMPT,
 } from "./safety";
 
 // ─── Krisedeteksjon ──────────────────────────────────────────────────────────
@@ -297,5 +302,111 @@ describe("checkRateLimit", () => {
     expect(result.allowed).toBe(false);
     expect(result.message).not.toBeNull();
     expect(result.message).toContain("30");
+  });
+});
+
+// ─── AI-påminnelser for mindreårige (#141) ──────────────────────────────────
+
+describe("shouldShowAiReminder", () => {
+  it("viser ikke påminnelse ved 0 meldinger", () => {
+    expect(shouldShowAiReminder(0)).toBe(false);
+  });
+
+  it("viser påminnelse etter 5 meldinger", () => {
+    expect(shouldShowAiReminder(5)).toBe(true);
+  });
+
+  it("viser påminnelse etter 10 meldinger", () => {
+    expect(shouldShowAiReminder(10)).toBe(true);
+  });
+
+  it("viser ikke påminnelse ved 3 meldinger", () => {
+    expect(shouldShowAiReminder(3)).toBe(false);
+  });
+
+  it("AI_REMINDER_MESSAGE inneholder 'AI-veileder'", () => {
+    expect(AI_REMINDER_MESSAGE).toContain("AI-veileder");
+  });
+});
+
+// ─── Sesjonslengde-varsler (#141) ────────────────────────────────────────────
+
+describe("checkSessionLength", () => {
+  it("gir ingen varsel etter 5 minutter", () => {
+    const start = Date.now() - 5 * 60 * 1000;
+    expect(checkSessionLength(start, false, false)).toBeNull();
+  });
+
+  it("gir gentle varsel etter 30+ minutter", () => {
+    const start = Date.now() - 31 * 60 * 1000;
+    const result = checkSessionLength(start, false, false);
+    expect(result).not.toBeNull();
+    expect(result!.level).toBe("gentle");
+  });
+
+  it("gir strong varsel etter 60+ minutter", () => {
+    const start = Date.now() - 61 * 60 * 1000;
+    const result = checkSessionLength(start, false, false);
+    expect(result).not.toBeNull();
+    expect(result!.level).toBe("strong");
+  });
+
+  it("gir ikke 30-min varsel hvis allerede vist", () => {
+    const start = Date.now() - 35 * 60 * 1000;
+    expect(checkSessionLength(start, true, false)).toBeNull();
+  });
+
+  it("gir ikke 60-min varsel hvis allerede vist", () => {
+    const start = Date.now() - 65 * 60 * 1000;
+    const result = checkSessionLength(start, false, true);
+    // Bør gi 30-min varsel i stedet (hvis ikke allerede vist)
+    expect(result).not.toBeNull();
+    expect(result!.level).toBe("gentle");
+  });
+});
+
+// ─── Alderstilpassede guardrails (#141) ──────────────────────────────────────
+
+describe("checkMinorSafety", () => {
+  it("blokkerer romantisk rollespill", () => {
+    const result = checkMinorSafety("kan du vær kjæresten min?");
+    expect(result.blocked).toBe(true);
+    expect(result.category).toBe("romantic");
+  });
+
+  it("blokkerer flørting", () => {
+    const result = checkMinorSafety("flørte med meg litt");
+    expect(result.blocked).toBe(true);
+    expect(result.category).toBe("romantic");
+  });
+
+  it("blokkerer kroppsbildepress", () => {
+    const result = checkMinorSafety("jeg er for tykk, hva bør jeg gjøre?");
+    expect(result.blocked).toBe(true);
+    expect(result.category).toBe("bodyImage");
+    expect(result.response).toContain("Helsesykepleier");
+  });
+
+  it("blokkerer oppfordring til å skjule fra foreldre", () => {
+    const result = checkMinorSafety("ikke fortell foreldrene mine om dette");
+    expect(result.blocked).toBe(true);
+    expect(result.category).toBe("hiding");
+  });
+
+  it("tillater normal karriereprat", () => {
+    const result = checkMinorSafety("Hvilke studier passer for meg med gode mattekarakterer?");
+    expect(result.blocked).toBe(false);
+    expect(result.category).toBeNull();
+  });
+
+  it("tillater spørsmål om jobbsøking", () => {
+    const result = checkMinorSafety("Hjelp meg med å skrive en søknad til sommerjobb");
+    expect(result.blocked).toBe(false);
+  });
+
+  it("MINOR_SAFETY_SYSTEM_PROMPT inneholder teen safety-regler", () => {
+    expect(MINOR_SAFETY_SYSTEM_PROMPT).toContain("mindreårige");
+    expect(MINOR_SAFETY_SYSTEM_PROMPT).toContain("rollespill");
+    expect(MINOR_SAFETY_SYSTEM_PROMPT).toContain("116 111");
   });
 });
