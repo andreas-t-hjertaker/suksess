@@ -36,30 +36,48 @@ import {
   GitBranch,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/use-admin";
+import { useLocale } from "@/hooks/use-locale";
+import type { Messages } from "@/lib/i18n/locales";
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/profil", label: "Min profil", icon: User },
-  { href: "/dashboard/veileder", label: "AI-veileder", icon: Sparkles },
-  { href: "/dashboard/karriere", label: "Karriere", icon: Compass },
-  { href: "/dashboard/karrieregraf", label: "Karrieregraf", icon: GitBranch },
-  { href: "/dashboard/cv", label: "CV-builder", icon: ScrollText },
-  { href: "/dashboard/analyse", label: "Analyse", icon: BarChart2 },
-  { href: "/dashboard/soknadscoach", label: "Søknads-coach", icon: ClipboardList },
-  { href: "/dashboard/jobbmatch", label: "Jobbmatch", icon: Briefcase },
-  { href: "/dashboard/studier", label: "Studiemestring", icon: BookOpen },
-  { href: "/dashboard/karakterer", label: "Karakterer", icon: GraduationCap },
-  { href: "/dashboard/dokumenter", label: "Dokumenter", icon: FileText },
-  { href: "/dashboard/fremgang", label: "Fremgang & XP", icon: TrendingUp },
-  { href: "/dashboard/abonnement", label: "Abonnement", icon: CreditCard },
-  { href: "/dashboard/utvikler", label: "Utvikler", icon: Code },
-  { href: "/dashboard/innstillinger", label: "Innstillinger", icon: Settings },
-  { href: "/dashboard/mine-data", label: "Mine data", icon: DatabaseZap },
+type NavItemDef = {
+  href: string;
+  labelKey: keyof Messages["nav"];
+  icon: typeof LayoutDashboard;
+};
+
+const navItemDefs: NavItemDef[] = [
+  { href: "/dashboard", labelKey: "dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/profil", labelKey: "profile", icon: User },
+  { href: "/dashboard/veileder", labelKey: "advisor", icon: Sparkles },
+  { href: "/dashboard/karriere", labelKey: "career", icon: Compass },
+  { href: "/dashboard/karrieregraf", labelKey: "careerGraph", icon: GitBranch },
+  { href: "/dashboard/cv", labelKey: "cv", icon: ScrollText },
+  { href: "/dashboard/analyse", labelKey: "analyse", icon: BarChart2 },
+  { href: "/dashboard/soknadscoach", labelKey: "applicationCoach", icon: ClipboardList },
+  { href: "/dashboard/jobbmatch", labelKey: "jobMatch", icon: Briefcase },
+  { href: "/dashboard/studier", labelKey: "studies", icon: BookOpen },
+  { href: "/dashboard/karakterer", labelKey: "grades", icon: GraduationCap },
+  { href: "/dashboard/dokumenter", labelKey: "documents", icon: FileText },
+  { href: "/dashboard/fremgang", labelKey: "progress", icon: TrendingUp },
+  { href: "/dashboard/abonnement", labelKey: "subscription", icon: CreditCard },
+  { href: "/dashboard/utvikler", labelKey: "developer", icon: Code },
+  { href: "/dashboard/innstillinger", labelKey: "settings", icon: Settings },
+  { href: "/dashboard/mine-data", labelKey: "myData", icon: DatabaseZap },
 ];
+
+function useNavItems() {
+  const { t } = useLocale();
+  return navItemDefs.map((item) => ({
+    href: item.href,
+    label: t.nav[item.labelKey],
+    icon: item.icon,
+  }));
+}
 
 function NavLinks({ onClick }: { onClick?: () => void }) {
   const pathname = usePathname();
   const { isAdmin } = useAdmin();
+  const navItems = useNavItems();
 
   const allItems = isAdmin
     ? [...navItems, { href: "/admin", label: "Admin", icon: Shield }]
@@ -140,6 +158,7 @@ export function Sidebar() {
 function CollapsedNav() {
   const pathname = usePathname();
   const { isAdmin } = useAdmin();
+  const navItems = useNavItems();
 
   const allItems = isAdmin
     ? [...navItems, { href: "/admin", label: "Admin", icon: Shield }]
@@ -175,15 +194,16 @@ function CollapsedNav() {
 export function MobileBottomNav() {
   const pathname = usePathname();
   const { isAdmin } = useAdmin();
+  const { t } = useLocale();
 
   const primaryItems = [
-    { href: "/dashboard", label: "Hjem", icon: LayoutDashboard },
-    { href: "/dashboard/veileder", label: "Veileder", icon: Sparkles },
-    { href: "/dashboard/karriere", label: "Karriere", icon: Compass },
-    { href: "/dashboard/profil", label: "Profil", icon: User },
+    { href: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard },
+    { href: "/dashboard/veileder", label: t.nav.advisor, icon: Sparkles },
+    { href: "/dashboard/karriere", label: t.nav.career, icon: Compass },
+    { href: "/dashboard/profil", label: t.nav.profile, icon: User },
     isAdmin
       ? { href: "/admin", label: "Admin", icon: Shield }
-      : { href: "/dashboard/innstillinger", label: "Mer", icon: Settings },
+      : { href: "/dashboard/innstillinger", label: t.nav.settings, icon: Settings },
   ];
 
   function handleTap() {
