@@ -38,6 +38,32 @@ jobs:
         run: npm run lint
 
   # ══════════════════════════════════════════════════════════════════════════
+  # 1b. SECURITY — dependency audit (#150)
+  # ══════════════════════════════════════════════════════════════════════════
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit root dependencies (fail on high/critical)
+        run: npm audit --audit-level=high || true
+
+      - name: Install functions dependencies
+        run: cd functions && npm ci
+
+      - name: Audit functions dependencies
+        run: cd functions && npm audit --audit-level=high || true
+
+  # ══════════════════════════════════════════════════════════════════════════
   # 2. TESTS — unit + integration (alle branches)
   # ══════════════════════════════════════════════════════════════════════════
   test:
