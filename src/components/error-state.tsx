@@ -28,7 +28,7 @@ export function ErrorState({
   const Icon = isOffline ? WifiOff : AlertTriangle;
 
   return (
-    <Card className="border-destructive/20 bg-destructive/5">
+    <Card role="alert" aria-live="polite" className="border-destructive/20 bg-destructive/5">
       <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
         <Icon className="h-10 w-10 text-destructive/70" aria-hidden="true" />
         <div className="space-y-1">
