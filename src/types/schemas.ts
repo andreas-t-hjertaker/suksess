@@ -261,8 +261,15 @@ export const ConversationSchema = z.object({
 export const FeatureFlagSchema = z.object({
   key: z.string(),
   label: z.string(),
+  description: z.string().nullable().optional(),
   enabled: z.boolean(),
   plans: z.array(z.string()),
+  /** Tenant-IDer dette flagget er aktivt for (tom = alle tenanter) */
+  tenantIds: z.array(z.string()).optional().default([]),
+  /** Tenant-IDer som eksplisitt er ekskludert */
+  excludedTenantIds: z.array(z.string()).optional().default([]),
+  /** Prosentandel av brukere som får flagget (0–100) */
+  rolloutPercentage: z.number().min(0).max(100).optional().default(100),
 });
 
 // ---------------------------------------------------------------------------
