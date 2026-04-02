@@ -252,6 +252,179 @@ const handleWebhook = async ({ req, res }: RouteContext) => {
 };
 
 // ============================================================
+// Stripe B2B — skolelisenser og EHF/Peppol (#110)
+// ============================================================
+
+/** POST /stripe/b2b/customer — Opprett B2B-kunde med EHF/Peppol-metadata */
+const createB2BCustomer = withAdmin(async ({ req, res }) => {
+  const {
+    organizationName, organizationNumber, glnNumber,
+    contactEmail, contactName, address, tenantId, invoiceReference,
+  } = req.body as {
+    organizationName?: string; organizationNumber?: string; glnNumber?: string;
+    contactEmail?: string; contactName?: string; tenantId?: string;
+    invoiceReference?: string;
+    address?: { line1: string; line2?: string; postalCode: string; city: string; country: string };
+  };
+
+  if (!organizationName || !organizationNumber || !contactEmail || !tenantId || !address) {
+    fail(res, "organizationName, organizationNumber, contactEmail, tenantId og address er påkrevd");
+    return;
+  }
+
+  // Valider organisasjonsnummer (9 siffer)
+  const orgDigits = organizationNumber.replace(/\s/g, "");
+  if (!/^\d{9}$/.test(orgDigits)) {
+    fail(res, "Ugyldig organisasjonsnummer (må være 9 siffer)");
+    return;
+  }
+
+  const customer = await getStripe().customers.create({
+    name: organizationName,
+    email: contactEmail,
+    metadata: {
+      tenantId,
+      organizationNumber: orgDigits,
+      glnNumber: glnNumber || "",
+      invoiceReference: invoiceReference || "",
+      contactName: contactName || "",
+      customerType: "b2b_school",
+      country: "NO",
+    },
+    address: {
+      line1: address.line1,
+      line2: address.line2 || "",
+      postal_code: address.postalCode,
+      city: address.city,
+      country: "NO",
+    },
+    tax_exempt: "none", // Norsk MVA gjelder
+    invoice_settings: {
+      custom_fields: [
+        { name: "Organisasjonsnr", value: orgDigits },
+        ...(glnNumber ? [{ name: "GLN (Peppol)", value: glnNumber }] : []),
+        ...(invoiceReference ? [{ name: "Deres ref", value: invoiceReference }] : []),
+      ],
+    },
+  });
+
+  // Oppdater tenant med Stripe-kunde
+  await db.collection("tenants").doc(tenantId).update({
+    stripeCustomerId: customer.id,
+    organizationNumber: orgDigits,
+    glnNumber: glnNumber || null,
+    billingEmail: contactEmail,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  success(res, { customerId: customer.id, tenantId }, 201);
+});
+
+/** POST /stripe/b2b/subscription — Opprett skolelisens-abonnement */
+const createB2BSubscription = withAdmin(async ({ req, res }) => {
+  const { tenantId, planId, studentCount, invoiceReference } = req.body as {
+    tenantId?: string; planId?: string; studentCount?: number; invoiceReference?: string;
+  };
+
+  if (!tenantId || !planId || !studentCount) {
+    fail(res, "tenantId, planId og studentCount er påkrevd");
+    return;
+  }
+
+  // Hent Stripe-kunde fra tenant
+  const tenantDoc = await db.collection("tenants").doc(tenantId).get();
+  if (!tenantDoc.exists || !tenantDoc.data()?.stripeCustomerId) {
+    fail(res, "Tenant har ingen Stripe-kunde. Opprett kunde først.", 400);
+    return;
+  }
+
+  const customerId = tenantDoc.data()!.stripeCustomerId as string;
+
+  // Velg pris basert på plan
+  const priceEnvMap: Record<string, string | undefined> = {
+    school: process.env.STRIPE_PRICE_B2B_SCHOOL,
+    municipality: process.env.STRIPE_PRICE_B2B_MUNICIPALITY,
+  };
+
+  const priceId = priceEnvMap[planId];
+  if (!priceId) {
+    fail(res, `Ugyldig plan-ID eller pris ikke konfigurert: ${planId}`);
+    return;
+  }
+
+  const subscription = await getStripe().subscriptions.create({
+    customer: customerId,
+    items: [{ price: priceId, quantity: studentCount }],
+    collection_method: "send_invoice",
+    days_until_due: 30,
+    metadata: {
+      tenantId,
+      planId,
+      studentCount: String(studentCount),
+      invoiceReference: invoiceReference || "",
+    },
+    payment_settings: {
+      payment_method_types: ["card"],
+    },
+  });
+
+  // Lagre abonnement-info på tenant
+  await db.collection("tenants").doc(tenantId).update({
+    subscriptionId: subscription.id,
+    plan: planId,
+    maxStudents: studentCount,
+    subscriptionStatus: subscription.status,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  success(res, {
+    subscriptionId: subscription.id,
+    status: subscription.status,
+    currentPeriodEnd: subscription.current_period_end,
+  }, 201);
+});
+
+/** GET /stripe/b2b/invoices — Hent fakturaer for en tenant */
+const getB2BInvoices = withAdmin(async ({ req, res }) => {
+  const tenantId = req.query.tenantId as string;
+  if (!tenantId) {
+    fail(res, "tenantId er påkrevd");
+    return;
+  }
+
+  const tenantDoc = await db.collection("tenants").doc(tenantId).get();
+  const customerId = tenantDoc.data()?.stripeCustomerId as string | undefined;
+  if (!customerId) {
+    success(res, []);
+    return;
+  }
+
+  const invoices = await getStripe().invoices.list({
+    customer: customerId,
+    limit: 24,
+  });
+
+  const mapped = invoices.data.map((inv) => ({
+    id: inv.id,
+    stripeInvoiceId: inv.id,
+    tenantId,
+    organizationNumber: tenantDoc.data()?.organizationNumber || "",
+    status: inv.status || "draft",
+    amountDue: inv.amount_due / 100,
+    amountPaid: inv.amount_paid / 100,
+    tax: (inv.tax || 0) / 100,
+    currency: "NOK",
+    dueDate: inv.due_date ? new Date(inv.due_date * 1000).toISOString() : null,
+    invoiceNumber: inv.number || inv.id,
+    pdfUrl: inv.invoice_pdf || null,
+    ehfStatus: inv.metadata?.ehfStatus || "not_applicable",
+    createdAt: new Date(inv.created * 1000).toISOString(),
+  }));
+
+  success(res, mapped);
+});
+
+// ============================================================
 // API-nøkkel-handlers
 // ============================================================
 
@@ -827,6 +1000,10 @@ const routes: Route[] = [
   { method: "POST", path: "/stripe/checkout", handler: createCheckout },
   { method: "POST", path: "/stripe/portal", handler: createPortal },
   { method: "POST", path: "/stripe/webhook", handler: handleWebhook },
+  // Stripe B2B
+  { method: "POST", path: "/stripe/b2b/customer", handler: createB2BCustomer },
+  { method: "POST", path: "/stripe/b2b/subscription", handler: createB2BSubscription },
+  { method: "GET", path: "/stripe/b2b/invoices", handler: getB2BInvoices },
   // API-nøkler
   { method: "GET", path: "/api-keys", handler: listApiKeys },
   { method: "POST", path: "/api-keys", handler: createApiKey },
