@@ -211,7 +211,9 @@ export async function searchJobs(params: JobSearchParams): Promise<JobSearchResu
       (j) =>
         j.title.toLowerCase().includes(q) ||
         j.company.toLowerCase().includes(q) ||
-        j.description.toLowerCase().includes(q)
+        j.description.toLowerCase().includes(q) ||
+        j.type.toLowerCase().includes(q) ||
+        j.sector.toLowerCase().includes(q)
     );
   }
 

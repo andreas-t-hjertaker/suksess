@@ -1,11 +1,15 @@
 "use client";
 
 /**
- * Jobbmatch-side — AI-drevet jobbmatching og søknadsbrev-generator (issue #15)
+ * Jobbmatch-side — AI-drevet jobbmatching med ekte NAV-stillinger (#15, #129)
+ *
+ * Henter ekte stillingsannonser fra Firestore (importert daglig fra NAV
+ * pam-stilling-feed) og matcher mot elevens RIASEC-profil.
  */
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { useJobSearch } from "@/hooks/use-job-search";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
@@ -14,10 +18,18 @@ import { useChatSession } from "@/modules/ai-assistant/hooks/use-chat";
 import { FeatureGate } from "@/components/feature-gate";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { ErrorState } from "@/components/error-state";
+import { EmptyState } from "@/components/empty-state";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import {
   Search,
   Star,
@@ -27,193 +39,40 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
-  CheckCircle2,
+  Briefcase,
+  CalendarDays,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserProfile } from "@/types/domain";
+import type { NavJobListing } from "@/lib/jobbmatch/nav-stillinger";
 
 // ---------------------------------------------------------------------------
-// Mock jobbdatabase (representativt utvalg)
+// Konstanter
 // ---------------------------------------------------------------------------
 
-type Job = {
-  id: string;
-  title: string;
-  company: string;
-  location: string;
-  type: "heltid" | "deltid" | "internship" | "lærling";
-  sector: string;
-  riasecMatch: string[]; // RIASEC-typer som passer
-  description: string;
-  requirements: string[];
-  salary?: string;
-};
-
-const JOBS: Job[] = [
-  {
-    id: "j1",
-    title: "Juniorutvikler (backend)",
-    company: "Bekk Consulting",
-    location: "Oslo",
-    type: "heltid",
-    sector: "IT",
-    riasecMatch: ["I", "R", "C"],
-    description: "Vi søker en engasjert juniorutvikler til å jobbe med backend-systemer i Java/Kotlin.",
-    requirements: ["Bachelor i informatikk", "Grunnleggende Java/Python", "Interesse for systemarkitektur"],
-    salary: "540 000 – 620 000 kr/år",
-  },
-  {
-    id: "j2",
-    title: "UX-designer (junior)",
-    company: "Eggs Design",
-    location: "Oslo",
-    type: "heltid",
-    sector: "Design",
-    riasecMatch: ["A", "I", "S"],
-    description: "Bli med på å skape meningsfulle digitale produkter for norske sluttbrukere.",
-    requirements: ["Utdanning innen interaksjonsdesign eller kommunikasjon", "Figma-erfaring", "Interesse for brukeratferd"],
-    salary: "480 000 – 560 000 kr/år",
-  },
-  {
-    id: "j3",
-    title: "Regnskapsmedarbeider",
-    company: "Visma",
-    location: "Bergen",
-    type: "heltid",
-    sector: "Økonomi",
-    riasecMatch: ["C", "E", "I"],
-    description: "Støtt kundenes regnskapsrapportering og bidra i den digitale transformasjonen av regnskapsbransjen.",
-    requirements: ["Bachelor i økonomi/regnskap", "Excel-kompetanse", "Nøyaktighet og struktur"],
-    salary: "460 000 – 530 000 kr/år",
-  },
-  {
-    id: "j4",
-    title: "Miljøterapeut",
-    company: "Oslo kommune",
-    location: "Oslo",
-    type: "heltid",
-    sector: "Helse/sosial",
-    riasecMatch: ["S", "A", "E"],
-    description: "Arbeid med ungdom i utfordrende livssituasjoner innen barnevernstjenesten.",
-    requirements: ["Vernepleier/barnevernspedagog", "Erfaring med ungdom", "Tålmodighet og empati"],
-  },
-  {
-    id: "j5",
-    title: "Bioingeniør",
-    company: "Oslo universitetssykehus",
-    location: "Oslo",
-    type: "heltid",
-    sector: "Helse",
-    riasecMatch: ["I", "R", "C"],
-    description: "Analyser biologiske prøver i en av Norges største laboratorieenheter.",
-    requirements: ["Bioingeniørutdanning", "Erfaring med analysearbeid", "Nøyaktighet"],
-    salary: "500 000 – 570 000 kr/år",
-  },
-  {
-    id: "j6",
-    title: "Markedskoordinator",
-    company: "Kahoot!",
-    location: "Oslo",
-    type: "heltid",
-    sector: "Marked/kommunikasjon",
-    riasecMatch: ["E", "A", "S"],
-    description: "Koordiner markedskampanjer og sosiale medier for et av Norges mest kjente tech-selskaper.",
-    requirements: ["Bachelor i markedsføring/kommunikasjon", "Erfaring med SoMe", "Kreativitet"],
-    salary: "490 000 – 560 000 kr/år",
-  },
-  {
-    id: "j7",
-    title: "Lærling elektro",
-    company: "Caverion",
-    location: "Trondheim",
-    type: "lærling",
-    sector: "Håndverk/teknikk",
-    riasecMatch: ["R", "I", "C"],
-    description: "Start din fagbrevreise innen elektriske installasjoner med en ledende teknisk servicevirksomhet.",
-    requirements: ["VG2 elektrofag", "Motivasjon for praktisk arbeid"],
-    salary: "250 000 – 310 000 kr/år",
-  },
-  {
-    id: "j8",
-    title: "Barnehagelærer",
-    company: "Læringsverkstedet",
-    location: "Stavanger",
-    type: "heltid",
-    sector: "Pedagogikk",
-    riasecMatch: ["S", "A", "E"],
-    description: "Gi barn de beste forutsetningene for læring og utvikling i en moderne barnehage.",
-    requirements: ["Barnehagelærerutdanning", "Engasjement for barn", "Teamspiller"],
-    salary: "470 000 – 530 000 kr/år",
-  },
-  {
-    id: "j9",
-    title: "Dataanalytiker (junior)",
-    company: "DNB",
-    location: "Oslo",
-    type: "heltid",
-    sector: "Finans/data",
-    riasecMatch: ["I", "C", "R"],
-    description: "Analyser store datamengder og bidra til datadrevne beslutninger i Norges største bank.",
-    requirements: ["Bachelor i statistikk/informatikk/økonomi", "Python/SQL-erfaring", "Analytisk tankegang"],
-    salary: "560 000 – 640 000 kr/år",
-  },
-  {
-    id: "j10",
-    title: "Sykepleier",
-    company: "Helse Sør-Øst",
-    location: "Akershus",
-    type: "heltid",
-    sector: "Helse",
-    riasecMatch: ["S", "R", "I"],
-    description: "Gi pasienter fremragende pleie og omsorg ved et av regionens ledende sykehus.",
-    requirements: ["Sykepleierutdanning", "Autorisasjon", "Empati og faglig styrke"],
-    salary: "510 000 – 590 000 kr/år",
-  },
-  {
-    id: "j11",
-    title: "Prosjektleder IT",
-    company: "Accenture",
-    location: "Oslo",
-    type: "heltid",
-    sector: "IT/konsulent",
-    riasecMatch: ["E", "C", "I"],
-    description: "Led digitale transformasjonsprosjekter for store norske virksomheter.",
-    requirements: ["Bachelor/master i relevant felt", "Ledererfaring", "Sertifisering (PMP/Prince2) er en fordel"],
-    salary: "680 000 – 820 000 kr/år",
-  },
-  {
-    id: "j12",
-    title: "Journalist (digital)",
-    company: "NRK",
-    location: "Oslo",
-    type: "heltid",
-    sector: "Medier",
-    riasecMatch: ["A", "E", "S"],
-    description: "Produser engasjerende innhold for NRKs digitale plattformer.",
-    requirements: ["Journalistutdanning", "Sterk skriftlig fremstillingsevne", "Nysgjerrighet"],
-    salary: "520 000 – 600 000 kr/år",
-  },
-];
-
-// ---------------------------------------------------------------------------
-// Match-score
-// ---------------------------------------------------------------------------
-
-function calcMatchScore(job: Job, riasecCode: string): number {
-  const topLetters = riasecCode.slice(0, 3).split("");
-  let score = 0;
-  for (const letter of topLetters) {
-    const matches = job.riasecMatch.filter((r) => r === letter).length;
-    score += matches;
-  }
-  return Math.round((score / 3) * 100);
-}
-
-const TYPE_LABELS: Record<Job["type"], string> = {
+const TYPE_LABELS: Record<string, string> = {
   heltid: "Heltid",
   deltid: "Deltid",
   internship: "Internship",
-  lærling: "Lærling",
+  "lærling": "Lærling",
+  annet: "Annet",
+};
+
+const TYPE_OPTIONS = [
+  { value: "", label: "Alle typer" },
+  { value: "heltid", label: "Heltid" },
+  { value: "deltid", label: "Deltid" },
+  { value: "lærling", label: "Lærling" },
+  { value: "internship", label: "Internship" },
+];
+
+const RIASEC_LETTERS: Record<string, string> = {
+  realistic: "R",
+  investigative: "I",
+  artistic: "A",
+  social: "S",
+  enterprising: "E",
+  conventional: "C",
 };
 
 // ---------------------------------------------------------------------------
@@ -222,25 +81,27 @@ const TYPE_LABELS: Record<Job["type"], string> = {
 
 function JobCard({
   job,
-  matchScore,
   isFavorite,
   onToggleFavorite,
   onGenerateLetter,
 }: {
-  job: Job;
-  matchScore: number;
+  job: NavJobListing;
   isFavorite: boolean;
   onToggleFavorite: () => void;
-  onGenerateLetter: (job: Job) => void;
+  onGenerateLetter: (job: NavJobListing) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
   const matchColor =
-    matchScore >= 70
+    job.matchScore >= 70
       ? "text-green-600"
-      : matchScore >= 40
+      : job.matchScore >= 40
       ? "text-yellow-600"
       : "text-muted-foreground";
+
+  const riasecLetters = job.riasecCodes
+    .map((code) => RIASEC_LETTERS[code] || code)
+    .join("");
 
   return (
     <div className={cn("rounded-xl border bg-card transition-all", isFavorite && "border-primary/40 bg-primary/5")}>
@@ -260,13 +121,14 @@ function JobCard({
           <p className="text-sm font-semibold">{job.title}</p>
           <p className="text-xs text-muted-foreground">{job.company} · {job.location}</p>
           <div className="flex flex-wrap gap-1.5 mt-1.5">
-            <Badge variant="secondary" className="text-xs">{TYPE_LABELS[job.type]}</Badge>
-            <Badge variant="outline" className="text-xs">{job.sector}</Badge>
+            <Badge variant="secondary" className="text-xs">{TYPE_LABELS[job.type] ?? job.type}</Badge>
+            {job.sector && <Badge variant="outline" className="text-xs">{job.sector}</Badge>}
+            {riasecLetters && <Badge variant="outline" className="text-xs">RIASEC: {riasecLetters}</Badge>}
           </div>
         </div>
 
         <div className="text-right shrink-0">
-          <p className={cn("text-lg font-bold", matchColor)}>{matchScore}%</p>
+          <p className={cn("text-lg font-bold", matchColor)}>{job.matchScore}%</p>
           <p className="text-[10px] text-muted-foreground">match</p>
         </div>
 
@@ -279,24 +141,15 @@ function JobCard({
 
       {expanded && (
         <div className="border-t px-4 pb-4 space-y-4">
-          <p className="text-sm text-muted-foreground mt-3">{job.description}</p>
+          {job.description && (
+            <p className="text-sm text-muted-foreground mt-3">{job.description}</p>
+          )}
 
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Krav</p>
-            <ul className="space-y-1">
-              {job.requirements.map((r) => (
-                <li key={r} className="flex items-start gap-1.5 text-xs">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mt-0.5 shrink-0" />
-                  {r}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {job.salary && (
-            <p className="text-xs">
-              <span className="font-medium">Lønn: </span>
-              <span className="text-muted-foreground">{job.salary}</span>
+          {job.deadline && (
+            <p className="text-xs flex items-center gap-1.5">
+              <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="font-medium">Søknadsfrist: </span>
+              <span className="text-muted-foreground">{job.deadline}</span>
             </p>
           )}
 
@@ -309,10 +162,17 @@ function JobCard({
               <Sparkles className="h-3.5 w-3.5" />
               Generer søknadsbrev
             </Button>
-            <Button size="sm" variant="outline" className="gap-1.5" render={<a href="https://arbeidsplassen.nav.no" target="_blank" rel="noopener noreferrer" />}>
+            {job.applicationUrl ? (
+              <Button size="sm" variant="outline" className="gap-1.5" render={<a href={job.applicationUrl} target="_blank" rel="noopener noreferrer" />}>
                 <ExternalLink className="h-3.5 w-3.5" />
                 Se på NAV
-            </Button>
+              </Button>
+            ) : (
+              <Button size="sm" variant="outline" className="gap-1.5" render={<a href="https://arbeidsplassen.nav.no" target="_blank" rel="noopener noreferrer" />}>
+                <ExternalLink className="h-3.5 w-3.5" />
+                NAV Arbeidsplassen
+              </Button>
+            )}
           </div>
         </div>
       )}
@@ -330,9 +190,10 @@ function JobMatchPage() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [generating, setGenerating] = useState(false);
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [selectedJob, setSelectedJob] = useState<NavJobListing | null>(null);
   const favoritesLoaded = useRef(false);
 
   useEffect(() => {
@@ -373,6 +234,23 @@ function JobMatchPage() {
 
   const riasecCode = profile?.riasec ? getRiasecCode(profile.riasec) : "IRS";
 
+  // Jobbsøk med ekte NAV-data
+  const {
+    jobs,
+    loading: jobsLoading,
+    loadingMore,
+    error: jobsError,
+    hasMore,
+    locations,
+    loadMore,
+    retry,
+  } = useJobSearch({
+    riasecProfile: profile?.riasec ?? null,
+    query: search || undefined,
+    location: locationFilter || undefined,
+    type: typeFilter || undefined,
+  });
+
   const context = useMemo(
     () => ({
       user: user ? { displayName: user.displayName, email: user.email, uid: user.uid } : undefined,
@@ -393,34 +271,11 @@ Tilpass brevet til stilling og bedrift. Fremhev relevante styrker og motivasjon.
 
   const { sendMessage, messages, isStreaming } = useChatSession(context, { systemPrompt });
 
-  const scored = useMemo(
-    () =>
-      JOBS.map((j) => ({ job: j, score: calcMatchScore(j, riasecCode) })).sort(
-        (a, b) => b.score - a.score
-      ),
-    [riasecCode]
-  );
-
-  const filtered = useMemo(() => {
-    if (!search.trim()) return scored;
-    const q = search.toLowerCase();
-    return scored.filter(
-      ({ job }) =>
-        job.title.toLowerCase().includes(q) ||
-        job.company.toLowerCase().includes(q) ||
-        job.sector.toLowerCase().includes(q) ||
-        job.location.toLowerCase().includes(q)
-    );
-  }, [scored, search]);
-
-  async function handleGenerateLetter(job: Job) {
+  async function handleGenerateLetter(job: NavJobListing) {
     setSelectedJob(job);
-    setGenerating(true);
     const prompt = `Skriv et søknadsbrev for stilling som "${job.title}" hos ${job.company} i ${job.location}.
-Krav: ${job.requirements.join("; ")}.
 Beskrivelse: ${job.description}`;
     await sendMessage(prompt);
-    setGenerating(false);
   }
 
   // Hent siste melding fra AI som søknadsbrevet
@@ -439,7 +294,7 @@ Beskrivelse: ${job.description}`;
       <div>
         <h1 className="text-2xl font-bold">Jobbmatch</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Jobber sortert etter match med din RIASEC-profil ({riasecCode}). Generer søknadsbrev med AI.
+          Ekte stillinger fra NAV matchet mot din RIASEC-profil ({riasecCode}).
         </p>
       </div>
 
@@ -454,26 +309,76 @@ Beskrivelse: ${job.description}`;
         />
       </div>
 
-      {/* Jobb-liste */}
-      <div className="space-y-2">
-        {filtered.map(({ job, score }) => (
-          <JobCard
-            key={job.id}
-            job={job}
-            matchScore={score}
-            isFavorite={favorites.has(job.id)}
-            onToggleFavorite={() =>
-              setFavorites((prev) => {
-                const next = new Set(prev);
-                if (next.has(job.id)) next.delete(job.id);
-                else next.add(job.id);
-                return next;
-              })
-            }
-            onGenerateLetter={handleGenerateLetter}
-          />
-        ))}
+      {/* Filtre */}
+      <div className="flex gap-2 flex-wrap">
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Alle typer" />
+          </SelectTrigger>
+          <SelectContent>
+            {TYPE_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={locationFilter} onValueChange={setLocationFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Alle steder" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Alle steder</SelectItem>
+            {locations.map((loc) => (
+              <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
+
+      {/* Jobb-liste */}
+      {jobsLoading ? (
+        <PageSkeleton variant="list" />
+      ) : jobsError ? (
+        <ErrorState message={jobsError} onRetry={retry} />
+      ) : jobs.length === 0 ? (
+        <EmptyState
+          icon={Briefcase}
+          title="Ingen stillinger funnet"
+          description="Prøv å endre søk eller filtre, eller kom tilbake senere for nye stillinger fra NAV."
+        />
+      ) : (
+        <div className="space-y-2">
+          {jobs.map((job) => (
+            <JobCard
+              key={job.id}
+              job={job}
+              isFavorite={favorites.has(job.id)}
+              onToggleFavorite={() =>
+                setFavorites((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(job.id)) next.delete(job.id);
+                  else next.add(job.id);
+                  return next;
+                })
+              }
+              onGenerateLetter={handleGenerateLetter}
+            />
+          ))}
+
+          {/* Last inn flere */}
+          {hasMore && (
+            <div className="flex justify-center pt-4">
+              <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
+                {loadingMore ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Laster…</>
+                ) : (
+                  "Last inn flere stillinger"
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Søknadsbrev-panel */}
       {selectedJob && (
@@ -485,7 +390,7 @@ Beskrivelse: ${job.description}`;
             </h2>
           </div>
 
-          {generating || isStreaming ? (
+          {isStreaming ? (
             <div className="flex items-center gap-2 text-muted-foreground text-sm">
               <Loader2 className="h-4 w-4 animate-spin" />
               Genererer søknadsbrev…

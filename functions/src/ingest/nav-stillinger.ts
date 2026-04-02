@@ -58,9 +58,11 @@ export type JobListing = {
   deadline: string | null;
   published: string;
   /** STYRK-08 yrkeskode — brukes for RIASEC-matching */
-  styrk08: string | null;
+  styrkCode: string | null;
   /** Utledet RIASEC-matching basert på STYRK-08 */
   riasecMatch: string[];
+  /** Aktiv stilling (brukes for filtrering i searchJobs) */
+  active: boolean;
   source: "nav";
   updatedAt: admin.firestore.FieldValue;
 };
@@ -165,8 +167,9 @@ export async function ingestNavStillinger(maxPages = 5): Promise<void> {
             : null),
         deadline: stilling.properties?.deadline ?? null,
         published: stilling.published ?? new Date().toISOString(),
-        styrk08: stilling.properties?.styrk08 ?? null,
+        styrkCode: stilling.properties?.styrk08 ?? null,
         riasecMatch: getRiasecFromStyrk(stilling.properties?.styrk08 ?? null),
+        active: true,
         source: "nav",
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       };
