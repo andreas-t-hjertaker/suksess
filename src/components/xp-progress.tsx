@@ -13,15 +13,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Flame, Trophy, Zap, Lock, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 
 function WeeklyQuests() {
   const quests = useMemo(() => getWeeklyQuests(null), []);
+  const { t } = useLocale();
 
   return (
     <div>
       <p className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
         <Target className="h-3 w-3" aria-hidden="true" />
-        Ukens oppdrag
+        {t.dashboard.weeklyQuests}
       </p>
       <div className="space-y-2">
         {quests.map((q) => (
@@ -46,6 +48,7 @@ function WeeklyQuests() {
 
 export function XpProgress() {
   const { loading, totalXp, level, progress, streak, earnedAchievements, recordDailyLogin } = useXp();
+  const { t } = useLocale();
 
   // Registrer daglig innlogging
   useEffect(() => {
@@ -61,12 +64,12 @@ export function XpProgress() {
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Din fremgang</CardTitle>
+          <CardTitle className="text-base">{t.dashboard.yourProgress}</CardTitle>
           <div className="flex items-center gap-2">
             {streak >= 3 && (
               <Badge variant="secondary" className="gap-1 text-orange-500">
                 <Flame className="h-3 w-3" />
-                {streak} dager
+                {streak} {t.dashboard.days}
               </Badge>
             )}
             <Badge variant="outline" className={cn("gap-1", level.color)}>
@@ -95,7 +98,7 @@ export function XpProgress() {
             aria-valuenow={progress.percent}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-label={`Fremgang mot ${nextLevel?.label ?? "maks nivå"}: ${progress.percent}%`}
+            aria-label={`${t.dashboard.yourProgress}: ${progress.percent}%`}
             className="h-2 w-full overflow-hidden rounded-full bg-muted"
           >
             <div
@@ -105,7 +108,7 @@ export function XpProgress() {
           </div>
           {nextLevel && (
             <p className="text-xs text-muted-foreground">
-              {progress.needed - progress.current} XP til {nextLevel.label}
+              {progress.needed - progress.current} {t.dashboard.xpToLevel} {nextLevel.label}
             </p>
           )}
         </div>
@@ -121,8 +124,8 @@ export function XpProgress() {
               return (
                 <div
                   key={a.id}
-                  title={earned ? `${a.title}: ${a.description}` : `Låst: ${a.description}`}
-                  aria-label={earned ? `${a.title}: ${a.description}` : `Låst achievement: ${a.description}`}
+                  title={earned ? `${a.title}: ${a.description}` : `${t.gamification.locked}: ${a.description}`}
+                  aria-label={earned ? `${a.title}: ${a.description}` : `${t.dashboard.lockedAchievement}: ${a.description}`}
                   className={cn(
                     "flex flex-col items-center gap-1 rounded-lg border p-2 text-center transition-colors",
                     earned
@@ -148,7 +151,7 @@ export function XpProgress() {
         {/* Nivå-oversikt */}
         <details className="group">
           <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors select-none">
-            Se alle nivåer ▾
+            {t.dashboard.seeAllLevels} ▾
           </summary>
           <div className="mt-3 space-y-2">
             {LEVELS.map((l) => {
@@ -172,7 +175,7 @@ export function XpProgress() {
                   <p className="text-xs text-muted-foreground mt-0.5">{l.description}</p>
                   {isCurrentLevel && (
                     <Badge variant="secondary" className="mt-1.5 text-xs">
-                      Nåværende nivå
+                      {t.dashboard.currentLevel}
                     </Badge>
                   )}
                 </div>

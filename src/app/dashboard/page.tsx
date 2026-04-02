@@ -34,93 +34,33 @@ import { SlideIn, StaggerList, StaggerItem, AnimatedCounter } from "@/components
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/hooks/use-locale";
 import type { UserProfile } from "@/types/domain";
 
 // ---------------------------------------------------------------------------
 // Quick-action lenker
 // ---------------------------------------------------------------------------
 
-const QUICK_LINKS = [
-  {
-    href: "/dashboard/veileder",
-    label: "AI-veileder",
-    desc: "Få personlig karriereveiledning",
-    icon: Sparkles,
-    color: "text-violet-500",
-    bg: "bg-violet-500/10",
-  },
-  {
-    href: "/dashboard/karriere",
-    label: "Karrierestiutforsker",
-    desc: "Se hvilke yrker som passer deg",
-    icon: Compass,
-    color: "text-blue-500",
-    bg: "bg-blue-500/10",
-  },
-  {
-    href: "/dashboard/soknadscoach",
-    label: "Søknads-coach",
-    desc: "Sjekk sjanser og poenggrenser",
-    icon: ClipboardList,
-    color: "text-orange-500",
-    bg: "bg-orange-500/10",
-  },
-  {
-    href: "/dashboard/karakterer",
-    label: "Karakterer & SO-poeng",
-    desc: "Beregn SO-poeng og se studieprogram",
-    icon: GraduationCap,
-    color: "text-amber-500",
-    bg: "bg-amber-500/10",
-  },
-  {
-    href: "/dashboard/jobbmatch",
-    label: "Jobbmatch",
-    desc: "Finn jobber som passer din profil",
-    icon: Briefcase,
-    color: "text-emerald-500",
-    bg: "bg-emerald-500/10",
-  },
-  {
-    href: "/dashboard/studier",
-    label: "Studiemestring",
-    desc: "Følg opp ECTS-poeng og eksamen",
-    icon: BookOpen,
-    color: "text-cyan-500",
-    bg: "bg-cyan-500/10",
-  },
-  {
-    href: "/dashboard/karrieregraf",
-    label: "Karrieregraf",
-    desc: "Visualiser mulige karriereveier",
-    icon: GitBranch,
-    color: "text-indigo-500",
-    bg: "bg-indigo-500/10",
-  },
-  {
-    href: "/dashboard/analyse",
-    label: "Avansert analyse",
-    desc: "Dypdykk i din personlighetsprofil",
-    icon: BarChart2,
-    color: "text-green-500",
-    bg: "bg-green-500/10",
-  },
-  {
-    href: "/dashboard/cv",
-    label: "CV-builder",
-    desc: "Bygg og last ned din CV",
-    icon: ScrollText,
-    color: "text-rose-500",
-    bg: "bg-rose-500/10",
-  },
-  {
-    href: "/dashboard/profil",
-    label: "Min profil",
-    desc: "Se din RIASEC- og Big Five-profil",
-    icon: Brain,
-    color: "text-teal-500",
-    bg: "bg-teal-500/10",
-  },
+type QuickLinkDef = {
+  href: string;
+  labelKey: keyof typeof import("@/lib/i18n/locales").MESSAGES.nb.quickLinks;
+  descKey: keyof typeof import("@/lib/i18n/locales").MESSAGES.nb.quickLinks;
+  icon: typeof Sparkles;
+  color: string;
+  bg: string;
+};
+
+const QUICK_LINK_DEFS: QuickLinkDef[] = [
+  { href: "/dashboard/veileder", labelKey: "aiAdvisor", descKey: "aiAdvisorDesc", icon: Sparkles, color: "text-violet-500", bg: "bg-violet-500/10" },
+  { href: "/dashboard/karriere", labelKey: "careerExplorer", descKey: "careerExplorerDesc", icon: Compass, color: "text-blue-500", bg: "bg-blue-500/10" },
+  { href: "/dashboard/soknadscoach", labelKey: "applicationCoach", descKey: "applicationCoachDesc", icon: ClipboardList, color: "text-orange-500", bg: "bg-orange-500/10" },
+  { href: "/dashboard/karakterer", labelKey: "gradesAndPoints", descKey: "gradesAndPointsDesc", icon: GraduationCap, color: "text-amber-500", bg: "bg-amber-500/10" },
+  { href: "/dashboard/jobbmatch", labelKey: "jobMatch", descKey: "jobMatchDesc", icon: Briefcase, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  { href: "/dashboard/studier", labelKey: "studyMastery", descKey: "studyMasteryDesc", icon: BookOpen, color: "text-cyan-500", bg: "bg-cyan-500/10" },
+  { href: "/dashboard/karrieregraf", labelKey: "careerGraph", descKey: "careerGraphDesc", icon: GitBranch, color: "text-indigo-500", bg: "bg-indigo-500/10" },
+  { href: "/dashboard/analyse", labelKey: "advancedAnalysis", descKey: "advancedAnalysisDesc", icon: BarChart2, color: "text-green-500", bg: "bg-green-500/10" },
+  { href: "/dashboard/cv", labelKey: "cvBuilder", descKey: "cvBuilderDesc", icon: ScrollText, color: "text-rose-500", bg: "bg-rose-500/10" },
+  { href: "/dashboard/profil", labelKey: "myProfile", descKey: "myProfileDesc", icon: Brain, color: "text-teal-500", bg: "bg-teal-500/10" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -129,48 +69,18 @@ const QUICK_LINKS = [
 
 type CheckItem = { label: string; done: boolean; href: string };
 
-function getChecklist(profile: UserProfile | null, gradeCount: number): CheckItem[] {
+type ChecklistMessages = typeof import("@/lib/i18n/locales").MESSAGES.nb.checklist;
+
+function getChecklist(profile: UserProfile | null, gradeCount: number, cl: ChecklistMessages): CheckItem[] {
   return [
-    {
-      label: "Fullfør onboarding",
-      done: !!profile,
-      href: "/dashboard",
-    },
-    {
-      label: "Ta Big Five-testen",
-      done: !!profile?.bigFive,
-      href: "/dashboard",
-    },
-    {
-      label: "Ta RIASEC-testen",
-      done: !!profile?.riasec,
-      href: "/dashboard",
-    },
-    {
-      label: "Registrer karakterer",
-      done: gradeCount > 0,
-      href: "/dashboard/karakterer",
-    },
-    {
-      label: "Utforsk karrierestier",
-      done: !!profile?.riasec,
-      href: "/dashboard/karriere",
-    },
-    {
-      label: "Chat med AI-veilederen",
-      done: false,
-      href: "/dashboard/veileder",
-    },
-    {
-      label: "Sjekk søknadssjansene dine",
-      done: false,
-      href: "/dashboard/soknadscoach",
-    },
-    {
-      label: "Last ned din CV",
-      done: false,
-      href: "/dashboard/cv",
-    },
+    { label: cl.completeOnboarding, done: !!profile, href: "/dashboard" },
+    { label: cl.takeBigFive, done: !!profile?.bigFive, href: "/dashboard" },
+    { label: cl.takeRiasec, done: !!profile?.riasec, href: "/dashboard" },
+    { label: cl.registerGrades, done: gradeCount > 0, href: "/dashboard/karakterer" },
+    { label: cl.exploreCareerPaths, done: !!profile?.riasec, href: "/dashboard/karriere" },
+    { label: cl.chatWithAdvisor, done: false, href: "/dashboard/veileder" },
+    { label: cl.checkApplicationChances, done: false, href: "/dashboard/soknadscoach" },
+    { label: cl.downloadCv, done: false, href: "/dashboard/cv" },
   ];
 }
 
@@ -180,6 +90,7 @@ function getChecklist(profile: UserProfile | null, gradeCount: number): CheckIte
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { t } = useLocale();
   const { totalXp, level, streak } = useXp();
   const { grades } = useGrades();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -194,8 +105,8 @@ export default function DashboardPage() {
   const topStrengths = profile?.strengths?.slice(0, 3) ?? [];
 
   const checklist = useMemo(
-    () => getChecklist(profile, grades.length),
-    [profile, grades.length]
+    () => getChecklist(profile, grades.length, t.checklist),
+    [profile, grades.length, t.checklist]
   );
   const completedSteps = checklist.filter((c) => c.done).length;
   const progressPercent = Math.round((completedSteps / checklist.length) * 100);
@@ -208,10 +119,10 @@ export default function DashboardPage() {
       <SlideIn direction="up" duration={0.4}>
         <div>
           <h1 className="text-fluid-2xl font-bold tracking-tight font-display">
-            Hei{firstName ? `, ${firstName}` : ""}! 👋
+            {t.dashboard.welcome}{firstName ? `, ${firstName}` : ""}! 👋
           </h1>
           <p className="text-muted-foreground mt-1">
-            Her er en oversikt over din utvikling og karriereplan.
+            {t.dashboard.overview}
           </p>
         </div>
       </SlideIn>
@@ -239,7 +150,7 @@ export default function DashboardPage() {
                 )}
               </div>
               <div>
-                <p className="font-semibold font-display">{user?.displayName ?? "Ny bruker"}</p>
+                <p className="font-semibold font-display">{user?.displayName ?? t.dashboard.newUser}</p>
                 {riasecCode && (
                   <p className="text-sm font-mono text-primary mt-0.5">{riasecCode}</p>
                 )}
@@ -257,7 +168,7 @@ export default function DashboardPage() {
                 href="/dashboard/profil"
                 className="text-xs text-primary hover:underline mt-1"
               >
-                Se full profil →
+                {t.dashboard.seeFullProfile} →
               </Link>
             </CardContent>
           </Card>
@@ -300,15 +211,15 @@ export default function DashboardPage() {
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10">
                   <GraduationCap className="h-4 w-4 text-amber-500" aria-hidden="true" />
                 </div>
-                <span className="text-sm font-medium text-muted-foreground">Karaktersnitt</span>
+                <span className="text-sm font-medium text-muted-foreground">{t.dashboard.gradeAverage}</span>
               </div>
               <p className="text-3xl font-bold font-display">
                 {gradePoints.average > 0 ? gradePoints.average.toFixed(2) : "—"}
               </p>
               <p className="text-xs text-muted-foreground mt-1.5">
                 {grades.length > 0
-                  ? `${gradePoints.subjectCount} fag · ${gradePoints.quotaPoints} SO-poeng`
-                  : "Ingen karakterer ennå"}
+                  ? `${gradePoints.subjectCount} ${t.grades.subject.toLowerCase()} · ${gradePoints.quotaPoints} ${t.grades.soPoints}`
+                  : t.dashboard.noGradesYet}
               </p>
             </CardContent>
           </Card>
@@ -322,13 +233,13 @@ export default function DashboardPage() {
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10">
                   <Compass className="h-4 w-4 text-blue-500" aria-hidden="true" />
                 </div>
-                <span className="text-sm font-medium text-muted-foreground">Interesseprofil</span>
+                <span className="text-sm font-medium text-muted-foreground">{t.dashboard.interestProfile}</span>
               </div>
               <p className="text-3xl font-bold font-mono">
                 {riasecCode ?? "—"}
               </p>
               <p className="text-xs text-muted-foreground mt-1.5">
-                {riasecCode ? "RIASEC-kode" : "Fullfør onboarding"}
+                {riasecCode ? t.dashboard.riasecCode : t.dashboard.completeOnboarding}
               </p>
             </CardContent>
           </Card>
@@ -343,16 +254,16 @@ export default function DashboardPage() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-500/10">
                     <Bot className="h-4 w-4 text-violet-500" aria-hidden="true" />
                   </div>
-                  <span className="text-sm font-medium text-muted-foreground">AI-veileder</span>
+                  <span className="text-sm font-medium text-muted-foreground">{t.nav.advisor}</span>
                   <ChevronRight className="h-3.5 w-3.5 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" aria-hidden="true" />
                 </div>
                 <p className="text-sm text-foreground">
-                  Hei! Jeg kan hjelpe deg med karrierevalg, studier og jobbsøking.
+                  {t.aiWidget.greeting}
                 </p>
                 <div className="flex gap-1.5 mt-3 flex-wrap">
-                  <Badge variant="secondary" className="text-xs">Karrieretips</Badge>
-                  <Badge variant="secondary" className="text-xs">Studievalg</Badge>
-                  <Badge variant="secondary" className="text-xs">CV-hjelp</Badge>
+                  <Badge variant="secondary" className="text-xs">{t.aiWidget.careerTips}</Badge>
+                  <Badge variant="secondary" className="text-xs">{t.aiWidget.studyChoice}</Badge>
+                  <Badge variant="secondary" className="text-xs">{t.aiWidget.cvHelp}</Badge>
                 </div>
               </CardContent>
             </Card>
@@ -368,7 +279,7 @@ export default function DashboardPage() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10">
                     <TrendingUp className="h-4 w-4 text-emerald-500" aria-hidden="true" />
                   </div>
-                  <span className="text-sm font-medium text-muted-foreground">Kom i gang</span>
+                  <span className="text-sm font-medium text-muted-foreground">{t.dashboard.getStarted}</span>
                 </div>
                 <span className="text-xs font-mono text-muted-foreground">
                   {completedSteps}/{checklist.length}
@@ -394,8 +305,8 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {completedSteps === checklist.length
-                    ? "Alt fullført! 🎉"
-                    : `${checklist.length - completedSteps} steg gjenstår`}
+                    ? `${t.dashboard.allDone} 🎉`
+                    : `${checklist.length - completedSteps} ${t.dashboard.stepsRemaining}`}
                 </div>
               </div>
 
@@ -420,7 +331,7 @@ export default function DashboardPage() {
                 ))}
                 {checklist.length > 5 && (
                   <li className="text-xs text-muted-foreground px-2 pt-1">
-                    +{checklist.length - 5} flere steg
+                    +{checklist.length - 5} {t.dashboard.moreSteps}
                   </li>
                 )}
               </ul>
@@ -434,9 +345,9 @@ export default function DashboardPage() {
 
       {/* Utforsk — Hurtiglenker */}
       <div>
-        <h2 className="text-lg font-semibold font-display mb-4">Utforsk</h2>
+        <h2 className="text-lg font-semibold font-display mb-4">{t.dashboard.explore}</h2>
         <StaggerList className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" staggerDelay={0.05}>
-          {QUICK_LINKS.map((link) => (
+          {QUICK_LINK_DEFS.map((link) => (
             <StaggerItem key={link.href}>
               <Link
                 href={link.href}
@@ -446,8 +357,8 @@ export default function DashboardPage() {
                   <link.icon className={cn("h-4 w-4", link.color)} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{link.label}</p>
-                  <p className="text-xs text-muted-foreground truncate">{link.desc}</p>
+                  <p className="text-sm font-semibold truncate">{t.quickLinks[link.labelKey]}</p>
+                  <p className="text-xs text-muted-foreground truncate">{t.quickLinks[link.descKey]}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 group-hover:text-foreground transition-colors" />
               </Link>
@@ -461,7 +372,7 @@ export default function DashboardPage() {
         <div>
           <h2 className="text-lg font-semibold mb-3 flex items-center gap-2 font-display">
             <TrendingUp className="h-5 w-5 text-primary" />
-            Dine topp-styrker
+            {t.dashboard.topStrengths}
           </h2>
           <div className="flex flex-wrap gap-2">
             {topStrengths.map((s) => (

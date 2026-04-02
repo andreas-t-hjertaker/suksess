@@ -15,6 +15,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Cloud, Loader2, Mail, UserRound } from "lucide-react";
+import { useLocale } from "@/hooks/use-locale";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,6 +40,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const { t } = useLocale();
 
   // Fullfør e-postlenke-innlogging hvis URL inneholder en sign-in link
   useEffect(() => {
@@ -66,16 +68,14 @@ export default function LoginPage() {
     try {
       if (mode === "reset") {
         await resetPassword(email);
-        setMessage("E-post for tilbakestilling av passord er sendt.");
+        setMessage(t.auth.resetEmailSent);
         setSubmitting(false);
         return;
       }
 
       if (mode === "emaillink") {
         await sendEmailSignInLink(email);
-        setMessage(
-          "Vi har sendt en innloggingslenke til e-posten din. Sjekk innboksen."
-        );
+        setMessage(t.auth.loginLinkSent);
         setSubmitting(false);
         return;
       }
@@ -89,16 +89,16 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const firebaseErr = err as { code?: string };
       const messages: Record<string, string> = {
-        "auth/user-not-found": "Ingen bruker funnet med denne e-postadressen.",
-        "auth/wrong-password": "Feil passord.",
-        "auth/invalid-credential": "Ugyldig e-post eller passord.",
-        "auth/email-already-in-use": "Denne e-postadressen er allerede i bruk.",
-        "auth/weak-password": "Passordet må være minst 6 tegn.",
-        "auth/invalid-email": "Ugyldig e-postadresse.",
-        "auth/too-many-requests": "For mange forsøk. Prøv igjen senere.",
+        "auth/user-not-found": t.auth.errorUserNotFound,
+        "auth/wrong-password": t.auth.errorWrongPassword,
+        "auth/invalid-credential": t.auth.errorInvalidCredential,
+        "auth/email-already-in-use": t.auth.errorEmailInUse,
+        "auth/weak-password": t.auth.errorWeakPassword,
+        "auth/invalid-email": t.auth.errorInvalidEmail,
+        "auth/too-many-requests": t.auth.errorTooManyRequests,
       };
       setError(
-        messages[firebaseErr.code || ""] || "Noe gikk galt. Prøv igjen."
+        messages[firebaseErr.code || ""] || t.auth.errorGeneric
       );
       setSubmitting(false);
     }
@@ -111,7 +111,7 @@ export default function LoginPage() {
       await signInGoogle();
       router.replace("/dashboard");
     } catch {
-      setError("Kunne ikke logge inn med Google.");
+      setError(t.auth.errorGoogle);
       setSubmitting(false);
     }
   }
@@ -124,7 +124,7 @@ export default function LoginPage() {
       await signInFeide();
       // Koden her nås ikke med redirect, men er med for klarhet
     } catch {
-      setError("Kunne ikke starte Feide-innlogging.");
+      setError(t.auth.errorFeide);
       setSubmitting(false);
     }
   }
@@ -136,7 +136,7 @@ export default function LoginPage() {
       await signInAnonymously();
       router.replace("/dashboard");
     } catch {
-      setError("Kunne ikke logge inn anonymt.");
+      setError(t.auth.errorAnonymous);
       setSubmitting(false);
     }
   }
@@ -150,24 +150,24 @@ export default function LoginPage() {
   }
 
   const title: Record<typeof mode, string> = {
-    login: "Logg inn",
-    register: "Opprett konto",
-    reset: "Tilbakestill passord",
-    emaillink: "Logg inn med e-postlenke",
+    login: t.auth.login,
+    register: t.auth.createAccount,
+    reset: t.auth.resetPassword,
+    emaillink: t.auth.loginWithEmailLink,
   };
 
   const description: Record<typeof mode, string> = {
-    login: "Logg inn på Suksess",
-    register: "Opprett en ny konto",
-    reset: "Vi sender deg en lenke for å tilbakestille passordet",
-    emaillink: "Vi sender deg en innloggingslenke — ingen passord nødvendig",
+    login: t.auth.loginToSuksess,
+    register: t.auth.createNewAccount,
+    reset: t.auth.resetPasswordDesc,
+    emaillink: t.auth.emailLinkDesc,
   };
 
   const submitLabel: Record<typeof mode, string> = {
-    login: "Logg inn",
-    register: "Opprett konto",
-    reset: "Send tilbakestillingslenke",
-    emaillink: "Send innloggingslenke",
+    login: t.auth.login,
+    register: t.auth.createAccount,
+    reset: t.auth.sendResetLink,
+    emaillink: t.auth.sendLoginLink,
   };
 
   const showPasswordField = mode === "login" || mode === "register";
@@ -186,7 +186,7 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">E-post</Label>
+              <Label htmlFor="email">{t.auth.email}</Label>
               <Input
                 id="email"
                 type="email"
@@ -199,7 +199,7 @@ export default function LoginPage() {
 
             {showPasswordField && (
               <div className="space-y-2">
-                <Label htmlFor="password">Passord</Label>
+                <Label htmlFor="password">{t.auth.password}</Label>
                 <Input
                   id="password"
                   type="password"
@@ -239,7 +239,7 @@ export default function LoginPage() {
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-card px-2 text-muted-foreground">
-                    eller
+                    {t.common.or}
                   </span>
                 </div>
               </div>
@@ -255,7 +255,7 @@ export default function LoginPage() {
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
                   </svg>
-                  Logg inn med Feide
+                  {t.auth.loginWithFeide}
                 </Button>
 
                 <Button
@@ -282,7 +282,7 @@ export default function LoginPage() {
                       fill="#EA4335"
                     />
                   </svg>
-                  Logg inn med Google
+                  {t.auth.loginWithGoogle}
                 </Button>
 
                 <Button
@@ -296,7 +296,7 @@ export default function LoginPage() {
                   disabled={submitting}
                 >
                   <Mail className="mr-2 h-4 w-4" />
-                  Logg inn med e-postlenke
+                  {t.auth.loginWithEmailLink}
                 </Button>
 
                 <Button
@@ -306,7 +306,7 @@ export default function LoginPage() {
                   disabled={submitting}
                 >
                   <UserRound className="mr-2 h-4 w-4" />
-                  Fortsett som gjest
+                  {t.auth.continueAsGuest}
                 </Button>
               </div>
             </>
@@ -315,7 +315,7 @@ export default function LoginPage() {
         <CardFooter className="flex justify-center gap-1 text-sm">
           {mode === "login" ? (
             <>
-              <span className="text-muted-foreground">Ingen konto?</span>
+              <span className="text-muted-foreground">{t.auth.noAccount}</span>
               <button
                 type="button"
                 className="text-primary underline-offset-4 hover:underline"
@@ -325,7 +325,7 @@ export default function LoginPage() {
                   setMessage("");
                 }}
               >
-                Opprett konto
+                {t.auth.createAccount}
               </button>
               <span className="text-muted-foreground mx-1">·</span>
               <button
@@ -337,12 +337,12 @@ export default function LoginPage() {
                   setMessage("");
                 }}
               >
-                Glemt passord?
+                {t.auth.forgotPassword}
               </button>
             </>
           ) : (
             <>
-              <span className="text-muted-foreground">Har du konto?</span>
+              <span className="text-muted-foreground">{t.auth.hasAccount}</span>
               <button
                 type="button"
                 className="text-primary underline-offset-4 hover:underline"
@@ -352,7 +352,7 @@ export default function LoginPage() {
                   setMessage("");
                 }}
               >
-                Logg inn
+                {t.auth.login}
               </button>
             </>
           )}
