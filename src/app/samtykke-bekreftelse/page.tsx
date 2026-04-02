@@ -96,8 +96,8 @@ export default function SamtykkeBekreftelsePage() {
                   Logg inn for å se elevens overordnede fremdrift.
                 </p>
               </div>
-              <Button asChild className="w-full">
-                <Link href="/login">Logg inn som foresatt</Link>
+              <Button className="w-full" render={<Link href="/login" />}>
+                Logg inn som foresatt
               </Button>
             </CardContent>
           </>
@@ -114,8 +114,8 @@ export default function SamtykkeBekreftelsePage() {
                 Samtykkelenken var gyldig i 7 dager og har nå utlopt.
                 Be eleven om å sende en ny forespørsel.
               </p>
-              <Button asChild variant="outline" className="w-full">
-                <Link href="/">Gå til forsiden</Link>
+              <Button variant="outline" className="w-full" render={<Link href="/" />}>
+                Gå til forsiden
               </Button>
             </CardContent>
           </>
@@ -132,8 +132,8 @@ export default function SamtykkeBekreftelsePage() {
                 Samtykkelenken er ugyldig eller har allerede blitt brukt.
                 Kontakt eleven for å få tilsendt en ny lenke.
               </p>
-              <Button asChild variant="outline" className="w-full">
-                <Link href="/">Gå til forsiden</Link>
+              <Button variant="outline" className="w-full" render={<Link href="/" />}>
+                Gå til forsiden
               </Button>
             </CardContent>
           </>
@@ -149,8 +149,8 @@ export default function SamtykkeBekreftelsePage() {
               <p className="text-sm text-muted-foreground">
                 Ingen samtykketoken funnet. Bruk lenken du mottok på e-post.
               </p>
-              <Button asChild variant="outline" className="w-full">
-                <Link href="/">Gå til forsiden</Link>
+              <Button variant="outline" className="w-full" render={<Link href="/" />}>
+                Gå til forsiden
               </Button>
             </CardContent>
           </>

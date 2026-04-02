@@ -16,6 +16,14 @@ import {
   type StudieprogramSO,
   type DBHStudieprogramStatistikk,
 } from "./utdanning-no-client";
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  getDocs,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase/firestore";
 
 // ---------------------------------------------------------------------------
 // Typer
@@ -217,4 +225,61 @@ export async function hentInstitusjonsStatistikk(
     hoyestePoenggrense:
       poenggrenser.length > 0 ? Math.max(...poenggrenser) : null,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Firestore-basert historikkhenting (#107)
+// ---------------------------------------------------------------------------
+
+/**
+ * Hent historiske poenggrenser direkte fra admissionHistory-collection
+ * (ingestet daglig kl 03:30 fra DBH tabell 571).
+ *
+ * Returnerer sortert etter år (eldst først).
+ */
+export async function hentHistorikkFraFirestore(
+  programKode: string
+): Promise<{ aar: number; ordinaer: number | null; fvitnemaal: number | null }[]> {
+  try {
+    const q = query(
+      collection(db, "admissionHistory"),
+      where("programCode", "==", programKode),
+      orderBy("year", "asc")
+    );
+    const snap = await getDocs(q);
+
+    if (snap.empty) return [];
+
+    return snap.docs.map((d) => {
+      const data = d.data();
+      return {
+        aar: data.year ?? 0,
+        ordinaer: data.pointsOrdinary ?? null,
+        fvitnemaal: data.pointsFirst ?? null,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Hent poenggrenser med Firestore-fallback.
+ * Prøver utdanning.no API først, faller tilbake til admissionHistory.
+ */
+export async function hentPoenggrenser(
+  studieprogramkode: string
+): Promise<{ aar: number; ordinaer: number | null; fvitnemaal: number | null }[]> {
+  // Prøv utdanning.no API (via cache)
+  const grenser = await fetchPoenggrenser(studieprogramkode);
+  if (grenser.length > 0) {
+    return grenser.map((g) => ({
+      aar: g?.aar ?? 0,
+      ordinaer: g?.ordinaer ?? null,
+      fvitnemaal: g?.forstegangsvitnemaal ?? null,
+    }));
+  }
+
+  // Fallback: Firestore (DBH-ingestet data)
+  return hentHistorikkFraFirestore(studieprogramkode);
 }

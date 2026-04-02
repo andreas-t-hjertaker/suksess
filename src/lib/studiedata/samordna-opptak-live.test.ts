@@ -31,6 +31,11 @@ describe("Samordna Opptak live-data (#107)", () => {
       expect(beregSjanse(45, 50).diff).toBe(-5);
       expect(beregSjanse(50, 50).diff).toBe(0);
     });
+
+    it("grenseverdier: nøyaktig ±2 er 'usikker'", () => {
+      expect(beregSjanse(48, 50).sjanse).toBe("usikker"); // diff = -2
+      expect(beregSjanse(52, 50).sjanse).toBe("god");     // diff = +2
+    });
   });
 
   describe("beregTrend", () => {
@@ -61,6 +66,42 @@ describe("Samordna Opptak live-data (#107)", () => {
       expect(
         beregTrend([{ ordinaer: null }, { ordinaer: 45 }, { ordinaer: null }])
       ).toBe("ukjent");
+    });
+
+    it("beregner korrekt for 5-årsperiode", () => {
+      const result = beregTrend([
+        { ordinaer: 50 },
+        { ordinaer: 50.5 },
+        { ordinaer: 51 },
+        { ordinaer: 51.5 },
+        { ordinaer: 52 },
+      ]);
+      expect(result).toBe("stabil"); // 0.5 per år = på grensen
+    });
+
+    it("returnerer 'stigende' for >0.5 per år endring", () => {
+      const result = beregTrend([
+        { ordinaer: 50 },
+        { ordinaer: 51 },
+        { ordinaer: 52 },
+        { ordinaer: 53 },
+        { ordinaer: 54 },
+      ]);
+      expect(result).toBe("stigende"); // 1.0 per år
+    });
+  });
+
+  describe("beregSjanse grenseverdier", () => {
+    it("returnerer 'god' for stor positiv differanse", () => {
+      const result = beregSjanse(70, 40);
+      expect(result.sjanse).toBe("god");
+      expect(result.diff).toBe(30);
+    });
+
+    it("returnerer 'lav' for stor negativ differanse", () => {
+      const result = beregSjanse(30, 60);
+      expect(result.sjanse).toBe("lav");
+      expect(result.diff).toBe(-30);
     });
   });
 });
