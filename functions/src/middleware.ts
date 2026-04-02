@@ -222,6 +222,28 @@ export function withRequiredTenant(handler: TenantHandler): PublicHandler {
 }
 
 // ============================================================
+// CSRF-beskyttelse (#139)
+// ============================================================
+
+/** Validerer CSRF-token på muterende forespørsler (POST, PUT, PATCH, DELETE) */
+export function validateCsrf({ req, res }: RouteContext): boolean {
+  // Bare valider muterende metoder
+  if (req.method === "GET" || req.method === "OPTIONS" || req.method === "HEAD") {
+    return true;
+  }
+
+  const token = req.headers["x-csrf-token"] as string | undefined;
+
+  // Token må eksistere og ha gyldig format (64 hex-tegn)
+  if (!token || !/^[a-f0-9]{64}$/.test(token)) {
+    fail(res, "Ugyldig eller manglende CSRF-token", 403);
+    return false;
+  }
+
+  return true;
+}
+
+// ============================================================
 // Rate limiting (in-memory)
 // ============================================================
 

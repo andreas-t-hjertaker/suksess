@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,8 @@ import { useLocale } from "@/hooks/use-locale";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const {
     user,
     loading,
@@ -46,7 +48,7 @@ export default function LoginPage() {
   useEffect(() => {
     completeEmailSignIn()
       .then((completed) => {
-        if (completed) router.replace("/dashboard");
+        if (completed) router.replace(callbackUrl);
       })
       .catch(() => {
         // Ignorer feil — brukeren er bare på vanlig login-side
@@ -55,7 +57,7 @@ export default function LoginPage() {
 
   // Omdiriger om allerede innlogget
   if (!loading && user) {
-    router.replace("/dashboard");
+    router.replace(callbackUrl);
     return null;
   }
 
@@ -85,7 +87,7 @@ export default function LoginPage() {
       } else {
         await signUpEmail(email, password);
       }
-      router.replace("/dashboard");
+      router.replace(callbackUrl);
     } catch (err: unknown) {
       const firebaseErr = err as { code?: string };
       const messages: Record<string, string> = {
@@ -109,7 +111,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await signInGoogle();
-      router.replace("/dashboard");
+      router.replace(callbackUrl);
     } catch {
       setError(t.auth.errorGoogle);
       setSubmitting(false);
@@ -134,7 +136,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await signInAnonymously();
-      router.replace("/dashboard");
+      router.replace(callbackUrl);
     } catch {
       setError(t.auth.errorAnonymous);
       setSubmitting(false);

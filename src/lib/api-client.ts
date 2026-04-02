@@ -1,6 +1,7 @@
 "use client";
 
 import { auth } from "@/lib/firebase/auth";
+import { getCsrfToken } from "@/lib/csrf";
 import type { ApiResponse } from "@/types";
 
 // Base-URL for API — bruker hosting rewrite (/api/** → api-funksjonen)
@@ -51,6 +52,11 @@ export async function fetchApi<T>(
   // Sett Content-Type for requests med body
   if (body !== undefined) {
     headers["Content-Type"] = "application/json";
+  }
+
+  // CSRF-token på muterende forespørsler (#139)
+  if (method !== "GET") {
+    headers["X-CSRF-Token"] = getCsrfToken();
   }
 
   try {

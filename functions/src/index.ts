@@ -4,7 +4,7 @@ import type { DocumentReference } from "firebase-admin/firestore";
 import * as crypto from "crypto";
 import Stripe from "stripe";
 import { z } from "zod";
-import { success, fail, withAuth, withAdmin, withValidation, rateLimit, type RouteContext } from "./middleware";
+import { success, fail, withAuth, withAdmin, withValidation, rateLimit, validateCsrf, type RouteContext } from "./middleware";
 import { sendEmail } from "./email";
 
 admin.initializeApp();
@@ -1078,6 +1078,9 @@ export const api = onRequest(
   async (req, res) => {
     // Rate limiting
     if (!apiRateLimit({ req, res })) return;
+
+    // CSRF-validering på muterende forespørsler (#139)
+    if (!validateCsrf({ req, res })) return;
 
     // Eksakt sti-matching
     const route = routes.find(
