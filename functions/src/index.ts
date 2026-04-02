@@ -978,6 +978,90 @@ const getXp = withAuth(async ({ user, res }) => {
 });
 
 // ============================================================
+// Foresatt / samtykke (#106)
+// ============================================================
+
+/** POST /email/parent-consent — Send samtykkeforespørsel til foresatt (krever auth) */
+const sendParentConsentEmail = withAuth(async ({ user, req, res }) => {
+  const { parentEmail, studentName } = req.body as {
+    parentEmail?: string;
+    studentName?: string;
+  };
+
+  if (!parentEmail || !studentName) {
+    fail(res, "parentEmail og studentName er påkrevd");
+    return;
+  }
+
+  // Generer unik token
+  const token = crypto.randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 dager
+
+  // Lagre token i Firestore
+  await db.collection("parentConsentTokens").doc(token).set({
+    studentUid: user.uid,
+    parentEmail,
+    token,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    expiresAt,
+    used: false,
+  });
+
+  // Bygg samtykke-URL
+  const baseUrl = process.env.APP_URL || "https://suksess.no";
+  const consentUrl = `${baseUrl}/samtykke-bekreftelse?token=${token}`;
+
+  try {
+    await sendEmail({
+      to: [{ email: parentEmail }],
+      subject: "Samtykke påkrevd — Suksess karriereveiledning",
+      html: `<p>${studentName} har opprettet en konto på Suksess. Siden eleven er under 16 år, krever GDPR samtykke fra foresatte.</p><p><a href="${consentUrl}">Godkjenn samtykke</a></p><p>Lenken er gyldig i 7 dager.</p>`,
+      text: `${studentName} har opprettet en konto på Suksess. Godkjenn samtykke: ${consentUrl} (gyldig i 7 dager)`,
+    });
+    success(res, { sent: true });
+  } catch (err) {
+    console.error("[parent-consent] E-post feilet:", err);
+    fail(res, "E-postsending feilet", 500);
+  }
+});
+
+/** POST /parent/unlink — Fjern foresatt-kobling (krever auth) */
+const unlinkParent = withAuth(async ({ user, req, res }) => {
+  const { studentUid } = req.body as { studentUid?: string };
+
+  if (!studentUid) {
+    fail(res, "studentUid er påkrevd");
+    return;
+  }
+
+  const linkId = `${user.uid}_${studentUid}`;
+  const linkRef = db.collection("parentLinks").doc(linkId);
+  const linkDoc = await linkRef.get();
+
+  if (!linkDoc.exists) {
+    fail(res, "Kobling ikke funnet", 404);
+    return;
+  }
+
+  // Sett status til revoked
+  await linkRef.update({
+    status: "revoked",
+    revokedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  // Logg i consentAudit
+  await db.collection("consentAudit").add({
+    type: "link_removed",
+    parentUid: user.uid,
+    studentUid,
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    source: "server",
+  });
+
+  success(res, { unlinked: true });
+});
+
+// ============================================================
 // Ruter — enkel stibasert ruting
 // ============================================================
 
@@ -1019,6 +1103,10 @@ const routes: Route[] = [
   // E-post
   { method: "POST", path: "/email/send", handler: sendEmailHandler },
   { method: "POST", path: "/email/invite", handler: sendInviteEmail },
+  // Foresatt (#106)
+  { method: "POST", path: "/email/parent-consent", handler: sendParentConsentEmail },
+  { method: "POST", path: "/parent/unlink", handler: unlinkParent },
+  // GET /consent/verify/:token — håndteres med startsWith-matching under
   // Konto
   { method: "DELETE", path: "/account", handler: deleteAccount },
   // XP
@@ -1112,6 +1200,68 @@ export const api = onRequest(
         await deleteAdminUser({ req, res });
         return;
       }
+    }
+
+    // Samtykke-verifisering: GET /consent/verify/:token (#106)
+    if (req.method === "GET" && req.path.startsWith("/consent/verify/")) {
+      const token = req.path.split("/consent/verify/")[1];
+      if (!token) {
+        fail(res, "Token mangler", 400);
+        return;
+      }
+
+      const tokenRef = db.collection("parentConsentTokens").doc(token);
+      const tokenDoc = await tokenRef.get();
+
+      if (!tokenDoc.exists) {
+        fail(res, "Ugyldig token", 404);
+        return;
+      }
+
+      const tokenData = tokenDoc.data()!;
+
+      // Sjekk om allerede brukt
+      if (tokenData.used) {
+        fail(res, "Token er allerede brukt", 400);
+        return;
+      }
+
+      // Sjekk utløp
+      const expiresAt = tokenData.expiresAt?.toDate?.() || tokenData.expiresAt;
+      if (new Date() > new Date(expiresAt)) {
+        res.status(410).json({ error: "Token har utløpt" });
+        return;
+      }
+
+      // Godkjenn samtykke
+      const studentUid = tokenData.studentUid;
+
+      await db.doc(`users/${studentUid}/consent/parental`).set({
+        parentalConsentGiven: true,
+        parentEmail: tokenData.parentEmail,
+        consentedAt: admin.firestore.FieldValue.serverTimestamp(),
+        token,
+      });
+
+      // Marker token som brukt
+      await tokenRef.update({ used: true, usedAt: admin.firestore.FieldValue.serverTimestamp() });
+
+      // Logg i consentAudit
+      await db.collection("consentAudit").add({
+        type: "consent_given",
+        parentUid: tokenData.parentEmail,
+        studentUid,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        source: "server",
+        metadata: { method: "email_link" },
+      });
+
+      // Hent elevnavn for respons
+      const studentDoc = await db.doc(`users/${studentUid}`).get();
+      const studentName = studentDoc.data()?.displayName || null;
+
+      res.json({ success: true, studentName });
+      return;
     }
 
     // Admin feature-flag-ruter: PUT /admin/feature-flags/:id

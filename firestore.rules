@@ -447,6 +447,28 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------------
+    // parentConsentTokens/{tokenId} — samtykke-tokens for foresatte (#106)
+    // Kun Cloud Functions kan lese/skrive — tokens håndteres server-side
+    // ---------------------------------------------------------------------------
+
+    match /parentConsentTokens/{tokenId} {
+      allow read: if false;
+      allow write: if false;
+    }
+
+    // ---------------------------------------------------------------------------
+    // consentAudit/{auditId} — immutabel audit-logg for foresatt-handlinger (#106)
+    // Klient kan opprette (logg handling), men ikke endre/slette
+    // ---------------------------------------------------------------------------
+
+    match /consentAudit/{auditId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.parentUid == request.auth.uid || resource.data.studentUid == request.auth.uid);
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // Immutabel
+    }
+
+    // ---------------------------------------------------------------------------
     // emailLogs/{logId} — e-postlogg (kun Cloud Functions kan skrive)
     // ---------------------------------------------------------------------------
 
