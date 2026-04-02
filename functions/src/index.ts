@@ -6,6 +6,7 @@ import Stripe from "stripe";
 import { z } from "zod";
 import { success, fail, withAuth, withAdmin, withValidation, rateLimit, validateCsrf, withRateLimit, withTenantAdmin, type RouteContext } from "./middleware";
 import { sendEmail } from "./email";
+import { processStripeInvoiceForEhf, getEhfStatus, retryEhfDelivery } from "./ehf";
 
 admin.initializeApp();
 
@@ -246,6 +247,31 @@ const handleWebhook = async ({ req, res }: RouteContext) => {
       }
       break;
     }
+
+    case "invoice.finalized": {
+      const invoice = event.data.object as Stripe.Invoice;
+      // Hent kundemetadata for B2B-sjekk
+      const customer = await getStripe().customers.retrieve(invoice.customer as string);
+      if (customer && !customer.deleted) {
+        const custMeta = customer.metadata || {};
+        // Bare prosesser B2B-kunder med organisasjonsnummer
+        if (custMeta.customerType === "b2b_school" && custMeta.organizationNumber) {
+          try {
+            const ehfResult = await processStripeInvoiceForEhf(
+              {
+                ...invoice,
+                metadata: { ...invoice.metadata, ...custMeta },
+              },
+              { invoices: getStripe().invoices }
+            );
+            console.log(`[EHF] Faktura ${invoice.id}: ${ehfResult.ehfStatus}`);
+          } catch (err) {
+            console.error(`[EHF] Feil ved EHF-generering for ${invoice.id}:`, err);
+          }
+        }
+      }
+      break;
+    }
   }
 
   success(res, { received: true });
@@ -422,6 +448,35 @@ const getB2BInvoices = withAdmin(async ({ req, res }) => {
   }));
 
   success(res, mapped);
+});
+
+/** GET /stripe/b2b/ehf-status — Hent EHF-leveringsstatus for en faktura (#110) */
+const getEhfStatusHandler = withAdmin(async ({ req, res }) => {
+  const invoiceId = req.query.invoiceId as string;
+  if (!invoiceId) {
+    fail(res, "invoiceId er påkrevd");
+    return;
+  }
+
+  const status = await getEhfStatus(invoiceId);
+  if (!status) {
+    fail(res, "EHF-faktura ikke funnet", 404);
+    return;
+  }
+
+  success(res, status);
+});
+
+/** POST /stripe/b2b/ehf-retry — Prøv å sende en feilet EHF-faktura på nytt (#110) */
+const retryEhfHandler = withAdmin(async ({ req, res }) => {
+  const { invoiceId } = req.body as { invoiceId?: string };
+  if (!invoiceId) {
+    fail(res, "invoiceId er påkrevd");
+    return;
+  }
+
+  const result = await retryEhfDelivery(invoiceId);
+  success(res, result);
 });
 
 // ============================================================
@@ -1542,6 +1597,8 @@ const routes: Route[] = [
   { method: "POST", path: "/stripe/b2b/customer", handler: createB2BCustomer },
   { method: "POST", path: "/stripe/b2b/subscription", handler: createB2BSubscription },
   { method: "GET", path: "/stripe/b2b/invoices", handler: getB2BInvoices },
+  { method: "GET", path: "/stripe/b2b/ehf-status", handler: getEhfStatusHandler },
+  { method: "POST", path: "/stripe/b2b/ehf-retry", handler: retryEhfHandler },
   // API-nøkler
   { method: "GET", path: "/api-keys", handler: listApiKeys },
   { method: "POST", path: "/api-keys", handler: createApiKey },
