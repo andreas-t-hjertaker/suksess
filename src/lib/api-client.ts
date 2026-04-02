@@ -45,7 +45,11 @@ export async function fetchApi<T>(
       const token = await auth.currentUser.getIdToken();
       headers["Authorization"] = `Bearer ${token}`;
     } catch {
-      // Ignorer — kallet går uten token
+      // Token-henting feilet — returner feil i stedet for å sende uautentisert
+      return {
+        success: false,
+        error: "Sesjonen din har utløpt. Logg inn på nytt.",
+      };
     }
   }
 

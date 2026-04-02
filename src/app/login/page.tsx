@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Cloud, Loader2, Mail, UserRound } from "lucide-react";
 import { useLocale } from "@/hooks/use-locale";
+import { getAuthErrorMessage, isNetworkError } from "@/lib/firebase/auth-errors";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,6 +25,8 @@ export default function LoginPage() {
   const {
     user,
     loading,
+    feideError,
+    emailPromptNeeded,
     signInGoogle,
     signInFeide,
     signInEmail,
@@ -32,6 +35,8 @@ export default function LoginPage() {
     signInAnonymously,
     sendEmailSignInLink,
     completeEmailSignIn,
+    confirmEmailForSignIn,
+    clearFeideError,
   } = useAuth();
 
   const [mode, setMode] = useState<
@@ -42,6 +47,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
   const { t } = useLocale();
 
   // Fullfør e-postlenke-innlogging hvis URL inneholder en sign-in link
@@ -50,10 +56,18 @@ export default function LoginPage() {
       .then((completed) => {
         if (completed) router.replace(callbackUrl);
       })
-      .catch(() => {
-        // Ignorer feil — brukeren er bare på vanlig login-side
+      .catch((err) => {
+        setError(getAuthErrorMessage(err));
       });
-  }, [completeEmailSignIn, router]);
+  }, [completeEmailSignIn, router, callbackUrl]);
+
+  // Vis Feide-redirect-feil fra oppstart
+  useEffect(() => {
+    if (feideError) {
+      setError(feideError);
+      clearFeideError();
+    }
+  }, [feideError, clearFeideError]);
 
   // Omdiriger om allerede innlogget
   if (!loading && user) {
@@ -71,6 +85,7 @@ export default function LoginPage() {
       if (mode === "reset") {
         await resetPassword(email);
         setMessage(t.auth.resetEmailSent);
+        setEmail("");
         setSubmitting(false);
         return;
       }
@@ -89,56 +104,51 @@ export default function LoginPage() {
       }
       router.replace(callbackUrl);
     } catch (err: unknown) {
-      const firebaseErr = err as { code?: string };
-      const messages: Record<string, string> = {
-        "auth/user-not-found": t.auth.errorUserNotFound,
-        "auth/wrong-password": t.auth.errorWrongPassword,
-        "auth/invalid-credential": t.auth.errorInvalidCredential,
-        "auth/email-already-in-use": t.auth.errorEmailInUse,
-        "auth/weak-password": t.auth.errorWeakPassword,
-        "auth/invalid-email": t.auth.errorInvalidEmail,
-        "auth/too-many-requests": t.auth.errorTooManyRequests,
-      };
-      setError(
-        messages[firebaseErr.code || ""] || t.auth.errorGeneric
-      );
+      setIsOffline(isNetworkError(err));
+      setError(getAuthErrorMessage(err));
       setSubmitting(false);
     }
   }
 
   async function handleGoogleSignIn() {
     setError("");
+    setIsOffline(false);
     setSubmitting(true);
     try {
       await signInGoogle();
       router.replace(callbackUrl);
-    } catch {
-      setError(t.auth.errorGoogle);
+    } catch (err) {
+      setIsOffline(isNetworkError(err));
+      setError(getAuthErrorMessage(err));
       setSubmitting(false);
     }
   }
 
   async function handleFeideSignIn() {
     setError("");
+    setIsOffline(false);
     setSubmitting(true);
     try {
       // Feide bruker redirect — siden laster på nytt etter innlogging
       await signInFeide();
       // Koden her nås ikke med redirect, men er med for klarhet
-    } catch {
-      setError(t.auth.errorFeide);
+    } catch (err) {
+      setIsOffline(isNetworkError(err));
+      setError(getAuthErrorMessage(err));
       setSubmitting(false);
     }
   }
 
   async function handleAnonymousSignIn() {
     setError("");
+    setIsOffline(false);
     setSubmitting(true);
     try {
       await signInAnonymously();
       router.replace(callbackUrl);
-    } catch {
-      setError(t.auth.errorAnonymous);
+    } catch (err) {
+      setIsOffline(isNetworkError(err));
+      setError(getAuthErrorMessage(err));
       setSubmitting(false);
     }
   }
@@ -186,6 +196,39 @@ export default function LoginPage() {
           <CardDescription>{description[mode]}</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* E-postbekreftelse for kryss-enhet e-postlenke-innlogging */}
+          {emailPromptNeeded && (
+            <form
+              className="mb-4 space-y-3 rounded-md border border-primary/20 bg-primary/5 p-4"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setSubmitting(true);
+                try {
+                  const completed = await confirmEmailForSignIn(email);
+                  if (completed) router.replace(callbackUrl);
+                } catch (err) {
+                  setError(getAuthErrorMessage(err));
+                }
+                setSubmitting(false);
+              }}
+            >
+              <p className="text-sm text-muted-foreground">
+                {t.auth.enterEmailForLink}
+              </p>
+              <Input
+                type="email"
+                placeholder="din@epost.no"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <Button type="submit" className="w-full" disabled={submitting}>
+                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {t.auth.confirmEmail}
+              </Button>
+            </form>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">{t.auth.email}</Label>
@@ -215,7 +258,18 @@ export default function LoginPage() {
             )}
 
             {error && (
-              <p role="alert" className="text-sm text-destructive">{error}</p>
+              <div role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                <p>{error}</p>
+                {isOffline && (
+                  <button
+                    type="button"
+                    className="mt-1 underline underline-offset-2 hover:no-underline"
+                    onClick={() => { setError(""); setIsOffline(false); }}
+                  >
+                    {t.common.tryAgain ?? "Prøv igjen"}
+                  </button>
+                )}
+              </div>
             )}
             {message && (
               <p role="status" className="text-sm text-green-500">{message}</p>
