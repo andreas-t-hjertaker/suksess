@@ -38,6 +38,10 @@ export function ProtectedRoute({
         if (!result.claims[requiredRole]) {
           router.replace("/dashboard");
         }
+      }).catch(() => {
+        // Token-henting feilet — omdiriger til login
+        const callbackUrl = encodeURIComponent(pathname);
+        router.replace(`/login?callbackUrl=${callbackUrl}`);
       });
     }
   }, [user, firebaseUser, loading, router, pathname, requiredRole]);

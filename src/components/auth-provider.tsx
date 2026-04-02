@@ -16,8 +16,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       displayName: firebaseUser.displayName,
       email: firebaseUser.email,
       photoURL: firebaseUser.photoURL,
-    }).catch(() => {
-      // Ignorer — brukeren kan allerede eksistere
+    }).catch((err) => {
+      console.error("[auth] Kunne ikke initialisere brukerdokument:", err);
     });
   }, [authState.firebaseUser?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
