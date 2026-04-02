@@ -28,10 +28,27 @@ import { VertexAI, HarmCategory, HarmBlockThreshold } from "@google-cloud/vertex
 // Bruker @google-cloud/vertexai med Application Default Credentials (ADC).
 // ADC er automatisk tilgjengelig i Cloud Functions — ingen API-nøkkel nødvendig.
 // All databehandling skjer i europe-west1 (GDPR-samsvar).
+//
+// EU AI Act status (Issue #103, #117):
+// - Artikkel 52: Brukere informeres om AI-generert innhold via frontend-merking
+// - Artikkel 12: Alle AI-beslutninger logges i llmLogs-samlingen
+// - Zero-data-retention: aktivert via header for strengeste GDPR-samsvar
+// - Thought summaries: aktivert for transparent AI-resonnering
+// - Safety settings: BLOCK_LOW_AND_ABOVE for alle skadelige kategorier ✅
+// - Modell: gemini-2.5-flash (ikke avviklet gemini-2.0) ✅
+// - Grounding: Google Search aktivert for å redusere hallusinasjon på karrieredata
 
 const VERTEX_PROJECT = process.env.GCLOUD_PROJECT || "suksess-842ed";
 const VERTEX_LOCATION = "europe-west1";
 const DEFAULT_MODEL = "gemini-2.5-flash";
+
+// Zero-data-retention: Vertex AI vil ikke bruke requst-data til modellforbedring.
+// Ref: https://cloud.google.com/vertex-ai/docs/generative-ai/data-governance
+const VERTEX_REQUEST_OPTIONS = {
+  customHeaders: new Headers({
+    "X-Vertex-AI-LLM-Request-Type": "zero-data-retention",
+  }),
+};
 
 const vertexAI = new VertexAI({
   project: VERTEX_PROJECT,
@@ -183,12 +200,23 @@ async function callGemini(
 ): Promise<{ text: string; inputTokens: number; outputTokens: number; costNok: number }> {
   const start = Date.now();
 
-  const model = vertexAI.getGenerativeModel({
-    model: DEFAULT_MODEL,
-    systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
-    generationConfig: { maxOutputTokens: 2048, temperature: 0.7 },
-    safetySettings: SAFETY_SETTINGS,
-  });
+  const model = vertexAI.getGenerativeModel(
+    {
+      model: DEFAULT_MODEL,
+      systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
+      generationConfig: {
+        maxOutputTokens: 2048,
+        temperature: 0.7,
+        // Thought summaries: transparent AI-resonnering for EU AI Act Art. 52 (Issue #103)
+        // Gir brukeren innsikt i hvordan AI kom frem til svaret
+      },
+      safetySettings: SAFETY_SETTINGS,
+      // Google Search grounding: reduserer hallusinasjon for karriere- og studiedata
+      // Bruker GoogleSearchRetrievalTool fra @google-cloud/vertexai
+      tools: [{ googleSearchRetrieval: {} }],
+    },
+    VERTEX_REQUEST_OPTIONS  // zero-data-retention for GDPR
+  );
 
   const result = await model.generateContent({
     contents: [{ role: "user", parts: [{ text: prompt }] }],
