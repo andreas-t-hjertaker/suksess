@@ -15,6 +15,8 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Flame, Trophy, Zap, Star, Lock } from "lucide-react";
+import { PageSkeleton } from "@/components/page-skeleton";
+import { ErrorState } from "@/components/error-state";
 
 // ---------------------------------------------------------------------------
 // Nivå-farger / bakgrunner
@@ -56,10 +58,14 @@ const XP_GUIDE = [
 // ---------------------------------------------------------------------------
 
 export default function FremgangPage() {
-  const { totalXp, level, streak, earnedAchievements } = useXp();
+  const { totalXp, level, streak, earnedAchievements, loading } = useXp();
   const progress = getXpProgress(totalXp);
   const nextLevel = getNextLevel(level.name);
   const levelStyle = LEVEL_STYLES[level.name] ?? LEVEL_STYLES.nybegynner;
+
+  if (loading) {
+    return <PageSkeleton variant="list" cards={4} />;
+  }
 
   return (
     <div className="space-y-8 max-w-2xl">

@@ -12,6 +12,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { FeatureGate } from "@/components/feature-gate";
+import { ErrorState } from "@/components/error-state";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { getRiasecCode } from "@/lib/personality/scoring";
 import { computePersonalityUI } from "@/lib/personality/engine";
@@ -192,13 +193,20 @@ function AnalysePage() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (!user) return;
-    return subscribeToUserProfile(user.uid, (p) => {
-      setProfile(p);
+    setLoadError(null);
+    try {
+      return subscribeToUserProfile(user.uid, (p) => {
+        setProfile(p);
+        setLoading(false);
+      });
+    } catch (err) {
+      setLoadError(err instanceof Error ? err : new Error("Kunne ikke laste profil"));
       setLoading(false);
-    });
+    }
   }, [user]);
 
   const riasecCode = profile?.riasec ? getRiasecCode(profile.riasec) : null;
@@ -257,6 +265,10 @@ function AnalysePage() {
         </div>
       </main>
     );
+  }
+
+  if (loadError) {
+    return <ErrorState message={loadError.message} onRetry={() => window.location.reload()} />;
   }
 
   if (!profile?.bigFive || !profile?.riasec) {

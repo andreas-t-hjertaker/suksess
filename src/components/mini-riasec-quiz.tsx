@@ -99,12 +99,20 @@ export function MiniRiasecQuiz() {
     <div className="mx-auto max-w-lg">
       <div className="glass-card rounded-2xl p-6 sm:p-8 bg-card dark:bg-card/60 border border-border/50 shadow-lg">
         {!isResult ? (
-          <div key={step}>
+          <div key={step} role="group" aria-labelledby={`quiz-q-${step}`}>
             {/* Progress */}
-            <div className="flex items-center gap-2 mb-6">
+            <div
+              className="flex items-center gap-2 mb-6"
+              role="progressbar"
+              aria-valuenow={step + 1}
+              aria-valuemin={1}
+              aria-valuemax={questions.length}
+              aria-label={`Spørsmål ${step + 1} av ${questions.length}`}
+            >
               {questions.map((_, i) => (
                 <div
                   key={i}
+                  aria-hidden="true"
                   className={`h-1.5 flex-1 rounded-full transition-all ${
                     i < step ? "bg-primary" : i === step ? "bg-primary/50" : "bg-muted"
                   }`}
@@ -115,19 +123,22 @@ export function MiniRiasecQuiz() {
             <p className="text-xs text-muted-foreground mb-2 font-display">
               Spørsmål {step + 1} av {questions.length}
             </p>
-            <h3 className="text-fluid-lg font-display font-bold mb-5">
+            <h3 id={`quiz-q-${step}`} className="text-fluid-lg font-display font-bold mb-5">
               {questions[step].text}
             </h3>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-labelledby={`quiz-q-${step}`}>
               {questions[step].options.map((opt) => (
                 <button
                   key={opt.code}
                   type="button"
+                  role="radio"
+                  aria-checked="false"
+                  aria-label={`${opt.label} (${RIASEC_LABELS[opt.code].name})`}
                   onClick={() => handleAnswer(opt.code)}
                   className="rounded-xl border border-border/60 bg-background/50 p-3.5 text-left text-sm transition-all hover:border-primary hover:bg-primary/5 hover:shadow-sm active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-primary"
                 >
-                  <span className="text-lg mb-1 block">{RIASEC_LABELS[opt.code].emoji}</span>
+                  <span className="text-lg mb-1 block" aria-hidden="true">{RIASEC_LABELS[opt.code].emoji}</span>
                   <span className="font-medium">{opt.label}</span>
                 </button>
               ))}
@@ -135,7 +146,7 @@ export function MiniRiasecQuiz() {
           </div>
         ) : (
           <ScaleIn>
-            <div className="text-center space-y-4">
+            <div className="text-center space-y-4" aria-live="polite">
               <div className="text-4xl mb-2">
                 {getTopCodes().map((c) => RIASEC_LABELS[c].emoji).join(" ")}
               </div>

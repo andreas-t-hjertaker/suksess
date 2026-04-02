@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/hooks/use-locale";
 import Link from "next/link";
 
 export default function GlobalError({
@@ -13,6 +14,8 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { t } = useLocale();
+
   useEffect(() => {
     console.error("[GlobalError]", error);
   }, [error]);
@@ -23,15 +26,14 @@ export default function GlobalError({
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10 mb-4">
           <AlertTriangle className="h-7 w-7 text-destructive" aria-hidden="true" />
         </div>
-        <h1 className="text-lg font-semibold font-display mb-1">Noe gikk galt</h1>
+        <h1 className="text-lg font-semibold font-display mb-1">{t.errors.somethingWentWrong}</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          En uventet feil oppstod. Prøv å laste siden på nytt, eller gå tilbake til
-          dashboard.
+          {t.errors.unexpectedError}
         </p>
         <div className="flex gap-3">
-          <Button onClick={reset}>Prøv igjen</Button>
+          <Button onClick={reset}>{t.common.tryAgain}</Button>
           <Link href="/dashboard" className={buttonVariants({ variant: "outline" })}>
-            Gå til dashboard
+            {t.common.goToDashboard}
           </Link>
         </div>
       </div>

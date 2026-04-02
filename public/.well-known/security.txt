@@ -1,0 +1,17 @@
+# Suksess Security Policy
+# https://securitytxt.org/
+
+Contact: mailto:sikkerhet@suksess.no
+Expires: 2027-04-01T00:00:00.000Z
+Preferred-Languages: nb, en
+Canonical: https://suksess.no/.well-known/security.txt
+Policy: https://suksess.no/legal/sikkerhet
+
+# Suksess er en AI-drevet karriereveiledningsplattform for norske VGS-elever.
+# Vi tar sikkerhet og personvern svært alvorlig, spesielt fordi brukerne
+# våre er mindreårige (15-19 år).
+#
+# Ansvarlig avsløring:
+# Vi setter pris på ansvarlige rapporter om sikkerhetssårbarheter.
+# Vennligst rapporter til e-postadressen ovenfor.
+# Vi lover å svare innen 48 timer.

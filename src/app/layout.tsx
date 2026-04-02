@@ -13,6 +13,7 @@ import { SkipLink } from "@/components/skip-link";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { AppCheckProvider } from "@/components/app-check-provider";
 import { ErrorReporter } from "@/components/error-reporter";
+import { ReducedMotionProvider } from "@/components/reduced-motion-provider";
 
 const plusJakartaSans = localFont({
   src: [
@@ -91,18 +92,20 @@ export default function RootLayout({
         <ServiceWorkerRegistration />
         <AppCheckProvider />
         <ErrorReporter />
-        <ThemeProvider>
-          <AuthProvider>
-            <PersonalityProvider>
-              <TooltipProvider>
-                <AnalyticsProvider />
-                {children}
-                <Toaster />
-                <ConsentBanner />
-              </TooltipProvider>
-            </PersonalityProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <ReducedMotionProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <PersonalityProvider>
+                <TooltipProvider>
+                  <AnalyticsProvider />
+                  {children}
+                  <Toaster />
+                  <ConsentBanner />
+                </TooltipProvider>
+              </PersonalityProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </ReducedMotionProvider>
       </body>
     </html>
   );

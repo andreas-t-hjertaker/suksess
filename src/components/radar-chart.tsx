@@ -72,8 +72,13 @@ export function RadarChart({ axes, size = 260, className }: RadarChartProps) {
       height={size}
       viewBox={`0 0 ${size} ${size}`}
       className={className}
-      aria-label="Radardiagram for personlighetsprofil"
+      role="img"
+      aria-label={`Radardiagram: ${axes.map((a) => `${a.label} ${a.value}%`).join(", ")}`}
     >
+      <desc>
+        Radardiagram for personlighetsprofil.{" "}
+        {axes.map((a) => `${a.label}: ${a.value}%`).join(". ")}
+      </desc>
       {/* Grid */}
       {gridPolygons.map((points, lvl) => (
         <polygon

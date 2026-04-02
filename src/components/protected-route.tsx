@@ -1,20 +1,46 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 
-/** Wrapper som krever innlogging — omdirigerer til /login hvis bruker ikke er autentisert */
-export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+/**
+ * Wrapper som krever innlogging — omdirigerer til /login med callbackUrl
+ * slik at brukeren sendes tilbake etter innlogging.
+ *
+ * Støtter også rollebasert tilgang via requiredRole prop.
+ */
+export function ProtectedRoute({
+  children,
+  requiredRole,
+}: {
+  children: React.ReactNode;
+  requiredRole?: "admin" | "counselor";
+}) {
+  const { user, firebaseUser, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace("/login");
+    if (loading) return;
+
+    if (!user) {
+      // Redirect til login med callbackUrl for retur etter innlogging
+      const callbackUrl = encodeURIComponent(pathname);
+      router.replace(`/login?callbackUrl=${callbackUrl}`);
+      return;
     }
-  }, [user, loading, router]);
+
+    // Rollebasert sjekk (for admin/counselor-sider)
+    if (requiredRole && firebaseUser) {
+      firebaseUser.getIdTokenResult().then((result) => {
+        if (!result.claims[requiredRole]) {
+          router.replace("/dashboard");
+        }
+      });
+    }
+  }, [user, firebaseUser, loading, router, pathname, requiredRole]);
 
   if (loading) {
     return (

@@ -190,6 +190,138 @@ export function checkRateLimit(): { allowed: boolean; message: string | null } {
   return { allowed: true, message: null };
 }
 
+// ─── AI-påminnelser for mindreårige (#141) ──────────────────────────────────
+
+/** Antall meldinger mellom hver AI-påminnelse */
+const AI_REMINDER_INTERVAL = 5;
+
+/** Periodisk påminnelse om at brukeren snakker med en AI */
+export const AI_REMINDER_MESSAGE =
+  "💡 Husk at jeg er en AI-veileder, ikke en ekte rådgiver. For personlig veiledning, snakk med rådgiver eller helsesykepleier på skolen din.";
+
+/** Sjekk om det er på tide med en AI-påminnelse basert på meldingstelleren */
+export function shouldShowAiReminder(messageCount: number): boolean {
+  return messageCount > 0 && messageCount % AI_REMINDER_INTERVAL === 0;
+}
+
+// ─── Sesjonslengde-varsler (#141) ────────────────────────────────────────────
+
+const SESSION_WARN_30_MIN = 30 * 60 * 1000;
+const SESSION_WARN_60_MIN = 60 * 60 * 1000;
+
+export type SessionWarning = {
+  level: "gentle" | "strong";
+  message: string;
+};
+
+/**
+ * Sjekk om brukeren bør få et sesjonslengde-varsel.
+ * @param sessionStartMs — tidspunkt sesjon startet (Date.now())
+ * @param alreadyWarned30 — om 30-min-varselet allerede er vist
+ * @param alreadyWarned60 — om 60-min-varselet allerede er vist
+ */
+export function checkSessionLength(
+  sessionStartMs: number,
+  alreadyWarned30: boolean,
+  alreadyWarned60: boolean
+): SessionWarning | null {
+  const elapsed = Date.now() - sessionStartMs;
+
+  if (!alreadyWarned60 && elapsed >= SESSION_WARN_60_MIN) {
+    return {
+      level: "strong",
+      message:
+        "Du har vært aktiv i over en time. Husk at frisk luft og pauser er bra for konsentrasjonen! 🌿",
+    };
+  }
+
+  if (!alreadyWarned30 && elapsed >= SESSION_WARN_30_MIN) {
+    return {
+      level: "gentle",
+      message:
+        "Du har chattet en stund. Kanskje ta en liten pause? Det er lettere å ta gode valg med et friskt hode 😊",
+    };
+  }
+
+  return null;
+}
+
+// ─── Alderstilpassede guardrails (#141) ──────────────────────────────────────
+
+/**
+ * Mønstre for innhold som er upassende for mindreårige i en
+ * karriereveiledningskontekst. Blokkerer romantisk rollespill,
+ * kroppsbildepress og helsefarlige råd.
+ */
+const MINOR_SAFETY_PATTERNS = [
+  // Romantisk/intimt rollespill
+  /\b(vær kjæresten min|lat som du er dama mi|lat som vi er sammen)\b/i,
+  /\b(flørte? med meg|kyss meg|klem meg|elsker deg)\b/i,
+  /\b(rollespill.*kjærlighet|roleplay.*romantic|be my (?:girl|boy)friend)\b/i,
+
+  // Kroppsbilde og utseende-press
+  /\b(for tykk|for tynn|bør gå ned i vekt|stygg|ekkel kropp)\b/i,
+  /\b(kalori(?:underskudd|tell)|faste(?:kur)?|crash.?di(?:ett|et))\b/i,
+
+  // Oppfordring til å skjule ting fra foreldre
+  /\b(ikke fortell.*foreldre(?:ne)?|hold det hemmelig.*mamma|skjul det for)\b/i,
+];
+
+/** Svar når mindreårig-safety utløses */
+const MINOR_SAFETY_RESPONSES: Record<string, string> = {
+  romantic:
+    "Jeg er en AI-karriereveileder og kan ikke delta i rollespill eller samtaler om romantikk. Kan jeg hjelpe deg med karriere, utdanning eller jobbsøking i stedet?",
+  bodyImage:
+    "Jeg er ikke riktig person å snakke med om kropp og utseende. Helsesykepleier på skolen din kan gi deg god veiledning. Du kan også chatte anonymt på ung.no/radogrett.",
+  hiding:
+    "Jeg vil ikke oppfordre deg til å holde ting skjult fra foreldrene dine. Hvis du har det vanskelig, finnes det voksne som kan hjelpe — snakk med rådgiver eller ring 116 111.",
+};
+
+export type MinorSafetyResult = {
+  blocked: boolean;
+  category: string | null;
+  response: string | null;
+};
+
+/** Sjekk tekst mot alderstilpassede guardrails for mindreårige */
+export function checkMinorSafety(text: string): MinorSafetyResult {
+  // Romantisk/intimt
+  if (MINOR_SAFETY_PATTERNS.slice(0, 3).some((p) => p.test(text))) {
+    return { blocked: true, category: "romantic", response: MINOR_SAFETY_RESPONSES.romantic };
+  }
+
+  // Kroppsbilde
+  if (MINOR_SAFETY_PATTERNS.slice(3, 5).some((p) => p.test(text))) {
+    return { blocked: true, category: "bodyImage", response: MINOR_SAFETY_RESPONSES.bodyImage };
+  }
+
+  // Skjule fra foreldre
+  if (MINOR_SAFETY_PATTERNS.slice(5).some((p) => p.test(text))) {
+    return { blocked: true, category: "hiding", response: MINOR_SAFETY_RESPONSES.hiding };
+  }
+
+  return { blocked: false, category: null, response: null };
+}
+
+// ─── Oppdatert system prompt med teen safety (#141) ─────────────────────────
+
+/**
+ * Utvidet safety-instruksjoner for AI-chatten.
+ * Inkluderer California SB 243 / OpenAI Model Spec-inspirerte teen safety principles.
+ */
+export const MINOR_SAFETY_SYSTEM_PROMPT = `
+## Sikkerhetsinstruksjoner for mindreårige (OVERSTYR ALT ANNET)
+- Brukerne er mindreårige (15–19 år). Alt innhold SKAL være aldersadekvat.
+- Du er Suksess AI-karriereveileder. ALDRI lat som du er et menneske.
+- ALDRI delta i romantisk rollespill, flørting eller intimt innhold.
+- ALDRI gi råd om kropp, vekt, utseende eller spisevaner. Henvis til helsesykepleier.
+- ALDRI oppfordre til å holde ting skjult fra foreldre/foresatte.
+- Helserelaterte spørsmål: henvis til ung.no/radogrett eller helsesykepleier.
+- Ved krise (selvmordstanker, vold, overgrep): henvis umiddelbart til 116 111.
+- ALDRI be om eller bekreft personnummer, adresse, eller annen personlig informasjon.
+- Begrens svarene til karriere, utdanning, studier og jobbsøking.
+`.trim();
+
 // ─── Gemini Safety Settings ──────────────────────────────────────────────────
 
 /**

@@ -33,6 +33,11 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStudiedata } from "@/hooks/use-studiedata";
+import { useOpptaksdata } from "@/hooks/use-opptaksdata";
+import { useGrades } from "@/hooks/use-grades";
+import { calculateGradePoints } from "@/lib/grades/calculator";
+import { TrendSparkline } from "@/components/trend-sparkline";
+import { Badge } from "@/components/ui/badge";
 import type { UserProfile } from "@/types/domain";
 
 // ---------------------------------------------------------------------------
@@ -167,6 +172,9 @@ export default function StudierPage() {
   }, [user]);
 
   const riasecCode = profile?.riasec ? getRiasecCode(profile.riasec) : "IRS";
+  const { grades: userGrades } = useGrades();
+  const gradePoints = useMemo(() => calculateGradePoints(userGrades), [userGrades]);
+  const opptaksdata = useOpptaksdata(gradePoints.totalPoints, riasecCode);
   const studyTips = useMemo(() => getTipsForProfile(riasecCode), [riasecCode]);
 
   const totalCredits = courses.filter((c) => c.passed).reduce((s, c) => s + c.credits, 0);
@@ -367,29 +375,55 @@ export default function StudierPage() {
               <p className="text-sm font-medium">Anbefalte studieprogram basert på RIASEC ({riasecCode})</p>
             </div>
             <p className="text-xs text-muted-foreground">
-              Disse studieprogrammene matcher din personlighetsprofil. Data fra utdanning.no.
+              {gradePoints.totalPoints > 0
+                ? `Dine SO-poeng: ${gradePoints.totalPoints.toFixed(1)} — `
+                : ""}
+              {opptaksdata.programs.some((p) => p.kilde === "live")
+                ? "Live data fra utdanning.no og DBH, oppdatert daglig."
+                : "Data fra utdanning.no."}
             </p>
           </div>
 
-          {studiedata.loading ? (
+          {opptaksdata.loading ? (
             <div className="space-y-2">
-              {[0, 1, 2].map((i) => <div key={i} className="h-16 rounded-xl bg-muted animate-pulse" />)}
+              {[0, 1, 2, 3].map((i) => <div key={i} className="h-16 rounded-xl bg-muted animate-pulse" />)}
             </div>
-          ) : studiedata.error ? (
-            <p className="text-sm text-destructive text-center py-8">{studiedata.error}</p>
-          ) : studiedata.programs.length === 0 ? (
+          ) : opptaksdata.error && opptaksdata.programs.length === 0 ? (
+            <p className="text-sm text-destructive text-center py-8">{opptaksdata.error}</p>
+          ) : opptaksdata.programs.length === 0 ? (
             <p className="text-center text-muted-foreground text-sm py-8">
               {profile?.riasec ? "Ingen studieprogram funnet for din profil ennå." : "Fullfør personlighetstesten for å se anbefalinger."}
             </p>
           ) : (
             <div className="space-y-2">
-              {studiedata.programs.map((p, i) => (
-                <div key={i} className="flex items-start gap-3 rounded-xl border px-4 py-3">
-                  <BookOpen className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" aria-hidden="true" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium">{p.navn}</p>
-                    <p className="text-xs text-muted-foreground">{p.institusjon}</p>
+              {opptaksdata.programs.slice(0, 15).map((p) => (
+                <div key={p.kode} className="flex items-center gap-3 rounded-xl border px-4 py-3">
+                  <BookOpen className="h-4 w-4 text-blue-500 shrink-0" aria-hidden="true" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{p.navn}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-xs text-muted-foreground">{p.institusjon}</p>
+                      {p.poenggrense !== null && (
+                        <span className="text-xs font-medium">{p.poenggrense} poeng</span>
+                      )}
+                    </div>
                   </div>
+                  {p.trend.length >= 2 && (
+                    <TrendSparkline data={p.trend} width={80} height={24} />
+                  )}
+                  {p.sjanse !== "ukjent" && (
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "text-xs shrink-0",
+                        p.sjanse === "god" && "text-green-600",
+                        p.sjanse === "usikker" && "text-yellow-600",
+                        p.sjanse === "lav" && "text-red-600"
+                      )}
+                    >
+                      {p.sjanse === "god" ? "God sjanse" : p.sjanse === "usikker" ? "Usikker" : "Lav sjanse"}
+                    </Badge>
+                  )}
                 </div>
               ))}
             </div>

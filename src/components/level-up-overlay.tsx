@@ -6,7 +6,7 @@
  * Issue #68
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useXp } from "@/hooks/use-xp";
 import { getLevelForXp, type LevelDefinition } from "@/lib/gamification/xp";
@@ -21,6 +21,26 @@ export function LevelUpOverlay() {
   const [particleOffsets] = useState(() =>
     Array.from({ length: 8 }, () => ({ x: (Math.random() - 0.5) * 200, y: (Math.random() - 0.5) * 200 }))
   );
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const close = useCallback(() => setShowOverlay(false), []);
+
+  // Escape-tast lukker overlay
+  useEffect(() => {
+    if (!showOverlay) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [showOverlay, close]);
+
+  // Fokuser knappen ved åpning
+  useEffect(() => {
+    if (showOverlay) {
+      setTimeout(() => buttonRef.current?.focus(), 600);
+    }
+  }, [showOverlay]);
 
   useEffect(() => {
     const currentLevel = getLevelForXp(totalXp);
@@ -40,8 +60,11 @@ export function LevelUpOverlay() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="level-up-title"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-          onClick={() => setShowOverlay(false)}
+          onClick={close}
         >
           <motion.div
             initial={{ scale: 0.5, opacity: 0, y: 40 }}
@@ -55,6 +78,7 @@ export function LevelUpOverlay() {
             {[...Array(8)].map((_, i) => (
               <motion.div
                 key={i}
+                aria-hidden="true"
                 className="absolute h-2 w-2 rounded-full bg-white/40"
                 initial={{
                   x: 0,
@@ -83,6 +107,7 @@ export function LevelUpOverlay() {
             </motion.div>
 
             <motion.h2
+              id="level-up-title"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
@@ -115,8 +140,9 @@ export function LevelUpOverlay() {
               transition={{ delay: 0.6 }}
             >
               <Button
+                ref={buttonRef}
                 variant="secondary"
-                onClick={() => setShowOverlay(false)}
+                onClick={close}
                 className="rounded-full px-8"
               >
                 Fantastisk!

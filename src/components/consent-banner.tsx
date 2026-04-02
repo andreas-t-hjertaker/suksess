@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useLocale } from "@/hooks/use-locale";
 
 const CONSENT_KEY = "consent";
 
@@ -14,6 +15,7 @@ export function hasConsent(): boolean {
 /** GDPR-samtykkebanner for informasjonskapsler/analytics */
 export function ConsentBanner() {
   const [visible, setVisible] = useState(false);
+  const { t } = useLocale();
 
   useEffect(() => {
     const stored = localStorage.getItem(CONSENT_KEY);
@@ -45,18 +47,17 @@ export function ConsentBanner() {
     >
       <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 sm:flex-row sm:justify-between">
         <div>
-          <p id="consent-title" className="sr-only">Samtykke til informasjonskapsler</p>
+          <p id="consent-title" className="sr-only">{t.consent.title}</p>
           <p id="consent-desc" className="text-sm text-muted-foreground">
-            Vi bruker informasjonskapsler og analyse for å forbedre opplevelsen din.
-            Ved å godta samtykker du til bruk av Firebase Analytics.
+            {t.consent.description}
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={decline}>
-            Avslå
+            {t.common.decline}
           </Button>
           <Button size="sm" onClick={accept}>
-            Godta
+            {t.common.accept}
           </Button>
         </div>
       </div>

@@ -109,6 +109,25 @@ export type Tenant = WithFirestoreTimestamps & {
 };
 
 // ---------------------------------------------------------------------------
+// Feature Flag (featureFlags/{flagId})
+// ---------------------------------------------------------------------------
+
+export type FeatureFlag = WithFirestoreTimestamps & {
+  key: string;
+  label: string;
+  description: string | null;
+  enabled: boolean;
+  /** Planer dette flagget er aktivt for (tom = alle) */
+  plans: string[];
+  /** Tenant-IDer dette flagget er aktivt for (tom = alle tenanter) */
+  tenantIds: string[];
+  /** Tenant-IDer som eksplisitt er ekskludert */
+  excludedTenantIds: string[];
+  /** Prosentandel av brukere som får flagget (0–100, 100 = alle) */
+  rolloutPercentage: number;
+};
+
+// ---------------------------------------------------------------------------
 // Karrierevei (careerPaths/{pathId})
 // ---------------------------------------------------------------------------
 

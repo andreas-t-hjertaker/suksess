@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageSkeleton } from "@/components/page-skeleton";
+import { ErrorState } from "@/components/error-state";
 import {
   TrendingUp,
   GraduationCap,
@@ -180,6 +182,8 @@ export default function KarriereGrafPage() {
   const { user } = useAuth();
   const { earnXp } = useXp();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileError, setProfileError] = useState<Error | null>(null);
   const [selectedCareer, setSelectedCareer] = useState<CareerNode | null>(null);
   const [zoom, setZoom] = useState(1);
   const [filter, setFilter] = useState<"alle" | "topp" | "god">("alle");
@@ -191,7 +195,17 @@ export default function KarriereGrafPage() {
 
   useEffect(() => {
     if (!user) return;
-    return subscribeToUserProfile(user.uid, setProfile);
+    setProfileError(null);
+    try {
+      const unsub = subscribeToUserProfile(user.uid, (p) => {
+        setProfile(p);
+        setProfileLoading(false);
+      });
+      return unsub;
+    } catch (err) {
+      setProfileError(err instanceof Error ? err : new Error("Kunne ikke laste profil"));
+      setProfileLoading(false);
+    }
   }, [user]);
 
   const riasecCode = profile?.riasec ? getRiasecCode(profile.riasec) : null;
@@ -214,6 +228,14 @@ export default function KarriereGrafPage() {
 
   const W = 900;
   const H = 680;
+
+  if (profileLoading) {
+    return <PageSkeleton variant="grid" cards={4} />;
+  }
+
+  if (profileError) {
+    return <ErrorState message={profileError.message} onRetry={() => window.location.reload()} />;
+  }
 
   return (
     <div className="space-y-4">
@@ -271,7 +293,7 @@ export default function KarriereGrafPage() {
       </div>
 
       {/* SVG Graf */}
-      <div className="w-full overflow-auto rounded-xl border bg-muted/20" style={{ maxHeight: "70vh" }}>
+      <div className="w-full overflow-auto rounded-xl border bg-muted/20 dark:bg-muted/40" style={{ maxHeight: "70vh" }}>
         <svg
           width={W * zoom}
           height={H * zoom}
@@ -292,7 +314,7 @@ export default function KarriereGrafPage() {
                 y1={from.y}
                 x2={to.x}
                 y2={to.y}
-                stroke="#e5e7eb"
+                stroke="hsl(var(--border))"
                 strokeWidth={1.5}
               />
             );
@@ -303,11 +325,11 @@ export default function KarriereGrafPage() {
             if (node.type === "root") {
               return (
                 <g key={node.id}>
-                  <circle cx={node.x} cy={node.y} r={36} fill="#7c3aed" />
-                  <text x={node.x} y={node.y - 4} textAnchor="middle" fontSize={10} fill="white" fontWeight="bold">
+                  <circle cx={node.x} cy={node.y} r={36} fill="hsl(var(--primary))" />
+                  <text x={node.x} y={node.y - 4} textAnchor="middle" fontSize={10} fill="hsl(var(--primary-foreground))" fontWeight="bold">
                     Din
                   </text>
-                  <text x={node.x} y={node.y + 8} textAnchor="middle" fontSize={10} fill="white" fontWeight="bold">
+                  <text x={node.x} y={node.y + 8} textAnchor="middle" fontSize={10} fill="hsl(var(--primary-foreground))" fontWeight="bold">
                     profil
                   </text>
                 </g>
@@ -321,7 +343,7 @@ export default function KarriereGrafPage() {
                     cx={node.x}
                     cy={node.y}
                     r={26}
-                    fill={node.color ?? "#6b7280"}
+                    fill={node.color ?? "hsl(var(--muted-foreground))"}
                     opacity={0.85}
                   />
                   <text
@@ -329,7 +351,7 @@ export default function KarriereGrafPage() {
                     y={node.y + 4}
                     textAnchor="middle"
                     fontSize={8}
-                    fill="white"
+                    fill="hsl(var(--primary-foreground))"
                     fontWeight="600"
                   >
                     {node.label}
@@ -367,7 +389,7 @@ export default function KarriereGrafPage() {
                   y={node.y - 3}
                   textAnchor="middle"
                   fontSize={7}
-                  fill="#1f2937"
+                  fill="hsl(var(--foreground))"
                 >
                   {node.label.length > 14 ? node.label.slice(0, 12) + "…" : node.label}
                 </text>
