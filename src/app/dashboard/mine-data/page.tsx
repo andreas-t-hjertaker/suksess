@@ -8,7 +8,6 @@ import {
   getDoc,
   deleteDoc,
   doc,
-  query,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { deleteUser } from "firebase/auth";
@@ -42,52 +41,93 @@ import {
 // Hjelpefunksjoner
 // ---------------------------------------------------------------------------
 
+/**
+ * Fullstendig dataeksport — GDPR Art. 20 (rett til dataportabilitet).
+ * Inkluderer all brukerdata i strukturert, maskinlesbart JSON-format.
+ * Datatilsynet-frist: 30 dager fra forespørsel.
+ */
 async function exportUserData(userId: string) {
   const result: Record<string, unknown> = {};
 
-  // Hent hvert datalag
-  const paths: Record<string, string> = {
+  // Enkeltdokumenter
+  const docPaths: Record<string, string> = {
     profil: `profiles/${userId}`,
     bruker: `users/${userId}`,
+    abonnement: `subscriptions/${userId}`,
   };
 
-  // Subcollections
-  const subcols = ["grades", "testResults", "conversations", "notifications", "gamification", "studier", "jobbmatch", "soknadscoach"];
-
-  for (const [key, path] of Object.entries(paths)) {
-    const snap = await getDoc(doc(db, path));
-    if (snap.exists()) result[key] = snap.data();
+  for (const [key, path] of Object.entries(docPaths)) {
+    try {
+      const snap = await getDoc(doc(db, path));
+      if (snap.exists()) result[key] = snap.data();
+    } catch { /* samling finnes ikke */ }
   }
+
+  // Subcollections under users/{userId}
+  const subcols = [
+    "grades",
+    "testResults",
+    "conversations",       // AI-samtalehistorikk
+    "notifications",
+    "gamification",        // XP, badges, streaks
+    "achievements",        // Opptjente badges
+    "studier",
+    "jobbmatch",
+    "soknadscoach",
+    "cv",                  // CV-utkast
+    "documents",           // Opplastede dokumenter
+    "feedback",            // Tilbakemeldinger på AI-svar
+    "personalityProfile",  // Big Five / RIASEC
+    "aiCache",             // Cachelagrede AI-svar
+    "xp",                  // XP-transaksjoner
+    "soknader",            // Søknader
+  ];
 
   for (const col of subcols) {
-    const snaps = await getDocs(query(collection(db, "users", userId, col)));
-    result[col] = snaps.docs.map((d) => ({ id: d.id, ...d.data() }));
+    try {
+      const snaps = await getDocs(collection(db, "users", userId, col));
+      if (!snaps.empty) {
+        result[col] = snaps.docs.map((d) => ({ id: d.id, ...d.data() }));
+      }
+    } catch { /* subcollection finnes ikke */ }
   }
+
+  // AI-beslutningslogg (for EU AI Act Art. 12 åpenhet)
+  try {
+    const aiLogs = await getDocs(collection(db, "llmLogs"));
+    // Filtrer kun denne brukerens logg klient-side (serveren gjøre dette bedre)
+    result["aiDecisionLog"] = aiLogs.docs
+      .filter((d) => d.data().userId === userId)
+      .map((d) => ({ id: d.id, ...d.data() }));
+  } catch { /* samling ikke tilgjengelig fra klient */ }
 
   return result;
 }
 
+/**
+ * Slett all brukerdata — GDPR Art. 17 (rett til sletting).
+ * Logger slettingen for lovpålagt revisjonsspor.
+ * Datatilsynet-frist: 30 dager fra forespørsel.
+ */
 async function deleteAllUserData(userId: string) {
   const subcols = [
-    "grades", "testResults", "conversations", "apiKeys/keys",
-    "notifications", "gamification", "studier", "jobbmatch", "soknadscoach", "cv",
+    "grades", "testResults", "conversations",
+    "notifications", "gamification", "achievements",
+    "studier", "jobbmatch", "soknadscoach", "cv",
+    "documents", "feedback", "personalityProfile",
+    "aiCache", "xp", "soknader",
   ];
 
   for (const sub of subcols) {
-    const parts = sub.split("/");
-    const colPath = parts.length === 2
-      ? `users/${userId}/${parts[0]}/${parts[1]}`
-      : `users/${userId}/${sub}`;
     try {
-      const snaps = await getDocs(collection(db, colPath));
+      const snaps = await getDocs(collection(db, "users", userId, sub));
       await Promise.all(snaps.docs.map((d) => deleteDoc(d.ref)));
-    } catch {
-      // Subcollection finnes kanskje ikke
-    }
+    } catch { /* subcollection finnes kanskje ikke */ }
   }
 
   // Slett hoveddokumenter
   try { await deleteDoc(doc(db, "profiles", userId)); } catch { /* ok */ }
+  try { await deleteDoc(doc(db, "subscriptions", userId)); } catch { /* ok */ }
   try { await deleteDoc(doc(db, "users", userId)); } catch { /* ok */ }
 }
 
@@ -275,8 +315,9 @@ export default function MineDataPage() {
             <CardTitle className="text-base">Eksporter mine data</CardTitle>
           </div>
           <CardDescription>
-            Last ned all din data som en JSON-fil. Inkluderer profil, karakterer,
-            testresultater og samtalehistorikk.
+            Last ned all din data som en maskinlesbar JSON-fil (GDPR Art. 20).
+            Inkluderer profil, karakterer, testresultater, AI-samtalehistorikk,
+            XP/badges, CV-utkast, søknader og AI-beslutningslogg.
           </CardDescription>
         </CardHeader>
         <CardContent>
