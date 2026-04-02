@@ -396,6 +396,31 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------------
+    // parentLinks/{linkId} — foresatt-elev kobling (#106)
+    // ---------------------------------------------------------------------------
+
+    match /parentLinks/{linkId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.parentUid == request.auth.uid || resource.data.studentUid == request.auth.uid);
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() &&
+        (resource.data.parentUid == request.auth.uid || resource.data.studentUid == request.auth.uid);
+      allow delete: if isAuthenticated() &&
+        (resource.data.parentUid == request.auth.uid || resource.data.studentUid == request.auth.uid);
+    }
+
+    // ---------------------------------------------------------------------------
+    // parentInvites/{inviteId} — invitasjonskoder for foresatte (#106)
+    // ---------------------------------------------------------------------------
+
+    match /parentInvites/{inviteId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if false;
+    }
+
+    // ---------------------------------------------------------------------------
     // emailLogs/{logId} — e-postlogg (kun Cloud Functions kan skrive)
     // ---------------------------------------------------------------------------
 
