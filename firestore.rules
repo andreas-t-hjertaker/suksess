@@ -348,6 +348,19 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------------
+    // chatFeedback/{feedbackId} — bruker-feedback på AI-svar (#105)
+    // ---------------------------------------------------------------------------
+
+    match /chatFeedback/{feedbackId} {
+      // Brukere kan opprette feedback på egne meldinger
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
+      // Kun admin/superadmin kan lese aggregert feedback
+      allow read: if isAdmin();
+      allow update, delete: if false; // immutable feedback
+    }
+
+    // ---------------------------------------------------------------------------
     // consentAudit/{auditId} — revisjonsspor for samtykke (immutable)
     // ---------------------------------------------------------------------------
 

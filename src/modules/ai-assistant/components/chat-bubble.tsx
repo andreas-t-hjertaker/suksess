@@ -1,14 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { Bot } from "lucide-react";
+import { Bot, ThumbsUp, ThumbsDown } from "lucide-react";
 import Markdown from "react-markdown";
 import { cn } from "@/lib/utils";
-import type { ChatMessage } from "../types";
+import type { ChatMessage, FeedbackRating, FeedbackReason } from "../types";
 
-export function ChatBubble({ message }: { message: ChatMessage }) {
+const FEEDBACK_REASONS: { value: FeedbackReason; label: string }[] = [
+  { value: "wrong_info", label: "Feil informasjon" },
+  { value: "not_relevant", label: "Ikke relevant" },
+  { value: "unclear", label: "Uforståelig" },
+  { value: "other", label: "Annet" },
+];
+
+type ChatBubbleProps = {
+  message: ChatMessage;
+  onFeedback?: (messageId: string, rating: FeedbackRating, reason?: FeedbackReason) => void;
+};
+
+export function ChatBubble({ message, onFeedback }: ChatBubbleProps) {
   const [showTime, setShowTime] = useState(false);
+  const [showReasons, setShowReasons] = useState(false);
   const isUser = message.role === "user";
+  const canShowFeedback = !isUser && !message.streaming && message.content;
 
   const time = message.timestamp.toLocaleTimeString("nb-NO", {
     hour: "2-digit",
@@ -80,6 +94,70 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
             </>
           )}
         </div>
+        {/* Feedback-knapper for AI-meldinger */}
+        {canShowFeedback && onFeedback && (
+          <div className="flex items-center gap-1 px-1 mt-0.5">
+            <button
+              type="button"
+              onClick={() => {
+                onFeedback(message.id, "thumbs_up");
+                setShowReasons(false);
+              }}
+              className={cn(
+                "rounded p-0.5 transition-colors",
+                message.feedback === "thumbs_up"
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-muted-foreground/50 hover:text-green-600 dark:hover:text-green-400"
+              )}
+              aria-label="Nyttig svar"
+              title="Nyttig svar"
+            >
+              <ThumbsUp className="h-3 w-3" />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (message.feedback === "thumbs_down") return;
+                setShowReasons((v) => !v);
+              }}
+              className={cn(
+                "rounded p-0.5 transition-colors",
+                message.feedback === "thumbs_down"
+                  ? "text-red-500 dark:text-red-400"
+                  : "text-muted-foreground/50 hover:text-red-500 dark:hover:text-red-400"
+              )}
+              aria-label="Ikke nyttig svar"
+              title="Ikke nyttig svar"
+            >
+              <ThumbsDown className="h-3 w-3" />
+            </button>
+            {message.feedback && (
+              <span className="text-[10px] text-muted-foreground ml-1">
+                Takk for tilbakemelding
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Begrunnelse-dropdown ved thumbs down */}
+        {showReasons && !message.feedback && onFeedback && (
+          <div className="flex flex-wrap gap-1 px-1 mt-1 animate-in fade-in slide-in-from-top-1 duration-150">
+            {FEEDBACK_REASONS.map((r) => (
+              <button
+                key={r.value}
+                type="button"
+                onClick={() => {
+                  onFeedback(message.id, "thumbs_down", r.value);
+                  setShowReasons(false);
+                }}
+                className="rounded-md border border-border px-2 py-0.5 text-[10px] text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-foreground"
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {showTime && (
           <span className={cn("px-1 text-[10px] text-muted-foreground", isUser ? "text-right" : "text-left")} aria-hidden="true">
             {time}

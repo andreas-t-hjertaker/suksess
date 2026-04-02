@@ -1,9 +1,18 @@
+export type FeedbackRating = "thumbs_up" | "thumbs_down";
+export type FeedbackReason =
+  | "wrong_info"
+  | "not_relevant"
+  | "unclear"
+  | "other";
+
 export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
   streaming?: boolean;
+  feedback?: FeedbackRating | null;
+  feedbackReason?: FeedbackReason | null;
 };
 
 export type AssistantContext = {

@@ -28,7 +28,7 @@ export function AiAssistant(config?: ChatConfig) {
     return getDefaultContext(user, pathname);
   }, [user, pathname, config]);
 
-  const { messages, sendMessage, clearMessages, loadConversation, isStreaming, conversationId } =
+  const { messages, sendMessage, sendFeedback, clearMessages, loadConversation, isStreaming, conversationId } =
     useChatSession(context, config);
 
   const title = config?.title || "AI-assistent";
@@ -125,7 +125,7 @@ export function AiAssistant(config?: ChatConfig) {
           )}
 
           {/* Meldinger */}
-          <ChatMessages messages={messages} welcomeMessage={welcomeMessage} onSendSuggestion={handleSend} />
+          <ChatMessages messages={messages} welcomeMessage={welcomeMessage} onSendSuggestion={handleSend} onFeedback={sendFeedback} />
 
           {/* Inndata */}
           <ChatInput

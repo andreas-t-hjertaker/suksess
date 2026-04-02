@@ -17,7 +17,8 @@ import {
   saveConversationMessages,
   getConversationMessages,
 } from "../lib/conversation-store";
-import type { ChatMessage, ChatConfig, AssistantContext } from "../types";
+import { saveChatFeedback } from "../lib/feedback-store";
+import type { ChatMessage, ChatConfig, AssistantContext, FeedbackRating, FeedbackReason } from "../types";
 
 type FirebaseChatSession = ReturnType<ReturnType<typeof getModel>["startChat"]>;
 
@@ -238,5 +239,33 @@ export function useChatSession(
     [context.user?.uid]
   );
 
-  return { messages, sendMessage, clearMessages, loadConversation, isStreaming, conversationId: conversationIdRef.current };
+  const sendFeedback = useCallback(
+    async (messageId: string, rating: FeedbackRating, reason?: FeedbackReason) => {
+      const uid = context.user?.uid;
+      if (!uid) return;
+
+      // Oppdater lokal state
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? { ...m, feedback: rating, feedbackReason: reason ?? null }
+            : m
+        )
+      );
+
+      // Lagre til Firestore
+      const message = messages.find((m) => m.id === messageId);
+      await saveChatFeedback({
+        userId: uid,
+        conversationId: conversationIdRef.current,
+        messageId,
+        rating,
+        reason: reason ?? null,
+        messageContent: message?.content?.slice(0, 500) ?? "",
+      });
+    },
+    [context.user?.uid, messages]
+  );
+
+  return { messages, sendMessage, sendFeedback, clearMessages, loadConversation, isStreaming, conversationId: conversationIdRef.current };
 }

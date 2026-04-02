@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Bot, Sparkles, GraduationCap, Compass, Brain } from "lucide-react";
 import { ChatBubble } from "./chat-bubble";
-import type { ChatMessage } from "../types";
+import type { ChatMessage, FeedbackRating, FeedbackReason } from "../types";
 
 const SUGGESTED_PROMPTS = [
   { text: "Hva passer for min RIASEC-profil?", icon: Compass },
@@ -16,9 +16,10 @@ type ChatMessagesProps = {
   messages: ChatMessage[];
   welcomeMessage: string;
   onSendSuggestion?: (text: string) => void;
+  onFeedback?: (messageId: string, rating: FeedbackRating, reason?: FeedbackReason) => void;
 };
 
-export function ChatMessages({ messages, welcomeMessage, onSendSuggestion }: ChatMessagesProps) {
+export function ChatMessages({ messages, welcomeMessage, onSendSuggestion, onFeedback }: ChatMessagesProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,7 +63,7 @@ export function ChatMessages({ messages, welcomeMessage, onSendSuggestion }: Cha
       aria-label="AI-chat samtale"
     >
       {messages.map((msg) => (
-        <ChatBubble key={msg.id} message={msg} />
+        <ChatBubble key={msg.id} message={msg} onFeedback={onFeedback} />
       ))}
       <div ref={bottomRef} aria-hidden="true" />
     </div>

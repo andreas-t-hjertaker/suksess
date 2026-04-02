@@ -285,6 +285,24 @@ export const UserSubscriptionSchema = z.object({
 // SchoolStats — schoolStats/{tenantId}
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// ChatFeedback — chatFeedback/{feedbackId}
+// ---------------------------------------------------------------------------
+
+export const ChatFeedbackSchema = z.object({
+  userId: z.string(),
+  conversationId: z.string().nullable(),
+  messageId: z.string(),
+  rating: z.enum(["thumbs_up", "thumbs_down"]),
+  reason: z.enum(["wrong_info", "not_relevant", "unclear", "other"]).nullable(),
+  messageContent: z.string(),
+  createdAt: firestoreTimestamp,
+});
+
+// ---------------------------------------------------------------------------
+// SchoolStats — schoolStats/{tenantId}
+// ---------------------------------------------------------------------------
+
 export const SchoolStatsSchema = z.object({
   tenantId: z.string(),
   period: z.string(),
