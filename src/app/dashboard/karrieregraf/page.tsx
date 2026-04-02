@@ -293,7 +293,7 @@ export default function KarriereGrafPage() {
       </div>
 
       {/* SVG Graf */}
-      <div className="w-full overflow-auto rounded-xl border bg-muted/20" style={{ maxHeight: "70vh" }}>
+      <div className="w-full overflow-auto rounded-xl border bg-muted/20 dark:bg-muted/40" style={{ maxHeight: "70vh" }}>
         <svg
           width={W * zoom}
           height={H * zoom}
@@ -314,7 +314,7 @@ export default function KarriereGrafPage() {
                 y1={from.y}
                 x2={to.x}
                 y2={to.y}
-                stroke="#e5e7eb"
+                stroke="hsl(var(--border))"
                 strokeWidth={1.5}
               />
             );
@@ -325,11 +325,11 @@ export default function KarriereGrafPage() {
             if (node.type === "root") {
               return (
                 <g key={node.id}>
-                  <circle cx={node.x} cy={node.y} r={36} fill="#7c3aed" />
-                  <text x={node.x} y={node.y - 4} textAnchor="middle" fontSize={10} fill="white" fontWeight="bold">
+                  <circle cx={node.x} cy={node.y} r={36} fill="hsl(var(--primary))" />
+                  <text x={node.x} y={node.y - 4} textAnchor="middle" fontSize={10} fill="hsl(var(--primary-foreground))" fontWeight="bold">
                     Din
                   </text>
-                  <text x={node.x} y={node.y + 8} textAnchor="middle" fontSize={10} fill="white" fontWeight="bold">
+                  <text x={node.x} y={node.y + 8} textAnchor="middle" fontSize={10} fill="hsl(var(--primary-foreground))" fontWeight="bold">
                     profil
                   </text>
                 </g>
@@ -343,7 +343,7 @@ export default function KarriereGrafPage() {
                     cx={node.x}
                     cy={node.y}
                     r={26}
-                    fill={node.color ?? "#6b7280"}
+                    fill={node.color ?? "hsl(var(--muted-foreground))"}
                     opacity={0.85}
                   />
                   <text
@@ -351,7 +351,7 @@ export default function KarriereGrafPage() {
                     y={node.y + 4}
                     textAnchor="middle"
                     fontSize={8}
-                    fill="white"
+                    fill="hsl(var(--primary-foreground))"
                     fontWeight="600"
                   >
                     {node.label}
@@ -389,7 +389,7 @@ export default function KarriereGrafPage() {
                   y={node.y - 3}
                   textAnchor="middle"
                   fontSize={7}
-                  fill="#1f2937"
+                  fill="hsl(var(--foreground))"
                 >
                   {node.label.length > 14 ? node.label.slice(0, 12) + "…" : node.label}
                 </text>
