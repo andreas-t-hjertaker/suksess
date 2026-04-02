@@ -222,6 +222,50 @@ export function withRequiredTenant(handler: TenantHandler): PublicHandler {
 }
 
 // ============================================================
+// Tenant-admin middleware (#134)
+// ============================================================
+
+/** Kontekst med garantert tenantId (non-null) */
+export type TenantAdminContext = AuthenticatedContext & {
+  tenantId: string;
+};
+
+type TenantAdminHandler = (ctx: TenantAdminContext) => Promise<void> | void;
+
+/**
+ * Wrapper for skole-admin endepunkter (#134).
+ * Krever:
+ * - Autentisert bruker
+ * - Rolle "admin" eller "superadmin"
+ * - tenantId custom claim (satt via Feide OIDC)
+ *
+ * Superadmins med tenantId i query-param kan operere på andres tenanter.
+ */
+export function withTenantAdmin(handler: TenantAdminHandler): PublicHandler {
+  return withAuth(async (ctx) => {
+    const role = (ctx.user.role as string) ?? (ctx.user.admin ? "superadmin" : "student");
+
+    if (!["admin", "superadmin"].includes(role)) {
+      fail(ctx.res, "Krever skoleadministrator-tilgang", 403);
+      return;
+    }
+
+    // Superadmin kan operere på en spesifikk tenant via query-param
+    const tenantId =
+      (role === "superadmin" && ctx.req.query.tenantId as string) ||
+      (ctx.user.tenantId as string | null) ||
+      null;
+
+    if (!tenantId) {
+      fail(ctx.res, "Ingen tenant-tilknytning", 403);
+      return;
+    }
+
+    await handler({ ...ctx, tenantId });
+  });
+}
+
+// ============================================================
 // CSRF-beskyttelse (#139)
 // ============================================================
 

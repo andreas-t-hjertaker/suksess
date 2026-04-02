@@ -168,9 +168,10 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
-      // GDPR-samtykke (subcollection) — sensitiv, kun eleven og superadmin
+      // GDPR-samtykke (subcollection) — eleven, superadmin og skoleadmin (#134)
       match /consent/{consentId} {
-        allow read: if isOwner(userId) || isSuperAdmin();
+        allow read: if isOwner(userId) || isSuperAdmin() ||
+          (isAdmin() && get(/databases/$(database)/documents/users/$(userId)).data.get("tenantId", null) == userTenantId());
         allow write: if isOwner(userId);
       }
     }
@@ -239,6 +240,24 @@ service cloud.firestore {
 
     match /schoolStats/{tenantId} {
       allow read: if isCounselorInTenant(tenantId);
+      allow write: if false; // kun Cloud Functions (admin SDK)
+    }
+
+    // ---------------------------------------------------------------------------
+    // consentLogs/{logId} — samtykkelogg per tenant (#134)
+    // ---------------------------------------------------------------------------
+
+    match /consentLogs/{logId} {
+      allow read: if isAdmin() && resource.data.get("tenantId", null) == userTenantId();
+      allow write: if false; // kun Cloud Functions (admin SDK)
+    }
+
+    // ---------------------------------------------------------------------------
+    // invoices/{invoiceId} — Stripe-fakturaer speilet (#134)
+    // ---------------------------------------------------------------------------
+
+    match /invoices/{invoiceId} {
+      allow read: if isAdmin() && resource.data.get("tenantId", null) == userTenantId();
       allow write: if false; // kun Cloud Functions (admin SDK)
     }
 

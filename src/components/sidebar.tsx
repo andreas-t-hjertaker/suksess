@@ -35,8 +35,10 @@ import {
   BookOpen,
   GitBranch,
   Target,
+  Building2,
 } from "lucide-react";
 import { useAdmin } from "@/hooks/use-admin";
+import { useTenant } from "@/hooks/use-tenant";
 import { useLocale } from "@/hooks/use-locale";
 import type { Messages } from "@/lib/i18n/locales";
 
@@ -79,11 +81,16 @@ function useNavItems() {
 function NavLinks({ onClick }: { onClick?: () => void }) {
   const pathname = usePathname();
   const { isAdmin } = useAdmin();
+  const { role, tenantId } = useTenant();
   const navItems = useNavItems();
 
-  const allItems = isAdmin
-    ? [...navItems, { href: "/admin", label: "Admin", icon: Shield }]
-    : navItems;
+  const isTenantAdmin = tenantId && ["admin", "superadmin"].includes(role);
+
+  const allItems = [
+    ...navItems,
+    ...(isTenantAdmin ? [{ href: "/school-admin", label: "Skoledashboard", icon: Building2 }] : []),
+    ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: Shield }] : []),
+  ];
 
   return (
     <nav aria-label="Hovednavigasjon" className="space-y-1">
