@@ -396,6 +396,32 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------------
+    // chatRooms/{roomId} — rådgiver-elev sanntidschat (#108)
+    // ---------------------------------------------------------------------------
+
+    match /chatRooms/{roomId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.studentUid == request.auth.uid ||
+         resource.data.counselorUid == request.auth.uid);
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() &&
+        (resource.data.studentUid == request.auth.uid ||
+         resource.data.counselorUid == request.auth.uid);
+
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() &&
+          (get(/databases/$(database)/documents/chatRooms/$(roomId)).data.studentUid == request.auth.uid ||
+           get(/databases/$(database)/documents/chatRooms/$(roomId)).data.counselorUid == request.auth.uid);
+        allow create: if isAuthenticated() &&
+          (get(/databases/$(database)/documents/chatRooms/$(roomId)).data.studentUid == request.auth.uid ||
+           get(/databases/$(database)/documents/chatRooms/$(roomId)).data.counselorUid == request.auth.uid);
+        allow update: if isAuthenticated() &&
+          (get(/databases/$(database)/documents/chatRooms/$(roomId)).data.studentUid == request.auth.uid ||
+           get(/databases/$(database)/documents/chatRooms/$(roomId)).data.counselorUid == request.auth.uid);
+      }
+    }
+
+    // ---------------------------------------------------------------------------
     // parentLinks/{linkId} — foresatt-elev kobling (#106)
     // ---------------------------------------------------------------------------
 
