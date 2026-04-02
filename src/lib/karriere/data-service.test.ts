@@ -118,7 +118,7 @@ describe("Karrieredata-tjeneste (#128)", () => {
         if (filters.demand && career.demand !== filters.demand) return false;
         if (filters.riasecCodes && filters.riasecCodes.length > 0) {
           const hasMatch = filters.riasecCodes.some((code) =>
-            career.riasecCodes.includes(code as keyof typeof career.riasecCodes[number])
+            career.riasecCodes.includes(code as (typeof career.riasecCodes)[number])
           );
           if (!hasMatch) return false;
         }

@@ -80,7 +80,7 @@ function validateEnv(): ClientEnv {
   const result = clientEnvSchema.safeParse(process.env);
 
   if (!result.success) {
-    const missing = result.error.errors
+    const missing = result.error.issues
       .map((e) => `  - ${e.path.join(".")}: ${e.message}`)
       .join("\n");
 
