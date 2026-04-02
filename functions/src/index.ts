@@ -1035,16 +1035,37 @@ const routes: Route[] = [
  */
 export const health = onRequest(
   { region: "europe-west1", cors: ALLOWED_ORIGINS },
-  (_req, res) => {
+  async (_req, res) => {
+    const checks: Record<string, "connected" | "error"> = {
+      firestore: "error",
+      storage: "error",
+      functions: "connected",
+    };
+
+    // Ekte Firestore-sjekk: les featureFlags-samlingen
+    try {
+      const snap = await db.collection("featureFlags").limit(1).get();
+      checks.firestore = snap !== undefined ? "connected" : "error";
+    } catch {
+      checks.firestore = "error";
+    }
+
+    // Ekte Storage-sjekk: sjekk at bucket eksisterer
+    try {
+      const bucket = admin.storage().bucket();
+      const [exists] = await bucket.exists();
+      checks.storage = exists ? "connected" : "error";
+    } catch {
+      checks.storage = "error";
+    }
+
+    const allOk = Object.values(checks).every((v) => v === "connected");
+
     res.json({
-      status: "ok",
+      status: allOk ? "ok" : "degraded",
       project: "suksess-842ed",
       timestamp: new Date().toISOString(),
-      services: {
-        firestore: "connected",
-        storage: "connected",
-        functions: "running",
-      },
+      services: checks,
     });
   }
 );

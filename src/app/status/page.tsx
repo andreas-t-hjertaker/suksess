@@ -72,29 +72,66 @@ const STATUS_CONFIG: Record<ServiceStatus, { label: string; color: string; icon:
 };
 
 // ---------------------------------------------------------------------------
-// Helsesjekker
+// Helsesjekker — ekte sjekker mot tjenestene
 // ---------------------------------------------------------------------------
 
-async function checkFirebase(): Promise<{ ok: boolean; latencyMs: number }> {
+/** Sjekk Firebase Auth ved å hente auth-instansen */
+async function checkFirebaseAuth(): Promise<{ ok: boolean; latencyMs: number }> {
   const start = performance.now();
   try {
-    // Enkel ping — sjekk at Firebase SDK er initialisert
     const { getAuth } = await import("firebase/auth");
-    getAuth();
+    const auth = getAuth();
+    // Auth er operasjonell hvis SDK er initialisert og har en config
+    const ok = !!auth.config?.apiKey;
+    return { ok, latencyMs: Math.round(performance.now() - start) };
+  } catch {
+    return { ok: false, latencyMs: Math.round(performance.now() - start) };
+  }
+}
+
+/** Sjekk Firestore med ekte lesekall (leser featureFlags — offentlig tilgjengelig) */
+async function checkFirestore(): Promise<{ ok: boolean; latencyMs: number }> {
+  const start = performance.now();
+  try {
+    const { collection, getDocs, query, limit } = await import("firebase/firestore");
+    const { db } = await import("@/lib/firebase/firestore");
+    const q = query(collection(db, "featureFlags"), limit(1));
+    await getDocs(q);
     return { ok: true, latencyMs: Math.round(performance.now() - start) };
   } catch {
     return { ok: false, latencyMs: Math.round(performance.now() - start) };
   }
 }
 
-async function checkApi(): Promise<{ ok: boolean; latencyMs: number }> {
+/** Sjekk Cloud Functions health endpoint */
+async function checkCloudFunctions(): Promise<{ ok: boolean; latencyMs: number }> {
   const start = performance.now();
   try {
-    const res = await fetch("/api/health", { signal: AbortSignal.timeout(5000) });
+    const baseUrl = process.env.NEXT_PUBLIC_CF_BASE_URL
+      || "https://europe-west1-suksess-842ed.cloudfunctions.net";
+    const res = await fetch(`${baseUrl}/health`, {
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return { ok: false, latencyMs: Math.round(performance.now() - start) };
+    const data = await res.json();
+    const ok = data.status === "ok" && data.services?.firestore === "connected";
+    return { ok, latencyMs: Math.round(performance.now() - start) };
+  } catch {
+    return { ok: false, latencyMs: Math.round(performance.now() - start) };
+  }
+}
+
+/** Sjekk Firebase Hosting (sjekker at manifest.json er tilgjengelig) */
+async function checkHosting(): Promise<{ ok: boolean; latencyMs: number }> {
+  const start = performance.now();
+  try {
+    const res = await fetch("/manifest.json", {
+      signal: AbortSignal.timeout(5000),
+      cache: "no-store",
+    });
     return { ok: res.ok, latencyMs: Math.round(performance.now() - start) };
   } catch {
-    // API endpoint finnes kanskje ikke ennå — marker som operasjonell hvis rask
-    return { ok: true, latencyMs: Math.round(performance.now() - start) };
+    return { ok: false, latencyMs: Math.round(performance.now() - start) };
   }
 }
 
@@ -116,47 +153,41 @@ export default function StatusPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
+  const updateService = useCallback(
+    (id: string, status: ServiceStatus, latencyMs: number | null) => {
+      setServices((prev) =>
+        prev.map((svc) =>
+          svc.id === id ? { ...svc, status, latencyMs, lastChecked: new Date() } : svc
+        )
+      );
+    },
+    []
+  );
+
   const runChecks = useCallback(async () => {
     setRefreshing(true);
-    const now = new Date();
 
-    // Firebase-sjekk
-    const firebaseResult = await checkFirebase();
-    const apiResult = await checkApi();
+    // Kjør alle sjekker parallelt
+    const [authResult, firestoreResult, cfResult, hostingResult] = await Promise.all([
+      checkFirebaseAuth(),
+      checkFirestore(),
+      checkCloudFunctions(),
+      checkHosting(),
+    ]);
 
-    setServices((prev) =>
-      prev.map((svc) => {
-        switch (svc.id) {
-          case "firebase-auth":
-          case "firestore":
-            return {
-              ...svc,
-              status: firebaseResult.ok ? "operational" : "outage",
-              latencyMs: firebaseResult.latencyMs,
-              lastChecked: now,
-            };
-          case "cloud-functions":
-            return {
-              ...svc,
-              status: apiResult.ok ? "operational" : "degraded",
-              latencyMs: apiResult.latencyMs,
-              lastChecked: now,
-            };
-          // Andre tjenester — marker som operasjonell (ekstern overvåking)
-          default:
-            return {
-              ...svc,
-              status: "operational",
-              latencyMs: null,
-              lastChecked: now,
-            };
-        }
-      })
-    );
+    updateService("firebase-auth", authResult.ok ? "operational" : "outage", authResult.latencyMs);
+    updateService("firestore", firestoreResult.ok ? "operational" : "outage", firestoreResult.latencyMs);
+    updateService("cloud-functions", cfResult.ok ? "operational" : cfResult.latencyMs > 5000 ? "degraded" : "outage", cfResult.latencyMs);
+    updateService("hosting", hostingResult.ok ? "operational" : "outage", hostingResult.latencyMs);
 
-    setLastRefresh(now);
+    // AI og Weaviate — sjekkes indirekte via Cloud Functions health
+    // Marker som operasjonell hvis CF svarer, ellers ukjent
+    updateService("ai-services", cfResult.ok ? "operational" : "degraded", null);
+    updateService("weaviate", cfResult.ok ? "operational" : "degraded", null);
+
+    setLastRefresh(new Date());
     setRefreshing(false);
-  }, []);
+  }, [updateService]);
 
   useEffect(() => {
     runChecks();
