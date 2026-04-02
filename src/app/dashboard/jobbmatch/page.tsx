@@ -12,6 +12,8 @@ import { db } from "@/lib/firebase/firestore";
 import { getRiasecCode } from "@/lib/personality/scoring";
 import { useChatSession } from "@/modules/ai-assistant/hooks/use-chat";
 import { FeatureGate } from "@/components/feature-gate";
+import { PageSkeleton } from "@/components/page-skeleton";
+import { ErrorState } from "@/components/error-state";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -325,6 +327,8 @@ function JobCard({
 function JobMatchPage() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileError, setProfileError] = useState<Error | null>(null);
   const [search, setSearch] = useState("");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
@@ -333,7 +337,17 @@ function JobMatchPage() {
 
   useEffect(() => {
     if (!user) return;
-    return subscribeToUserProfile(user.uid, setProfile);
+    setProfileError(null);
+    try {
+      const unsub = subscribeToUserProfile(user.uid, (p) => {
+        setProfile(p);
+        setProfileLoading(false);
+      });
+      return unsub;
+    } catch (err) {
+      setProfileError(err instanceof Error ? err : new Error("Kunne ikke laste profil"));
+      setProfileLoading(false);
+    }
   }, [user]);
 
   // Last favoritter fra Firestore
@@ -411,6 +425,14 @@ Beskrivelse: ${job.description}`;
 
   // Hent siste melding fra AI som søknadsbrevet
   const lastAiMessage = messages.filter((m) => m.role === "assistant").slice(-1)[0];
+
+  if (profileLoading) {
+    return <PageSkeleton variant="grid" cards={6} />;
+  }
+
+  if (profileError) {
+    return <ErrorState message={profileError.message} onRetry={() => window.location.reload()} />;
+  }
 
   return (
     <div className="space-y-6 max-w-3xl">

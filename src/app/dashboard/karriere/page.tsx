@@ -51,6 +51,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageSkeleton } from "@/components/page-skeleton";
+import { ErrorState } from "@/components/error-state";
 
 const RIASEC_LABELS: Record<keyof RiasecScores, string> = {
   realistic: "R",
@@ -343,6 +345,7 @@ function KarrierePage() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [profileError, setProfileError] = useState<Error | null>(null);
   const { earnXp } = useXp();
 
   const [search, setSearch] = useState("");
@@ -354,11 +357,17 @@ function KarrierePage() {
 
   useEffect(() => {
     if (!user) return;
-    const unsub = subscribeToUserProfile(user.uid, (p) => {
-      setProfile(p);
+    setProfileError(null);
+    try {
+      const unsub = subscribeToUserProfile(user.uid, (p) => {
+        setProfile(p);
+        setProfileLoading(false);
+      });
+      return unsub;
+    } catch (err) {
+      setProfileError(err instanceof Error ? err : new Error("Kunne ikke laste profil"));
       setProfileLoading(false);
-    });
-    return unsub;
+    }
   }, [user]);
 
   const riasec = profile?.riasec ?? null;
@@ -408,6 +417,14 @@ function KarrierePage() {
     sectorFilter !== "alle" ||
     eduFilter !== "alle" ||
     demandFilter !== "alle";
+
+  if (profileLoading) {
+    return <PageSkeleton variant="grid" cards={6} />;
+  }
+
+  if (profileError) {
+    return <ErrorState message={profileError.message} onRetry={() => window.location.reload()} />;
+  }
 
   return (
     <main id="main-content" tabIndex={-1} className="p-4 md:p-6 space-y-6 max-w-5xl mx-auto">

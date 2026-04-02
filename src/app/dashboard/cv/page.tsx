@@ -8,6 +8,8 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { FeatureGate } from "@/components/feature-gate";
+import { PageSkeleton } from "@/components/page-skeleton";
+import { ErrorState } from "@/components/error-state";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { useGrades } from "@/hooks/use-grades";
 import { calculateGradePoints } from "@/lib/grades/calculator";
@@ -307,7 +309,8 @@ function CvPage() {
       }
       setCvLoading(false);
       initialLoad.current = false;
-    }).catch(() => {
+    }).catch((err) => {
+      console.error("CV-lasting feilet:", err);
       setCvLoading(false);
       initialLoad.current = false;
     });
@@ -370,6 +373,10 @@ function CvPage() {
     } finally {
       setGeneratingSummary(false);
     }
+  }
+
+  if (cvLoading) {
+    return <PageSkeleton variant="form" cards={5} />;
   }
 
   return (

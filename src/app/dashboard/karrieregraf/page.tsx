@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PageSkeleton } from "@/components/page-skeleton";
+import { ErrorState } from "@/components/error-state";
 import {
   TrendingUp,
   GraduationCap,
@@ -180,6 +182,8 @@ export default function KarriereGrafPage() {
   const { user } = useAuth();
   const { earnXp } = useXp();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [profileError, setProfileError] = useState<Error | null>(null);
   const [selectedCareer, setSelectedCareer] = useState<CareerNode | null>(null);
   const [zoom, setZoom] = useState(1);
   const [filter, setFilter] = useState<"alle" | "topp" | "god">("alle");
@@ -191,7 +195,17 @@ export default function KarriereGrafPage() {
 
   useEffect(() => {
     if (!user) return;
-    return subscribeToUserProfile(user.uid, setProfile);
+    setProfileError(null);
+    try {
+      const unsub = subscribeToUserProfile(user.uid, (p) => {
+        setProfile(p);
+        setProfileLoading(false);
+      });
+      return unsub;
+    } catch (err) {
+      setProfileError(err instanceof Error ? err : new Error("Kunne ikke laste profil"));
+      setProfileLoading(false);
+    }
   }, [user]);
 
   const riasecCode = profile?.riasec ? getRiasecCode(profile.riasec) : null;
@@ -214,6 +228,14 @@ export default function KarriereGrafPage() {
 
   const W = 900;
   const H = 680;
+
+  if (profileLoading) {
+    return <PageSkeleton variant="grid" cards={4} />;
+  }
+
+  if (profileError) {
+    return <ErrorState message={profileError.message} onRetry={() => window.location.reload()} />;
+  }
 
   return (
     <div className="space-y-4">

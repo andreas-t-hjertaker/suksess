@@ -16,6 +16,8 @@ import { calculateGradePoints, STUDY_PROGRAMS, type StudyProgramEntry } from "@/
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { Card, CardContent } from "@/components/ui/card";
+import { PageSkeleton } from "@/components/page-skeleton";
+import { ErrorState } from "@/components/error-state";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -323,7 +325,7 @@ function ProgramCard({
 
 export default function SoknadsCoachPage() {
   const { user } = useAuth();
-  const { grades } = useGrades();
+  const { grades, loading: gradesLoading } = useGrades();
   const { earnXp } = useXp();
   const gradePoints = useMemo(() => calculateGradePoints(grades), [grades]);
   const myPoints = gradePoints.totalPoints;
@@ -401,6 +403,10 @@ export default function SoknadsCoachPage() {
   }, [search, showFavoritesOnly, favorites, myPoints]);
 
   const doneCount = checklist.filter((c) => c.done).length;
+
+  if (gradesLoading) {
+    return <PageSkeleton variant="list" cards={5} />;
+  }
 
   return (
     <div className="space-y-6 max-w-3xl">

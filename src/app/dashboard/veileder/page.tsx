@@ -19,6 +19,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Trash2, Bot, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageSkeleton } from "@/components/page-skeleton";
+import { ErrorState } from "@/components/error-state";
 
 // ---------------------------------------------------------------------------
 // System-prompt builder med personlighetsdata
@@ -121,14 +123,21 @@ function VeilederPage() {
   const { earnXp } = useXp();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [profileError, setProfileError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (!user) return;
-    const unsub = subscribeToUserProfile(user.uid, (p) => {
-      setProfile(p);
+    setProfileError(null);
+    try {
+      const unsub = subscribeToUserProfile(user.uid, (p) => {
+        setProfile(p);
+        setProfileLoading(false);
+      });
+      return unsub;
+    } catch (err) {
+      setProfileError(err instanceof Error ? err : new Error("Kunne ikke laste profil"));
       setProfileLoading(false);
-    });
-    return unsub;
+    }
   }, [user]);
 
   const systemPrompt = useMemo(
@@ -164,6 +173,14 @@ function VeilederPage() {
   }, [profile]);
 
   const riasecCode = profile?.riasec ? getRiasecCode(profile.riasec) : null;
+
+  if (profileLoading) {
+    return <PageSkeleton variant="chat" cards={4} />;
+  }
+
+  if (profileError) {
+    return <ErrorState message={profileError.message} onRetry={() => window.location.reload()} />;
+  }
 
   return (
     <div className="flex flex-col -m-6 mb-[-5rem] md:mb-[-1.5rem] h-[calc(100vh-3.5rem)]">
