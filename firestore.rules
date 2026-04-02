@@ -388,5 +388,23 @@ service cloud.firestore {
       allow create: if isAuthenticated();
       allow update, delete: if false;
     }
+
+    // ---------------------------------------------------------------------------
+    // emailLogs/{logId} — e-postlogg (kun Cloud Functions kan skrive)
+    // ---------------------------------------------------------------------------
+
+    match /emailLogs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false; // Kun Cloud Functions via Admin SDK
+    }
+
+    // ---------------------------------------------------------------------------
+    // invites/{inviteId} — skoleinvitasjoner (#111, #127)
+    // ---------------------------------------------------------------------------
+
+    match /invites/{inviteId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.email == request.auth.token.email);
+      allow write: if false; // Kun Cloud Functions via Admin SDK
+    }
   }
 }
