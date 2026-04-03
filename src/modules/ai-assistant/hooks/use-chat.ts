@@ -9,7 +9,12 @@ import {
   detectAndRemovePii,
   detectInjection,
   checkRateLimit,
-  SAFETY_SYSTEM_INSTRUCTIONS,
+  checkMinorSafety,
+  shouldShowAiReminder,
+  checkSessionLength,
+  AI_REMINDER_MESSAGE,
+  MINOR_SAFETY_SYSTEM_PROMPT,
+  type SessionWarning,
 } from "@/lib/ai/safety";
 import { retrieveRagContext } from "@/lib/ai/rag-pipeline";
 import {
@@ -28,10 +33,15 @@ export function useChatSession(
 ) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [sessionWarning, setSessionWarning] = useState<SessionWarning | null>(null);
   const chatRef = useRef<FirebaseChatSession | null>(null);
   const contextRef = useRef(context);
   const conversationIdRef = useRef<string | null>(null);
   const creatingConversationRef = useRef<Promise<string> | null>(null);
+  const messageCountRef = useRef(0);
+  const sessionStartRef = useRef(Date.now());
+  const warned30Ref = useRef(false);
+  const warned60Ref = useRef(false);
 
   // Debounced Firestore-persistering etter hver melding
   const persistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -70,7 +80,7 @@ export function useChatSession(
   function createSession() {
     const systemPrompt = config?.systemPrompt
       ? config.systemPrompt
-      : buildSystemPrompt(context, SAFETY_SYSTEM_INSTRUCTIONS);
+      : buildSystemPrompt(context, MINOR_SAFETY_SYSTEM_PROMPT);
 
     const model = getModel(config?.modelName);
     const session = model.startChat({
@@ -131,6 +141,29 @@ export function useChatSession(
         return;
       }
 
+      // Safety: Alderstilpassede guardrails for mindreårige (#141)
+      const minorCheck = checkMinorSafety(text.trim());
+      if (minorCheck.blocked) {
+        setMessages((prev: ChatMessage[]) => [
+          ...prev,
+          { id: generateId(), role: "user" as const, content: text.trim(), timestamp: new Date() },
+          { id: generateId(), role: "assistant" as const, content: minorCheck.response!, timestamp: new Date() },
+        ]);
+        return;
+      }
+
+      // Safety: Sesjonslengde-varsel (#141)
+      const sessionCheck = checkSessionLength(
+        sessionStartRef.current,
+        warned30Ref.current,
+        warned60Ref.current
+      );
+      if (sessionCheck) {
+        setSessionWarning(sessionCheck);
+        if (sessionCheck.level === "gentle") warned30Ref.current = true;
+        if (sessionCheck.level === "strong") warned60Ref.current = true;
+      }
+
       // Safety: PII-filtrering — fjern personnummer, telefon, e-post
       const { sanitized } = detectAndRemovePii(text.trim());
 
@@ -186,11 +219,21 @@ export function useChatSession(
           }
         }
 
-        // Marker streaming som ferdig og persister til Firestore
+        // Oppdater meldingsteller og marker streaming som ferdig
+        messageCountRef.current += 1;
         setMessages((prev) => {
-          const updated = prev.map((m) =>
+          let updated = prev.map((m) =>
             m.id === assistantId ? { ...m, streaming: false } : m
           );
+
+          // AI-påminnelse (#141): vis periodisk melding om at dette er en AI
+          if (shouldShowAiReminder(messageCountRef.current)) {
+            updated = [
+              ...updated,
+              { id: generateId(), role: "assistant" as const, content: AI_REMINDER_MESSAGE, timestamp: new Date() },
+            ];
+          }
+
           schedulePersist(updated);
           return updated;
         });
@@ -267,5 +310,5 @@ export function useChatSession(
     [context.user?.uid, messages]
   );
 
-  return { messages, sendMessage, sendFeedback, clearMessages, loadConversation, isStreaming, conversationId: conversationIdRef.current };
+  return { messages, sendMessage, sendFeedback, clearMessages, loadConversation, isStreaming, sessionWarning, conversationId: conversationIdRef.current };
 }
