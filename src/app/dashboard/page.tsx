@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useXp } from "@/hooks/use-xp";
 import { useGrades } from "@/hooks/use-grades";
+import { PageSkeleton } from "@/components/page-skeleton";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { calculateGradePoints } from "@/lib/grades/calculator";
 import { getRiasecCode } from "@/lib/personality/scoring";
@@ -89,7 +90,7 @@ function getChecklist(profile: UserProfile | null, gradeCount: number, cl: Check
 // ---------------------------------------------------------------------------
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { t } = useLocale();
   const { totalXp, level, streak } = useXp();
   const { grades } = useGrades();
@@ -112,6 +113,10 @@ export default function DashboardPage() {
   const progressPercent = Math.round((completedSteps / checklist.length) * 100);
 
   const firstName = user?.displayName?.split(" ")[0] ?? null;
+
+  if (authLoading) {
+    return <PageSkeleton variant="grid" cards={6} />;
+  }
 
   return (
     <div className="space-y-6">

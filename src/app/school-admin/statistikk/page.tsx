@@ -13,6 +13,7 @@
 import { useState, useEffect } from "react";
 import { useTenant } from "@/hooks/use-tenant";
 import { fetchApi } from "@/lib/api-client";
+import { ErrorState } from "@/components/error-state";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -139,6 +140,7 @@ function ModuleUsageChart({ data }: { data: { module: string; visits: number }[]
 export default function SchoolAdminStatistikkPage() {
   const { tenantId, loading: tenantLoading } = useTenant();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [stats, setStats] = useState<StatsData | null>(null);
 
   useEffect(() => {
@@ -148,13 +150,16 @@ export default function SchoolAdminStatistikkPage() {
 
   async function loadStats() {
     setLoading(true);
+    setError(false);
     try {
       const res = await fetchApi<StatsData>("/school-admin/stats");
       if (res.success && res.data) {
         setStats(res.data);
+      } else {
+        setError(true);
       }
-    } catch (err) {
-      console.error("[SchoolAdminStats]", err);
+    } catch {
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -166,6 +171,10 @@ export default function SchoolAdminStatistikkPage() {
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
+  }
+
+  if (error) {
+    return <ErrorState message="Kunne ikke laste statistikk." onRetry={loadStats} />;
   }
 
   const engagementRate = stats.totalStudents > 0

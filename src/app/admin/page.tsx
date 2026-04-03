@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/error-state";
 import { apiGet } from "@/lib/api-client";
 import { Users, CreditCard, Key, TrendingUp } from "lucide-react";
 
@@ -20,14 +21,26 @@ type AdminStats = {
 export default function AdminPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
+  function loadStats() {
+    setLoading(true);
+    setError(false);
     apiGet<AdminStats>("/admin/stats").then((res) => {
       if (res.success) {
         setStats(res.data);
+      } else {
+        setError(true);
       }
       setLoading(false);
+    }).catch(() => {
+      setError(true);
+      setLoading(false);
     });
+  }
+
+  useEffect(() => {
+    loadStats();
   }, []);
 
   const cards = [
@@ -56,6 +69,10 @@ export default function AdminPage() {
       description: "Utstedte nøkler",
     },
   ];
+
+  if (error) {
+    return <ErrorState message="Kunne ikke laste admin-statistikk." onRetry={loadStats} />;
+  }
 
   return (
     <div className="space-y-6">

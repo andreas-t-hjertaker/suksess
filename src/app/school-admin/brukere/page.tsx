@@ -14,6 +14,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useTenant } from "@/hooks/use-tenant";
 import { fetchApi, apiPost, apiDelete } from "@/lib/api-client";
+import { ErrorState } from "@/components/error-state";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -102,6 +103,7 @@ export default function SchoolAdminBrukerePage() {
   const { tenantId, loading: tenantLoading } = useTenant();
   const [users, setUsers] = useState<SchoolUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [tab, setTab] = useState<"liste" | "inviter" | "import">("liste");
@@ -125,13 +127,16 @@ export default function SchoolAdminBrukerePage() {
 
   async function loadUsers() {
     setLoading(true);
+    setError(false);
     try {
       const res = await fetchApi<{ users: SchoolUser[] }>("/school-admin/users");
       if (res.success && res.data) {
         setUsers(res.data.users);
+      } else {
+        setError(true);
       }
-    } catch (err) {
-      console.error("[SchoolAdminBrukere]", err);
+    } catch {
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -258,6 +263,10 @@ export default function SchoolAdminBrukerePage() {
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
+  }
+
+  if (error) {
+    return <ErrorState message="Kunne ikke laste brukerlisten." onRetry={loadUsers} />;
   }
 
   return (

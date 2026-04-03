@@ -36,6 +36,8 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageSkeleton } from "@/components/page-skeleton";
+import { ErrorState } from "@/components/error-state";
 import type { Grade } from "@/types/domain";
 
 // ---------------------------------------------------------------------------
@@ -150,11 +152,7 @@ export default function KaraktererPage() {
   // ---------------------------------------------------------------------------
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    );
+    return <PageSkeleton variant="form" cards={4} />;
   }
 
   return (

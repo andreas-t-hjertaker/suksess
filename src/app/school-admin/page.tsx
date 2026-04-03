@@ -30,6 +30,7 @@ import {
   type B2BInvoice,
 } from "@/lib/stripe/b2b-billing";
 import { fetchApi, apiPost } from "@/lib/api-client";
+import { ErrorState } from "@/components/error-state";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -89,6 +90,7 @@ export default function SchoolAdminOverviewPage() {
   const { user: _user } = useAuth();
   const { tenantId, loading: tenantLoading } = useTenant();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [tenant, setTenant] = useState<TenantInfo | null>(null);
   const [students, setStudents] = useState<StudentSummary>({ total: 0, active7d: 0, onboardingComplete: 0, personalityTestComplete: 0 });
   const [gdpr, setGdpr] = useState<GdprSummary>({ consentRecords: 0, granted: 0, pending: 0, parentRequired: 0 });
@@ -105,6 +107,7 @@ export default function SchoolAdminOverviewPage() {
 
   async function loadDashboard() {
     setLoading(true);
+    setError(false);
     try {
       // Tenant info
       const tenantDoc = await getDoc(doc(db, "tenants", tenantId!));
@@ -169,8 +172,8 @@ export default function SchoolAdminOverviewPage() {
           setInvoices(invRes.data.invoices);
         }
       } catch { /* ignore */ }
-    } catch (err) {
-      console.error("[SchoolAdminOverview]", err);
+    } catch {
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -224,6 +227,10 @@ export default function SchoolAdminOverviewPage() {
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
+  }
+
+  if (error) {
+    return <ErrorState message="Kunne ikke laste skoleoversikten." onRetry={loadDashboard} />;
   }
 
   const licensePct = tenant?.maxStudents ? Math.round((students.total / tenant.maxStudents) * 100) : 0;
