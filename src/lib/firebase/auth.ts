@@ -31,8 +31,9 @@ const googleProvider = new GoogleAuthProvider();
 // Firebase støtter Feide via OIDC-tilleggsleverandør.
 // FEIDE_OIDC_PROVIDER_ID konfigureres i Firebase Authentication console.
 
-const FEIDE_PROVIDER_ID =
-  process.env.NEXT_PUBLIC_FEIDE_PROVIDER_ID ?? "oidc.feide";
+import { env } from "@/lib/env";
+
+const FEIDE_PROVIDER_ID = env.NEXT_PUBLIC_FEIDE_PROVIDER_ID || "oidc.feide";
 
 function createFeideProvider() {
   const provider = new OAuthProvider(FEIDE_PROVIDER_ID);

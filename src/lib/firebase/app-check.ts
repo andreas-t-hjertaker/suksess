@@ -20,6 +20,7 @@
 
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import { app } from "./config";
+import { env } from "@/lib/env";
 
 let appCheckInitialized = false;
 
@@ -34,7 +35,7 @@ export function initAppCheck(): void {
   if (appCheckInitialized) return;
   if (typeof window === "undefined") return; // Server-side: ikke initialiser
 
-  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY;
+  const siteKey = env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY;
 
   if (!siteKey) {
     if (process.env.NODE_ENV === "development") {

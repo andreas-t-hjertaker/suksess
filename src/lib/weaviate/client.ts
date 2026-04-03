@@ -8,15 +8,17 @@
  * Frontend-koden her kaller Cloud Function som proxy.
  */
 
+import { env } from "@/lib/env";
+
 // ---------------------------------------------------------------------------
 // Konfigurasjon
 // ---------------------------------------------------------------------------
 
 export const WEAVIATE_CONFIG = {
   /** Weaviate Cloud endpoint (europe-west1) */
-  url: process.env.NEXT_PUBLIC_WEAVIATE_URL ?? "https://suksess.weaviate.network",
+  url: env.NEXT_PUBLIC_WEAVIATE_URL || "https://suksess.weaviate.network",
   /** API-kall via Cloud Function (frontend → backend → Weaviate) */
-  proxyUrl: process.env.NEXT_PUBLIC_WEAVIATE_PROXY ?? "/api/search",
+  proxyUrl: env.NEXT_PUBLIC_WEAVIATE_PROXY || "/api/search",
 } as const;
 
 // ---------------------------------------------------------------------------
