@@ -836,8 +836,8 @@ const updateFeatureFlag = withAdmin(async ({ req, res }) => {
 // E-post (#111)
 // ============================================================
 
-/** POST /email/send — Send transaksjonell e-post (krever auth) */
-const sendEmailHandler = withAuth(async ({ req, res }) => {
+/** POST /email/send — Send transaksjonell e-post (krever auth + rate limit) */
+const sendEmailHandler = withRateLimit("api", async ({ req, res }) => {
   const { to, subject, html, text, replyTo } = req.body as {
     to?: { email: string; name?: string }[];
     subject?: string;
@@ -992,8 +992,8 @@ const XP_SOURCES: Record<string, number> = {
   coach_session: 15,
 };
 
-/** POST /xp/award — Tildel XP server-side (forhindrer klient-manipulasjon) */
-const awardXp = withAuth(async ({ user, req, res }) => {
+/** POST /xp/award — Tildel XP server-side (forhindrer klient-manipulasjon, rate-begrenset) */
+const awardXp = withRateLimit("api", async ({ user, req, res }) => {
   const { source, amount } = req.body as { source?: string; amount?: number };
 
   if (!source || !(source in XP_SOURCES)) {

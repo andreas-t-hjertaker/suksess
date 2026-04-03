@@ -11,7 +11,7 @@
 
 import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
-import { withValidation, success, fail } from "./middleware";
+import { withRateLimitedValidation, success, fail } from "./middleware";
 import { z } from "zod";
 
 // Tillatte CORS-origins (produksjon + dev)
@@ -271,7 +271,7 @@ const chatSchema = z.object({
  * POST /llm/generate — Generer profilbasert innhold med L2-cache
  * Typisk bruk: AI-genererte sammendrag, karrieretips, studiemotivasjon
  */
-const generateContent = withValidation(generateContentSchema, async ({ user, data, res }) => {
+const generateContent = withRateLimitedValidation("ai", generateContentSchema, async ({ user, data, res }) => {
   const { contentType, clusterId, profileContext } = data;
 
   // Sjekk L2-cache (delt mellom brukere i same klynge)
@@ -304,7 +304,7 @@ const generateContent = withValidation(generateContentSchema, async ({ user, dat
  * POST /llm/chat — Server-side chat med samtalehistorikk
  * Brukes når klientside-chat ikke er tilstrekkelig (f.eks. med RAG)
  */
-const serverChat = withValidation(chatSchema, async ({ user, data, res }) => {
+const serverChat = withRateLimitedValidation("ai", chatSchema, async ({ user, data, res }) => {
   const { message, profileContext, conversationHistory = [] } = data;
 
   // Safety: Rate limiting per bruker

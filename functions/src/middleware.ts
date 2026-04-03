@@ -107,6 +107,39 @@ export function withValidation<T>(
   });
 }
 
+/**
+ * Auth + Zod-validering + per-bruker rate limiting + tenant-kvote (#145).
+ * Brukes for AI/LLM-endepunkter som trenger strengere hastighetsbegrensning.
+ */
+export function withRateLimitedValidation<T>(
+  type: "ai" | "api",
+  schema: ZodSchema<T>,
+  handler: ValidatedHandler<T>
+): PublicHandler {
+  return withAuth(async ({ req, res, user }) => {
+    // Per-bruker rate limit
+    if (!(await checkUserRateLimit(user.uid, type, res))) return;
+
+    // Per-tenant kvote (kun for AI-kall)
+    if (type === "ai") {
+      const tenantId = (user.tenantId as string) ?? null;
+      const plan = (user.plan as string) ?? "free";
+      if (tenantId) {
+        if (!(await checkTenantQuota(tenantId, plan, res))) return;
+      }
+    }
+
+    // Zod-validering
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      const messages = parsed.error.errors.map((e: z.ZodIssue) => e.message).join(", ");
+      fail(res, messages);
+      return;
+    }
+    await handler({ req, res, user, data: parsed.data });
+  });
+}
+
 // ============================================================
 // Admin-middleware
 // ============================================================
