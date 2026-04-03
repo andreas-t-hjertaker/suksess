@@ -40,7 +40,6 @@ import { showToast } from "@/lib/toast";
 import { Loader2, Upload, Lock, Link2, Unlink, Trash2, Globe, Users, Copy, UserMinus } from "lucide-react";
 import { useLocale } from "@/hooks/use-locale";
 import {
-  generateInviteCode,
   formatInviteCode,
   createParentInvite,
   getLinkedGuardians,
@@ -190,11 +189,6 @@ export default function InnstillingerPage() {
   }
 
   // ─── Foresatt-tilgang (#106) ─────────────────────────────
-  useEffect(() => {
-    if (!user?.uid || guardiansLoaded) return;
-    loadGuardians();
-  }, [user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
-
   async function loadGuardians() {
     if (!user?.uid) return;
     try {
@@ -205,6 +199,11 @@ export default function InnstillingerPage() {
       console.error("[Innstillinger] Kunne ikke laste foresatte");
     }
   }
+
+  useEffect(() => {
+    if (!user?.uid || guardiansLoaded) return;
+    loadGuardians();
+  }, [user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleGenerateCode() {
     if (!user?.uid) return;

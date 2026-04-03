@@ -27,12 +27,23 @@ service firebase.storage {
         request.resource.size < 10 * 1024 * 1024;
     }
 
-    // Rådgivere kan lese studenters dokumenter (via tenantId-krav)
-    match /users/{userId}/shared/{fileName} {
+    // Rådgivere kan lese studenters dokumenter — krever tenant-isolering.
+    // Filstien inkluderer tenantId: /users/{userId}/shared/{tenantId}/{fileName}
+    // Rådgivere kan kun lese filer i sin egen tenant.
+    match /users/{userId}/shared/{tenantId}/{fileName} {
       allow read: if request.auth != null && (
         request.auth.uid == userId ||
-        request.auth.token.get("role", "") in ["counselor", "admin", "superadmin"]
+        (request.auth.token.get("role", "") in ["counselor", "admin", "superadmin"] &&
+         request.auth.token.get("tenantId", "") == tenantId) ||
+        request.auth.token.get("role", "") == "superadmin"
       );
+      allow write: if request.auth != null && request.auth.uid == userId &&
+        request.resource.size < 20 * 1024 * 1024;
+    }
+
+    // Legacy sti uten tenant-isolering — kun eieren kan lese (migreringsstøtte)
+    match /users/{userId}/shared/{fileName} {
+      allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if request.auth != null && request.auth.uid == userId &&
         request.resource.size < 20 * 1024 * 1024;
     }

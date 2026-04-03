@@ -121,7 +121,7 @@ export default function SchoolAdminBrukerePage() {
   useEffect(() => {
     if (tenantLoading || !tenantId) return;
     loadUsers();
-  }, [tenantId, tenantLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tenantId, tenantLoading]);
 
   async function loadUsers() {
     setLoading(true);

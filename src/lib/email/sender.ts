@@ -35,7 +35,7 @@ export type SendEmailResult = {
 export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
   const recipients = Array.isArray(options.to) ? options.to : [options.to];
 
-  const res = await apiPost("/email/send", {
+  const res = await apiPost<{ messageId: string }>("/email/send", {
     to: recipients,
     subject: options.template.subject,
     html: options.template.html,

@@ -17,8 +17,6 @@ import {
   getDocs,
   orderBy,
   limit,
-  getDoc,
-  doc,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { CAREER_NODES, type CareerNode } from "./data";

@@ -144,7 +144,7 @@ export default function SchoolAdminStatistikkPage() {
   useEffect(() => {
     if (tenantLoading || !tenantId) return;
     loadStats();
-  }, [tenantId, tenantLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tenantId, tenantLoading]);
 
   async function loadStats() {
     setLoading(true);

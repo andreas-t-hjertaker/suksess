@@ -126,7 +126,7 @@ async function sendViaPeppolAP(
 async function sendViaEmailFallback(
   invoice: EhfGenerationResult,
   recipientEmail: string,
-  fallbackFrom: string
+  _fallbackFrom: string
 ): Promise<PeppolDeliveryResult> {
   try {
     // Importer e-posttjeneste dynamisk (unngå sirkulære avhengigheter)

@@ -6,7 +6,7 @@
  * med Firebase emulator (se functions/src/).
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 
 // ─── Tenant-kvoter ───────────────────────────────────────────────────────────
 

@@ -42,7 +42,6 @@ import {
   Mail,
   Send,
   CreditCard,
-  FileText,
   Shield,
   CheckCircle2,
   AlertTriangle,
@@ -87,7 +86,7 @@ type GdprSummary = {
 // ---------------------------------------------------------------------------
 
 export default function SchoolAdminOverviewPage() {
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const { tenantId, loading: tenantLoading } = useTenant();
   const [loading, setLoading] = useState(true);
   const [tenant, setTenant] = useState<TenantInfo | null>(null);

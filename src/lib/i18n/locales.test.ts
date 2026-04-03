@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { MESSAGES, SUPPORTED_LOCALES, type Locale, type Messages } from "./locales";
+import { MESSAGES, SUPPORTED_LOCALES, type Locale } from "./locales";
 
 // ─── Grunnleggende struktur ─────────────────────────────────────────────────
 

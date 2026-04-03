@@ -181,7 +181,7 @@ export default function SchoolDashboardPage() {
 
     setSending(true);
     try {
-      const res = await apiPost("/email/invite", {
+      const res = await apiPost<{ sent: number }>("/email/invite", {
         emails,
         schoolName: tenant?.name || "Skolen",
         tenantId,

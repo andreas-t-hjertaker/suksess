@@ -27,14 +27,6 @@ export default function SamtykkeBekreftelsePage() {
   const [state, setState] = useState<VerifyState>(token ? "loading" : "missing");
   const [studentName, setStudentName] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!token) {
-      setState("missing");
-      return;
-    }
-    verifyConsent(token);
-  }, [token]);
-
   async function verifyConsent(consentToken: string) {
     setState("loading");
     try {
@@ -55,6 +47,14 @@ export default function SamtykkeBekreftelsePage() {
       setState("error");
     }
   }
+
+  useEffect(() => {
+    if (!token) {
+      setState("missing");
+      return;
+    }
+    verifyConsent(token);
+  }, [token]);
 
   return (
     <main
