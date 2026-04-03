@@ -58,6 +58,13 @@ export const PROTECTED_ROUTES: RouteConfig[] = [
     redirectTo: "/login",
     includeCallback: true,
   },
+  // School-admin — krever admin-rolle
+  {
+    pattern: "/school-admin",
+    requiredRole: "admin",
+    redirectTo: "/dashboard",
+    includeCallback: false,
+  },
 ];
 
 /** Ruter som innloggede brukere skal redirectes bort fra */
@@ -71,6 +78,7 @@ export const PUBLIC_ROUTES = [
   "/personvern",
   "/pricing",
   "/status",
+  "/samtykke-bekreftelse",
 ];
 
 // ---------------------------------------------------------------------------

@@ -14,6 +14,7 @@ import { ServiceWorkerRegistration } from "@/components/service-worker-registrat
 import { AppCheckProvider } from "@/components/app-check-provider";
 import { ErrorReporter } from "@/components/error-reporter";
 import { ReducedMotionProvider } from "@/components/reduced-motion-provider";
+import { RouteGuard } from "@/components/route-guard";
 
 const plusJakartaSans = localFont({
   src: [
@@ -95,6 +96,7 @@ export default function RootLayout({
         <ReducedMotionProvider>
           <ThemeProvider>
             <AuthProvider>
+              <RouteGuard>
               <PersonalityProvider>
                 <TooltipProvider>
                   <AnalyticsProvider />
@@ -103,6 +105,7 @@ export default function RootLayout({
                   <ConsentBanner />
                 </TooltipProvider>
               </PersonalityProvider>
+              </RouteGuard>
             </AuthProvider>
           </ThemeProvider>
         </ReducedMotionProvider>
