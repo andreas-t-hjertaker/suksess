@@ -37,8 +37,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { showToast } from "@/lib/toast";
-import { Loader2, Upload, Lock, Link2, Unlink, Trash2, Globe, Users, Copy, UserMinus } from "lucide-react";
+import { Loader2, Upload, Lock, Link2, Unlink, Trash2, Globe, Users, Copy, UserMinus, Sun, Moon, Monitor } from "lucide-react";
 import { useLocale } from "@/hooks/use-locale";
+import { useTheme, type Theme } from "@/hooks/use-theme";
 import {
   formatInviteCode,
   createParentInvite,
@@ -75,6 +76,7 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 export default function InnstillingerPage() {
   const { user, firebaseUser } = useAuth();
   const { locale, setLocale, locales } = useLocale();
+  const { theme, setTheme } = useTheme();
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [linkingGoogle, setLinkingGoogle] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
@@ -512,6 +514,48 @@ export default function InnstillingerPage() {
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
             Valgt språk huskes mellom sesjoner. AI-innhold genereres på valgt språk.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Utseende-kort (#148) */}
+      <Card className="max-w-2xl">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Sun className="h-4 w-4 text-primary" aria-hidden="true" />
+            <CardTitle>Utseende</CardTitle>
+          </div>
+          <CardDescription>
+            Velg mellom lyst, mørkt eller systembasert tema.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {([
+              { value: "light" as Theme, label: "Lyst", icon: Sun },
+              { value: "dark" as Theme, label: "Mørkt", icon: Moon },
+              { value: "system" as Theme, label: "System", icon: Monitor },
+            ]).map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => {
+                  setTheme(opt.value);
+                  showToast.success(`Tema endret til ${opt.label.toLowerCase()}`);
+                }}
+                className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  theme === opt.value
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:bg-accent"
+                }`}
+                aria-pressed={theme === opt.value}
+              >
+                <opt.icon className="h-4 w-4" aria-hidden="true" />
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            «System» følger enhetens innstilling automatisk. Valget huskes mellom sesjoner.
           </p>
         </CardContent>
       </Card>
