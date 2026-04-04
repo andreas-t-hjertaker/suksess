@@ -4,7 +4,7 @@ import type { DocumentReference } from "firebase-admin/firestore";
 import * as crypto from "crypto";
 import Stripe from "stripe";
 import { z } from "zod";
-import { success, fail, withAuth, withAdmin, withValidation, rateLimit, validateCsrf, withRateLimit, withTenantAdmin, type RouteContext } from "./middleware";
+import { success, fail, withAuth, withAdmin, withValidation, rateLimit, validateCsrf, withTenantAdmin, type RouteContext } from "./middleware";
 import { sendEmail } from "./email";
 import { processStripeInvoiceForEhf, getEhfStatus, retryEhfDelivery } from "./ehf";
 

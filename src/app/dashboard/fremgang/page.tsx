@@ -16,7 +16,6 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Flame, Trophy, Zap, Star, Lock } from "lucide-react";
 import { PageSkeleton } from "@/components/page-skeleton";
-import { ErrorState } from "@/components/error-state";
 
 // ---------------------------------------------------------------------------
 // Nivå-farger / bakgrunner

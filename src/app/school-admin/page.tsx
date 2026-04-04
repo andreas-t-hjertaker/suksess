@@ -13,7 +13,6 @@
  */
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/use-auth";
 import { useTenant } from "@/hooks/use-tenant";
 import {
   collection,
@@ -87,7 +86,6 @@ type GdprSummary = {
 // ---------------------------------------------------------------------------
 
 export default function SchoolAdminOverviewPage() {
-  const { user: _user } = useAuth();
   const { tenantId, loading: tenantLoading } = useTenant();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);

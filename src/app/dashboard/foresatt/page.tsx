@@ -62,7 +62,6 @@ import {
 import type { StudentInsight } from "@/lib/foresatt/insight";
 import {
   getTopRiasecCategories,
-  emptyInsight,
   calculateOnboardingProgress,
   filterRecentCareers,
   filterRecentAchievements,

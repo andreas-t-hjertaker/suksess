@@ -33,7 +33,6 @@ import {
 } from "@/lib/stripe/b2b-billing";
 import {
   Building2,
-  Users,
   CreditCard,
   CheckCircle2,
   ArrowRight,
@@ -41,7 +40,6 @@ import {
   Loader2,
   School,
   Shield,
-  Globe,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------

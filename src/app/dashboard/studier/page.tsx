@@ -135,7 +135,7 @@ export default function StudierPage() {
   const [newSemester, setNewSemester] = useState("H25");
   const [examChecks, setExamChecks] = useState<Set<string>>(new Set());
   const [tab, setTab] = useState<"progresjon" | "studietips" | "eksamen" | "anbefalinger">("progresjon");
-  const studiedata = useStudiedata();
+  useStudiedata();
   const initialLoad = useRef(true);
 
   // Last kurser fra Firestore

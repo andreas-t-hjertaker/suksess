@@ -36,9 +36,7 @@ import {
   BarChart2,
   Send,
   Loader2,
-  ExternalLink,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // FAQ-data

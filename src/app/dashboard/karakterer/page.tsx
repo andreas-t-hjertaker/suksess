@@ -37,7 +37,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageSkeleton } from "@/components/page-skeleton";
-import { ErrorState } from "@/components/error-state";
 import type { Grade } from "@/types/domain";
 
 // ---------------------------------------------------------------------------

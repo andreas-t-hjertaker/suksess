@@ -17,12 +17,10 @@ import {
   getDocs,
   doc,
   getDoc,
-  orderBy,
   limit,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -43,7 +41,6 @@ import {
   TrendingUp,
   AlertTriangle,
   Loader2,
-  Download,
   Send,
   Activity,
   Building2,
@@ -84,7 +81,7 @@ type GdprOverview = {
 // ---------------------------------------------------------------------------
 
 export default function SchoolDashboardPage() {
-  const { user } = useAuth();
+  useAuth();
   const { tenantId, role, loading: tenantLoading } = useTenant();
   const [loading, setLoading] = useState(true);
   const [tenant, setTenant] = useState<TenantInfo | null>(null);

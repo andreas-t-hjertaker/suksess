@@ -126,7 +126,6 @@ async function sendViaPeppolAP(
 async function sendViaEmailFallback(
   invoice: EhfGenerationResult,
   recipientEmail: string,
-  _fallbackFrom: string
 ): Promise<PeppolDeliveryResult> {
   try {
     // Importer e-posttjeneste dynamisk (unngå sirkulære avhengigheter)
@@ -196,7 +195,6 @@ export async function sendEhfInvoice(
     return sendViaEmailFallback(
       invoice,
       recipientEmail,
-      "faktura@suksess.no"
     );
   }
 
@@ -211,7 +209,6 @@ export async function sendEhfInvoice(
   const emailResult = await sendViaEmailFallback(
     invoice,
     recipientEmail,
-    config.fallbackEmail
   );
 
   // Returner e-postresultat med Peppol-feilen vedlagt

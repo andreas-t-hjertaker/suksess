@@ -9,7 +9,6 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { FeatureGate } from "@/components/feature-gate";
 import { PageSkeleton } from "@/components/page-skeleton";
-import { ErrorState } from "@/components/error-state";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { useGrades } from "@/hooks/use-grades";
 import { calculateGradePoints } from "@/lib/grades/calculator";

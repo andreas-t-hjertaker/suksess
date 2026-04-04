@@ -11,7 +11,6 @@
  */
 
 import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
 import {
   Card,
   CardContent,
@@ -23,17 +22,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AiDisclosure } from "@/components/ai-disclosure";
 import {
-  Mic,
   Send,
   RotateCcw,
   CheckCircle2,
-  ChevronRight,
   Sparkles,
   Loader2,
   User,
   Bot,
   Briefcase,
-  GraduationCap,
   Coffee,
   Stethoscope,
   Code,
@@ -166,7 +162,6 @@ function generateFeedback(question: string, answer: string): string {
 // ---------------------------------------------------------------------------
 
 export default function IntervjutrenerPage() {
-  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<InterviewCategory | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [messages, setMessages] = useState<InterviewMessage[]>([]);
