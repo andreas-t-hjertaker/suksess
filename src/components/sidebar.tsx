@@ -174,7 +174,7 @@ function CollapsedNav() {
     : navItems;
 
   return (
-    <nav className="space-y-1">
+    <nav className="space-y-1" aria-label="Kollapset navigasjon">
       {allItems.map((item) => {
         const isActive =
           pathname === item.href ||
@@ -189,9 +189,10 @@ function CollapsedNav() {
                 ? "bg-accent text-accent-foreground"
                 : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
             )}
-            title={item.label}
+            aria-label={item.label}
+            aria-current={isActive ? "page" : undefined}
           >
-            <item.icon className="h-4 w-4" />
+            <item.icon className="h-4 w-4" aria-hidden="true" />
           </Link>
         );
       })}

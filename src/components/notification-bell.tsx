@@ -52,10 +52,19 @@ function NotifItem({
       className={cn(
         "flex items-start gap-3 px-4 py-3 transition-colors",
         !notif.read && "bg-primary/5",
-        "hover:bg-accent cursor-pointer"
+        "hover:bg-accent cursor-pointer",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
       )}
       onClick={() => !notif.read && onRead(notif.id)}
+      onKeyDown={(e) => {
+        if ((e.key === "Enter" || e.key === " ") && !notif.read) {
+          e.preventDefault();
+          onRead(notif.id);
+        }
+      }}
       role="listitem"
+      tabIndex={0}
+      aria-label={`${notif.title}${notif.read ? "" : " — ulest"}`}
     >
       <div className="mt-0.5 shrink-0">{TYPE_ICONS[notif.type]}</div>
       <div className="flex-1 min-w-0">
@@ -64,8 +73,8 @@ function NotifItem({
         <p className="text-[10px] text-muted-foreground mt-0.5">{timeAgo(notif.createdAt)}</p>
       </div>
       {notif.link && (
-        <Link href={notif.link} className="shrink-0 text-muted-foreground hover:text-foreground" onClick={(e) => e.stopPropagation()}>
-          <ExternalLink className="h-3.5 w-3.5" />
+        <Link href={notif.link} className="shrink-0 text-muted-foreground hover:text-foreground" onClick={(e) => e.stopPropagation()} aria-label={`Åpne ${notif.title}`}>
+          <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
         </Link>
       )}
       {!notif.read && (
@@ -84,15 +93,24 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Lukk ved klikk utenfor
+  // Lukk ved klikk utenfor eller Escape
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
       }
     }
-    if (open) document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    if (open) {
+      document.addEventListener("mousedown", onClickOutside);
+      document.addEventListener("keydown", onKeyDown);
+    }
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("keydown", onKeyDown);
+    };
   }, [open]);
 
   return (

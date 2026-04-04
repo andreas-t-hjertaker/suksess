@@ -485,6 +485,8 @@ export function OnboardingStepper() {
       role="dialog"
       aria-modal="true"
       aria-label={`Onboarding — steg ${step + 1} av ${TOTAL_STEPS}: ${STEPS[step].label}`}
+      aria-live="polite"
+      aria-busy={saving}
       className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
     >
       <Card className="w-full max-w-xl shadow-2xl">

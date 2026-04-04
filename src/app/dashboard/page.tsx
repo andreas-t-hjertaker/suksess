@@ -145,7 +145,7 @@ export default function DashboardPage() {
                 {user?.photoURL ? (
                   <Image
                     src={user.photoURL}
-                    alt=""
+                    alt={user?.displayName ? `Profilbilde av ${user.displayName}` : "Profilbilde"}
                     width={64}
                     height={64}
                     className="h-16 w-16 rounded-full object-cover"

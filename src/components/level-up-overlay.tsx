@@ -22,8 +22,13 @@ export function LevelUpOverlay() {
     Array.from({ length: 8 }, () => ({ x: (Math.random() - 0.5) * 200, y: (Math.random() - 0.5) * 200 }))
   );
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
-  const close = useCallback(() => setShowOverlay(false), []);
+  const close = useCallback(() => {
+    setShowOverlay(false);
+    // Returner fokus til elementet som var fokusert før overlay åpnet
+    previousFocusRef.current?.focus();
+  }, []);
 
   // Escape-tast lukker overlay
   useEffect(() => {
@@ -46,6 +51,7 @@ export function LevelUpOverlay() {
     const currentLevel = getLevelForXp(totalXp);
 
     if (previousLevel && previousLevel !== currentLevel.name) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
       setNewLevel(currentLevel);
       setShowOverlay(true);
     }
