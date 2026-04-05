@@ -71,21 +71,42 @@ export type JobListing = {
 // STYRK-08 → RIASEC-mapping (forenklet)
 // ---------------------------------------------------------------------------
 
+/**
+ * STYRK-08 → RIASEC-mapping.
+ * Konsistent med src/lib/jobbmatch/nav-stillinger.ts.
+ * Bokstavkoder: R=Realistic, I=Investigative, A=Artistic,
+ *               S=Social, E=Enterprising, C=Conventional
+ */
 const STYRK_TO_RIASEC: Record<string, string[]> = {
-  "2": ["I", "R"],    // 2xxx: Akademiske yrker
-  "21": ["I", "R"],   // IKT-yrker
-  "22": ["I", "R"],   // Realfag og ingeniør
-  "23": ["S", "A"],   // Undervisning
-  "24": ["I", "S"],   // Helse og biologi
-  "25": ["I", "C"],   // IKT-spesialister
-  "26": ["A", "E"],   // Juridisk, samfunnsvitenskap
-  "3": ["R", "I"],    // Teknikere
-  "4": ["C", "E"],    // Kontor og kundeservice
-  "5": ["E", "S"],    // Salg og service
-  "6": ["R", "I"],    // Jordbruk, skog
-  "7": ["R", "C"],    // Håndverk
-  "8": ["R", "C"],    // Prosess og maskin
-  "9": ["R", "S"],    // Elementære yrker
+  // 1-siffer (hovedgrupper)
+  "0": ["E", "C"],       // Militære yrker
+  "1": ["E", "C", "S"],  // Ledere
+  "2": ["I", "S"],       // Akademiske yrker
+  "3": ["C", "S", "R"],  // Teknikere
+  "4": ["C", "E"],       // Kontor og kundeservice
+  "5": ["S", "E"],       // Salg, service, omsorg
+  "6": ["R", "C"],       // Bønder, fiskere
+  "7": ["R", "I"],       // Håndverkere
+  "8": ["R", "C"],       // Operatører, sjåfører
+  "9": ["R", "C"],       // Renholdere, hjelpearbeidere
+  // 2-siffer (mer spesifikke)
+  "21": ["I", "R"],      // Realfag og ingeniører
+  "22": ["I", "S"],      // Helseyrker
+  "23": ["S", "A"],      // Undervisning
+  "24": ["C", "E"],      // Økonomi, HR, juss
+  "25": ["I", "R", "C"], // IT
+  "26": ["S", "A", "I"], // Kultur og samfunn
+  "31": ["R", "I"],      // Tekniske yrker
+  "32": ["S", "R"],      // Helseteknikere
+  "33": ["C", "E"],      // Forretning, finans
+  "34": ["S", "A"],      // Juss, sosial, kultur
+  "35": ["R", "I"],      // IKT-teknikere
+  "51": ["S", "E"],      // Personlig tjenesteyting
+  "52": ["E", "S"],      // Selgere
+  "53": ["S", "R"],      // Omsorg
+  "71": ["R", "A"],      // Bygg og anlegg
+  "72": ["R", "I"],      // Metall og maskin
+  "75": ["R", "A"],      // Mat og trearbeid
 };
 
 function getRiasecFromStyrk(styrk08: string | null): string[] {

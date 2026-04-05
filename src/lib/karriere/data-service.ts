@@ -21,6 +21,7 @@ import {
 import { db } from "@/lib/firebase/firestore";
 import { CAREER_NODES, type CareerNode } from "./data";
 import type { RiasecScores } from "@/types/domain";
+import { logger } from "@/lib/observability/logger";
 
 // ---------------------------------------------------------------------------
 // Typer
@@ -153,7 +154,7 @@ export async function getCareerData(): Promise<EnrichedCareer[]> {
       });
     }
   } catch (err) {
-    console.warn("[karriere-data] Firestore feil, bruker lokalt datasett:", err);
+    logger.warn("karriere_data_firestore_failed", { error: err instanceof Error ? err.message : "unknown" });
   }
 
   // Fallback til lokalt datasett
@@ -196,8 +197,8 @@ export async function enrichCareerWithLiveData(careerId: string): Promise<{
       );
       activeJobs += jobsSnap.size;
     }
-  } catch {
-    // Graceful degradation — vis 0 stillinger
+  } catch (err) {
+    logger.warn("karriere_jobs_fetch_failed", { careerId, error: err instanceof Error ? err.message : "unknown" });
   }
 
   // Hent relevante studieprogram
@@ -223,8 +224,8 @@ export async function enrichCareerWithLiveData(careerId: string): Promise<{
         }
       }
     }
-  } catch {
-    // Graceful degradation
+  } catch (err) {
+    logger.warn("karriere_programs_fetch_failed", { careerId, error: err instanceof Error ? err.message : "unknown" });
   }
 
   return { activeJobs, studyPrograms };

@@ -23,6 +23,7 @@ import {
   limit,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
+import { logger } from "@/lib/observability/logger";
 
 // ---------------------------------------------------------------------------
 // N-gram fingeravtrykk (tekst → numerisk hash)
@@ -120,12 +121,14 @@ export async function getSemanticCache(
       if (similarity >= SIMILARITY_THRESHOLD) {
         // Inkrementer hit-teller asynkront
         const ref = doc(db, SEMANTIC_CACHE_COLLECTION, d.id);
-        setDoc(ref, { hitCount: (entry.hitCount ?? 0) + 1 }, { merge: true }).catch(() => {});
+        setDoc(ref, { hitCount: (entry.hitCount ?? 0) + 1 }, { merge: true }).catch((err) => {
+          logger.warn("semantic_cache_hit_update_failed", { error: err instanceof Error ? err.message : "unknown" });
+        });
         return entry.responseText;
       }
     }
-  } catch {
-    // Cache-feil skal aldri stoppe AI-kallet
+  } catch (err) {
+    logger.warn("semantic_cache_read_failed", { feature, error: err instanceof Error ? err.message : "unknown" });
   }
   return null;
 }
@@ -151,8 +154,8 @@ export async function setSemanticCache(
       threshold: SIMILARITY_THRESHOLD,
     };
     await setDoc(ref, entry);
-  } catch {
-    // Ignorer cache-skriv-feil
+  } catch (err) {
+    logger.warn("semantic_cache_write_failed", { feature, error: err instanceof Error ? err.message : "unknown" });
   }
 }
 
@@ -173,7 +176,8 @@ export async function getApiCache<T = unknown>(key: string): Promise<T | null> {
     if (new Date(entry.expiresAt).getTime() < Date.now()) return null;
 
     return entry.data as T;
-  } catch {
+  } catch (err) {
+    logger.warn("api_cache_read_failed", { key, error: err instanceof Error ? err.message : "unknown" });
     return null;
   }
 }
@@ -196,8 +200,8 @@ export async function setApiCache(
       expiresAt: new Date(Date.now() + ttlMs).toISOString(),
     };
     await setDoc(ref, entry);
-  } catch {
-    // Ignorer cache-skriv-feil
+  } catch (err) {
+    logger.warn("api_cache_write_failed", { key, source, error: err instanceof Error ? err.message : "unknown" });
   }
 }
 

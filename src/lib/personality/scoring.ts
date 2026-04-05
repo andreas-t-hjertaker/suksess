@@ -23,8 +23,14 @@ export type RawAnswers = Record<string, number>;
 // Interne hjelpere
 // ---------------------------------------------------------------------------
 
+function clampAnswer(value: number): number {
+  if (!Number.isFinite(value)) return 3; // NaN/Infinity → midtpunkt
+  return Math.max(1, Math.min(5, Math.round(value)));
+}
+
 function scoredValue(rawValue: number, reversed: boolean): number {
-  return reversed ? 6 - rawValue : rawValue;
+  const clamped = clampAnswer(rawValue);
+  return reversed ? 6 - clamped : clamped;
 }
 
 /**

@@ -26,6 +26,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { CacheEntrySchema } from "@/types/schemas";
+import { logger } from "@/lib/observability/logger";
 
 // ---------------------------------------------------------------------------
 // Typer
@@ -40,6 +41,16 @@ export type CacheEntry = {
   ttlHours: number;
   createdAt: { toDate?: () => Date } | null;
 };
+
+// ---------------------------------------------------------------------------
+// Felles TTL-hjelpefunksjon
+// ---------------------------------------------------------------------------
+
+/** Sjekk om en tidsstempel er eldre enn angitt TTL (i timer) */
+function isExpiredHours(timestamp: Date | number, ttlHours: number): boolean {
+  const ms = typeof timestamp === "number" ? timestamp : timestamp.getTime();
+  return (Date.now() - ms) / 3_600_000 > ttlHours;
+}
 
 // ---------------------------------------------------------------------------
 // Nøkkel-hashing (enkel, ikke kryptografisk)
@@ -84,11 +95,11 @@ export async function getL1Cache(
     const createdAt = data.createdAt?.toDate?.() ?? null;
     if (!createdAt) return null;
 
-    const ageHours = (Date.now() - createdAt.getTime()) / 3600000;
-    if (ageHours > data.ttlHours) return null; // Utløpt
+    if (isExpiredHours(createdAt, data.ttlHours)) return null;
 
     return data.content;
-  } catch {
+  } catch (err) {
+    logger.warn("l1_cache_read_failed", { userId, cacheKey, error: err instanceof Error ? err.message : "unknown" });
     return null;
   }
 }
@@ -107,8 +118,8 @@ export async function setL1Cache(
       ttlHours: L1_TTL_HOURS,
       createdAt: serverTimestamp(),
     });
-  } catch {
-    // Silently fail — caching er ikke kritisk
+  } catch (err) {
+    logger.warn("l1_cache_write_failed", { userId, cacheKey, error: err instanceof Error ? err.message : "unknown" });
   }
 }
 
@@ -135,11 +146,11 @@ export async function getL2Cache(
     const generatedAt = data.generatedAt?.toDate?.() ?? null;
     if (!generatedAt) return null;
 
-    const ageHours = (Date.now() - generatedAt.getTime()) / 3600000;
-    if (ageHours > L2_TTL_HOURS) return null;
+    if (isExpiredHours(generatedAt, L2_TTL_HOURS)) return null;
 
     return data.content as string;
-  } catch {
+  } catch (err) {
+    logger.warn("l2_cache_read_failed", { clusterId, contentType, error: err instanceof Error ? err.message : "unknown" });
     return null;
   }
 }
@@ -163,8 +174,8 @@ export async function setL2Cache(
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-  } catch {
-    // Silently fail
+  } catch (err) {
+    logger.warn("l2_cache_write_failed", { clusterId, contentType, error: err instanceof Error ? err.message : "unknown" });
   }
 }
 
@@ -184,13 +195,13 @@ export function getL3Cache(cacheKey: string): string | null {
       content: string;
       timestamp: number;
     };
-    const ageHours = (Date.now() - timestamp) / 3600000;
-    if (ageHours > L3_TTL_HOURS) {
+    if (isExpiredHours(timestamp, L3_TTL_HOURS)) {
       localStorage.removeItem(L3_PREFIX + cacheKey);
       return null;
     }
     return content;
-  } catch {
+  } catch (err) {
+    logger.warn("l3_cache_read_failed", { cacheKey, error: err instanceof Error ? err.message : "unknown" });
     return null;
   }
 }
@@ -202,8 +213,8 @@ export function setL3Cache(cacheKey: string, content: string): void {
       L3_PREFIX + cacheKey,
       JSON.stringify({ content, timestamp: Date.now() })
     );
-  } catch {
-    // localStorage full — ignorer
+  } catch (err) {
+    logger.warn("l3_cache_write_failed", { cacheKey, error: err instanceof Error ? err.message : "unknown" });
   }
 }
 
@@ -275,8 +286,7 @@ export function pruneL3Cache(): void {
       const raw = localStorage.getItem(key);
       if (!raw) continue;
       const { timestamp } = JSON.parse(raw);
-      const ageHours = (Date.now() - timestamp) / 3600000;
-      if (ageHours > L3_TTL_HOURS) keysToDelete.push(key);
+      if (isExpiredHours(timestamp, L3_TTL_HOURS)) keysToDelete.push(key);
     } catch {
       keysToDelete.push(key!);
     }
