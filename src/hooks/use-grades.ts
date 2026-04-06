@@ -24,6 +24,7 @@ export function useGrades() {
   const { firebaseUser } = useAuth();
   const [grades, setGrades] = useState<GradeWithId[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (!firebaseUser) {
@@ -32,16 +33,24 @@ export function useGrades() {
       return;
     }
 
+    setError(null);
     const q = query(
       collection(db, "users", firebaseUser.uid, "grades"),
       orderBy("year", "desc"),
       limit(100)
     );
 
-    const unsub = onSnapshot(q, (snap) => {
-      setGrades(parseDocsWithId(snap.docs, GradeSchema) as GradeWithId[]);
-      setLoading(false);
-    });
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setGrades(parseDocsWithId(snap.docs, GradeSchema) as GradeWithId[]);
+        setLoading(false);
+      },
+      (err) => {
+        setError(err);
+        setLoading(false);
+      }
+    );
 
     return unsub;
   }, [firebaseUser]);
@@ -68,5 +77,5 @@ export function useGrades() {
     [firebaseUser]
   );
 
-  return { grades, loading, addGrade, removeGrade };
+  return { grades, loading, error, addGrade, removeGrade };
 }

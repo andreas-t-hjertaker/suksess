@@ -9,6 +9,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { FeatureGate } from "@/components/feature-gate";
 import { PageSkeleton } from "@/components/page-skeleton";
+import { ErrorState } from "@/components/error-state";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { useGrades } from "@/hooks/use-grades";
 import { calculateGradePoints } from "@/lib/grades/calculator";
@@ -277,6 +278,7 @@ function CvPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [tab, setTab] = useState<"edit" | "preview">("edit");
   const [cvLoading, setCvLoading] = useState(true);
+  const [cvError, setCvError] = useState<string | null>(null);
   const initialLoad = useRef(true);
 
   const [cv, setCv] = useState<CvData>({
@@ -310,6 +312,7 @@ function CvPage() {
       initialLoad.current = false;
     }).catch((err) => {
       console.error("CV-lasting feilet:", err);
+      setCvError("Kunne ikke laste CV-utkast. Prøv igjen senere.");
       setCvLoading(false);
       initialLoad.current = false;
     });
@@ -376,6 +379,17 @@ function CvPage() {
 
   if (cvLoading) {
     return <PageSkeleton variant="form" cards={5} />;
+  }
+
+  if (cvError) {
+    return (
+      <div className="max-w-5xl mx-auto p-4 md:p-6">
+        <ErrorState
+          message={cvError}
+          onRetry={() => window.location.reload()}
+        />
+      </div>
+    );
   }
 
   return (

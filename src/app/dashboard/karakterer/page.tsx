@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageSkeleton } from "@/components/page-skeleton";
+import { ErrorState } from "@/components/error-state";
 import type { Grade } from "@/types/domain";
 
 // ---------------------------------------------------------------------------
@@ -55,7 +56,7 @@ const YEARS = Array.from({ length: 4 }, (_, i) => CURRENT_YEAR - i);
 // ---------------------------------------------------------------------------
 
 export default function KaraktererPage() {
-  const { grades, loading, addGrade, removeGrade } = useGrades();
+  const { grades, loading, error: gradesError, addGrade, removeGrade } = useGrades();
   const { earnXp } = useXp();
 
   // Legg til ny karakter
@@ -152,6 +153,17 @@ export default function KaraktererPage() {
 
   if (loading) {
     return <PageSkeleton variant="form" cards={4} />;
+  }
+
+  if (gradesError) {
+    return (
+      <div className="p-4 md:p-6">
+        <ErrorState
+          message="Kunne ikke laste karakterer. Prøv igjen senere."
+          onRetry={() => window.location.reload()}
+        />
+      </div>
+    );
   }
 
   return (
