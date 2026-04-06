@@ -46,6 +46,10 @@ const clientEnvSchema = z.object({
     .string()
     .optional()
     .default("https://europe-west1-suksess-842ed.cloudfunctions.net"),
+  NEXT_PUBLIC_FUNCTIONS_URL: z
+    .string()
+    .optional()
+    .default("https://europe-west1-suksess-842ed.cloudfunctions.net"),
 
   // App metadata (satt i next.config.ts)
   NEXT_PUBLIC_APP_NAME: z.string().optional().default("Suksess"),
