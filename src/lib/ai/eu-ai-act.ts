@@ -19,6 +19,7 @@
 import { doc, setDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { logger } from "@/lib/observability/logger";
+import { nowISO } from "@/lib/utils/time";
 
 // ---------------------------------------------------------------------------
 // Risikokategorisering (Art. 9)
@@ -197,7 +198,7 @@ export async function logAiDecision(
   const entry: AiDecisionLog = {
     ...decision,
     logId,
-    timestamp: new Date().toISOString(),
+    timestamp: nowISO(),
   };
 
   try {

@@ -12,6 +12,7 @@
  */
 
 import { doc, setDoc, collection } from "firebase/firestore";
+import { nowISO } from "@/lib/utils/time";
 
 // ---------------------------------------------------------------------------
 // Typer
@@ -112,7 +113,7 @@ function buildLog(
   return {
     level,
     message,
-    timestamp: new Date().toISOString(),
+    timestamp: nowISO(),
     data,
   };
 }
@@ -211,7 +212,7 @@ export async function trackErrorToFirestore(
     await setDoc(ref, {
       ...event,
       stack: event.stack?.slice(0, 1000) ?? null,
-      createdAt: new Date().toISOString(),
+      createdAt: nowISO(),
       env: process.env.NODE_ENV,
     });
   } catch {

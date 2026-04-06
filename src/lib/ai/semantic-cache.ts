@@ -25,6 +25,7 @@ import {
 import { db } from "@/lib/firebase/firestore";
 import { logger } from "@/lib/observability/logger";
 import { isExpiredMs } from "@/lib/utils/ttl";
+import { nowISO } from "@/lib/utils/time";
 
 // ---------------------------------------------------------------------------
 // N-gram fingeravtrykk (tekst → numerisk hash)
@@ -149,7 +150,7 @@ export async function setSemanticCache(
       queryText,
       responseText,
       feature,
-      createdAt: new Date().toISOString(),
+      createdAt: nowISO(),
       hitCount: 0,
       threshold: SIMILARITY_THRESHOLD,
     };
