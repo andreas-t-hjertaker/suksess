@@ -137,6 +137,7 @@ function VeilederPage() {
     } catch (err) {
       setProfileError(err instanceof Error ? err : new Error("Kunne ikke laste profil"));
       setProfileLoading(false);
+      return undefined;
     }
   }, [user]);
 

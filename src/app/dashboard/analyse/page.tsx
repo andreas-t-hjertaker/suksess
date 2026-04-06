@@ -206,6 +206,7 @@ function AnalysePage() {
     } catch (err) {
       setLoadError(err instanceof Error ? err : new Error("Kunne ikke laste profil"));
       setLoading(false);
+      return undefined;
     }
   }, [user]);
 

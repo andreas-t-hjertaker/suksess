@@ -28,14 +28,6 @@ function allBigFiveAnswers(value: number): Record<string, number> {
   return Object.fromEntries(BIG_FIVE_QUESTIONS.map((q) => [q.id, value]));
 }
 
-function _allRiasecAnswers(value: number): Record<string, number> {
-  return Object.fromEntries(RIASEC_QUESTIONS.map((q) => [q.id, value]));
-}
-
-function _allStrengthAnswers(value: number): Record<string, number> {
-  return Object.fromEntries(STRENGTH_QUESTIONS.map((q) => [q.id, value]));
-}
-
 // ---------------------------------------------------------------------------
 // scoreBigFive
 // ---------------------------------------------------------------------------

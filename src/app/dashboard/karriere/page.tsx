@@ -6,7 +6,7 @@ import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { useXp } from "@/hooks/use-xp";
 import { useCareerData } from "@/hooks/use-career-data";
 import { FeatureGate } from "@/components/feature-gate";
-import type { UserProfile, RiasecScores } from "@/types/domain";
+import type { UserProfile } from "@/types/domain";
 import type { EnrichedCareer } from "@/lib/karriere/data-service";
 import {
   EDU_LABELS,
@@ -73,6 +73,7 @@ function KarrierePage() {
     } catch (err) {
       setProfileError(err instanceof Error ? err : new Error("Kunne ikke laste profil"));
       setProfileLoading(false);
+      return undefined;
     }
   }, [user]);
 
