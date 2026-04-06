@@ -1,8 +1,18 @@
 /**
- * EHF/Peppol Cloud Functions-modul (#110).
+ * EHF/Peppol Cloud Functions-modul (#110, #167).
+ *
+ * KRITISK: Dette er KUN server-side kode for Cloud Functions.
+ * ⚠️  ALDRI importer eller kopier denne filen til src/app eller src/lib/client-side kode.
  *
  * Server-side EHF-generering og Peppol-sending for B2B-fakturaer.
  * Trigges av Stripe webhook ved invoice.finalized for B2B-kunder.
+ *
+ * SIKKERHET: Bruker sensitive env-variabler:
+ * - PEPPOL_AP_KEY (hemmelighet)
+ * - PEPPOL_AP_URL
+ * - PEPPOL_SENDER_ID
+ *
+ * Disse må ALDRI bli eksponert til klient-kode.
  */
 
 import * as admin from "firebase-admin";
