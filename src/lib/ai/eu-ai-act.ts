@@ -18,6 +18,7 @@
 
 import { doc, setDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
+import { nowISO } from "@/lib/utils/time";
 import { logger } from "@/lib/observability/logger";
 
 // ---------------------------------------------------------------------------
@@ -197,7 +198,7 @@ export async function logAiDecision(
   const entry: AiDecisionLog = {
     ...decision,
     logId,
-    timestamp: new Date().toISOString(),
+    timestamp: nowISO(),
   };
 
   try {

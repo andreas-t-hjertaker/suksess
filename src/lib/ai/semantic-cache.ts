@@ -25,6 +25,7 @@ import {
 import { db } from "@/lib/firebase/firestore";
 import { logger } from "@/lib/observability/logger";
 import { isExpiredMs } from "@/lib/utils/ttl";
+import { nowISO, expiresAtISO } from "@/lib/utils/time";
 
 // ---------------------------------------------------------------------------
 // N-gram fingeravtrykk (tekst → numerisk hash)
@@ -149,7 +150,7 @@ export async function setSemanticCache(
       queryText,
       responseText,
       feature,
-      createdAt: new Date().toISOString(),
+      createdAt: nowISO(),
       hitCount: 0,
       threshold: SIMILARITY_THRESHOLD,
     };
@@ -173,7 +174,7 @@ export async function getApiCache<T = unknown>(key: string): Promise<T | null> {
     if (!snap.exists()) return null;
 
     const entry = snap.data() as ApiCacheEntry;
-    if (new Date(entry.expiresAt).getTime() < Date.now()) return null;
+    if (isExpiredMs(entry.expiresAt, 0)) return null;
 
     return entry.data as T;
   } catch (err) {
@@ -197,7 +198,7 @@ export async function setApiCache(
       key,
       data,
       source,
-      expiresAt: new Date(Date.now() + ttlMs).toISOString(),
+      expiresAt: expiresAtISO(ttlMs),
     };
     await setDoc(ref, entry);
   } catch (err) {
