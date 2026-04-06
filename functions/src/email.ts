@@ -8,9 +8,17 @@
  */
 
 import * as admin from "firebase-admin";
+import { createHash } from "crypto";
 
 function getDb() {
   return admin.firestore();
+}
+
+/** Hash e-postadresse med SHA-256 for GDPR-kompatibel logging */
+function hashEmail(email: string): string {
+  const hash = createHash("sha256").update(email.toLowerCase().trim()).digest("hex");
+  const domain = email.split("@")[1] || "unknown";
+  return `${hash.substring(0, 12)}@${domain}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -121,19 +129,24 @@ export async function sendEmail(payload: SendEmailPayload): Promise<EmailResult>
   } else {
     // I utvikling/test: logg og returner uten å sende
     console.log("[email] Ingen e-posttransport konfigurert. Logget e-post:", {
-      to: payload.to.map((r) => r.email),
+      to: payload.to.map((r) => hashEmail(r.email)),
       subject: payload.subject,
     });
     result = { messageId: `dev-${Date.now()}`, provider: "console" };
   }
 
-  // Logg e-post i Firestore
+  // Logg e-post i Firestore (anonymisert — GDPR Art. 5(1)(c) dataminimalisering)
+  const RETENTION_DAYS = 30;
+  const retentionExpiresAt = new Date(Date.now() + RETENTION_DAYS * 24 * 60 * 60 * 1000);
+
   await getDb().collection("emailLogs").add({
-    to: payload.to.map((r) => r.email),
+    to: payload.to.map((r) => hashEmail(r.email)),
+    recipientCount: payload.to.length,
     subject: payload.subject,
     provider: result.provider,
     messageId: result.messageId,
     sentAt: admin.firestore.FieldValue.serverTimestamp(),
+    retentionExpiresAt,
   });
 
   return result;
