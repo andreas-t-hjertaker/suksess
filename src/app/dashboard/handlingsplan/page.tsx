@@ -84,10 +84,80 @@ const CATEGORY_COLORS: Record<ActionStep["category"], string> = {
 };
 
 // ---------------------------------------------------------------------------
-// Generer handlingsplan (placeholder for AI-integrasjon)
+// AI-generert handlingsplan via Firebase AI (Gemini)
 // ---------------------------------------------------------------------------
 
-function generateActionPlan(riasecCode: string): ActionPlan {
+async function generateActionPlanAI(
+  profile: UserProfile,
+  riasecCode: string
+): Promise<ActionPlan> {
+  const { generateText } = await import("@/lib/firebase/ai");
+
+  const now = new Date();
+  const bigFive = profile.bigFive;
+  const riasec = profile.riasec;
+
+  const prompt = `Du er en karriereveileder for norske VGS-elever. Generer en personlig karrierehandlingsplan.
+
+ELEVPROFIL:
+- RIASEC-kode: ${riasecCode}
+- RIASEC-scorer: R=${riasec.realistic}, I=${riasec.investigative}, A=${riasec.artistic}, S=${riasec.social}, E=${riasec.enterprising}, C=${riasec.conventional}
+${bigFive ? `- Big Five: Åpenhet=${bigFive.openness}, Planmessighet=${bigFive.conscientiousness}, Utadvendthet=${bigFive.extraversion}, Medmenneskelighet=${bigFive.agreeableness}, Nevrotisisme=${bigFive.neuroticism}` : ""}
+- Dato i dag: ${now.toISOString().slice(0, 10)}
+
+INSTRUKSJONER:
+Generer en handlingsplan med 6–8 konkrete steg. Hvert steg skal være personalisert basert på profilen.
+Bruk realistiske norske ressurser (utdanning.no, samordnaopptak.no, nav.no, frivillig.no).
+Frister skal være YYYY-MM format, 1–6 måneder frem i tid.
+
+Svar KUN i dette JSON-formatet (ingen markdown, bare ren JSON):
+{
+  "goalTitle": "Kort tittel for karrieremålet",
+  "goalDescription": "2–3 setninger som beskriver planen personlig",
+  "steps": [
+    {
+      "id": "step_1",
+      "title": "Kort tittel",
+      "description": "2–3 setninger med konkret handling",
+      "category": "utdanning|erfaring|nettverk|ferdigheter|søknad",
+      "deadline": "YYYY-MM",
+      "resources": ["Ressurs 1", "Ressurs 2"]
+    }
+  ]
+}`;
+
+  try {
+    const response = await generateText(prompt);
+    // Rens respons for eventuelle markdown-kodeblokker
+    const cleaned = response.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+
+    return {
+      goalTitle: parsed.goalTitle ?? `Karrierevei for ${riasecCode}-profil`,
+      goalDescription: parsed.goalDescription ?? "Personlig handlingsplan.",
+      riasecCode,
+      steps: (parsed.steps ?? []).map((s: Record<string, unknown>, i: number) => ({
+        id: s.id ?? `step_${i + 1}`,
+        title: String(s.title ?? ""),
+        description: String(s.description ?? ""),
+        category: ["utdanning", "erfaring", "nettverk", "ferdigheter", "søknad"].includes(String(s.category))
+          ? s.category
+          : "utdanning",
+        deadline: String(s.deadline ?? now.toISOString().slice(0, 7)),
+        completed: false,
+        resources: Array.isArray(s.resources) ? s.resources.map(String) : [],
+      })),
+      generatedAt: now.toISOString(),
+      lastUpdatedAt: now.toISOString(),
+    };
+  } catch {
+    // Fallback til enkel plan ved AI-feil
+    return generateFallbackPlan(riasecCode);
+  }
+}
+
+/** Fallback-plan hvis AI er utilgjengelig */
+function generateFallbackPlan(riasecCode: string): ActionPlan {
   const now = new Date();
   const month = (offset: number) => {
     const d = new Date(now);
@@ -98,94 +168,54 @@ function generateActionPlan(riasecCode: string): ActionPlan {
   return {
     goalTitle: `Karrierevei basert på ${riasecCode}-profil`,
     goalDescription:
-      "En personlig handlingsplan med konkrete steg for å nå dine karrieremål. " +
-      "Planen er basert på din personlighetsprofil og tilpasses dine interesser.",
+      "En handlingsplan med konkrete steg for å nå dine karrieremål. " +
+      "Planen er basert på din personlighetsprofil.",
     riasecCode,
     steps: [
       {
         id: "step_1",
         title: "Utforsk studieprogram",
-        description:
-          "Undersøk 3–5 studieprogram som matcher din RIASEC-profil. " +
-          "Sjekk opptakskrav, studieplan og karrieremuligheter.",
+        description: "Undersøk 3–5 studieprogram som matcher din RIASEC-profil på utdanning.no.",
         category: "utdanning",
         deadline: month(1),
         completed: false,
-        resources: [
-          "utdanning.no — Studievelgeren",
-          "samordnaopptak.no — Poenggrenser",
-        ],
+        resources: ["utdanning.no — Studievelgeren", "samordnaopptak.no — Poenggrenser"],
       },
       {
         id: "step_2",
         title: "Sett karaktermål",
-        description:
-          "Identifiser fag der du kan forbedre karakteren. " +
-          "Lag en studieplan for de viktigste fagene.",
+        description: "Identifiser fag der du kan forbedre karakteren og lag en studieplan.",
         category: "ferdigheter",
         deadline: month(1),
         completed: false,
-        resources: [
-          "Suksess karakterkalkulator",
-          "Snakk med faglærer om forbedringsmuligheter",
-        ],
+        resources: ["Suksess karakterkalkulator"],
       },
       {
         id: "step_3",
         title: "Bygg relevant erfaring",
-        description:
-          "Søk sommerjobb, frivillig arbeid eller praksisplass innen ditt interesseområde. " +
-          "Dokumenter erfaringen i CV-en din.",
+        description: "Søk sommerjobb, frivillig arbeid eller praksisplass innen ditt interesseområde.",
         category: "erfaring",
         deadline: month(3),
         completed: false,
-        resources: [
-          "NAV — Ledige stillinger",
-          "Frivillig.no — Frivillige oppdrag",
-          "Suksess CV-builder",
-        ],
+        resources: ["NAV — Ledige stillinger", "Frivillig.no"],
       },
       {
         id: "step_4",
         title: "Utvid nettverket ditt",
-        description:
-          "Delta på utdanningsmesser, åpne dager og bransjearrangementer. " +
-          "Snakk med folk som jobber innen feltet du er interessert i.",
+        description: "Delta på utdanningsmesser og åpne dager ved universiteter.",
         category: "nettverk",
         deadline: month(4),
         completed: false,
-        resources: [
-          "Utdanningsmessa — årlig i januar",
-          "Åpen dag ved universiteter (vår/høst)",
-        ],
+        resources: ["Utdanningsmessa", "Åpen dag ved universiteter"],
       },
       {
         id: "step_5",
         title: "Forbered søknader",
-        description:
-          "Skriv motivasjonsbrev og oppdater CV. " +
-          "Send søknad til Samordna Opptak innen fristen.",
+        description: "Skriv motivasjonsbrev og send søknad til Samordna Opptak innen fristen.",
         category: "søknad",
         deadline: month(5),
         completed: false,
-        resources: [
-          "Samordna Opptak — Søknadsfrist 15. april",
-          "Suksess Søknads-coach",
-        ],
-      },
-      {
-        id: "step_6",
-        title: "Plan B — alternative veier",
-        description:
-          "Identifiser 2–3 alternative studiesteder eller karriereveier. " +
-          "Ha en backup-plan i tilfelle du ikke kommer inn på førstevalget.",
-        category: "utdanning",
-        deadline: month(5),
-        completed: false,
-        resources: [
-          "Folkehøgskoler — ettårig alternativ",
-          "Fagskole — kortere yrkesrettet utdanning",
-        ],
+        resources: ["Samordna Opptak — Søknadsfrist 15. april", "Suksess Søknads-coach"],
       },
     ],
     generatedAt: now.toISOString(),
@@ -233,7 +263,7 @@ export default function HandlingsplanPage() {
     setGenerating(true);
 
     const riasecCode = getRiasecCode(profile.riasec);
-    const newPlan = generateActionPlan(riasecCode);
+    const newPlan = await generateActionPlanAI(profile, riasecCode);
 
     try {
       await setDoc(doc(db, "users", user.uid, "actionPlan", "current"), {
