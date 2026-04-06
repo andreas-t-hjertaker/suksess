@@ -38,6 +38,7 @@ import {
   Sparkles,
   Loader2,
 } from "lucide-react";
+import { ErrorState } from "@/components/error-state";
 import { getModel } from "@/lib/firebase/ai";
 import { cn } from "@/lib/utils";
 import { z } from "zod";
@@ -277,6 +278,7 @@ function CvPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [tab, setTab] = useState<"edit" | "preview">("edit");
   const [cvLoading, setCvLoading] = useState(true);
+  const [cvError, setCvError] = useState<string | null>(null);
   const initialLoad = useRef(true);
 
   const [cv, setCv] = useState<CvData>({
@@ -310,6 +312,7 @@ function CvPage() {
       initialLoad.current = false;
     }).catch((err) => {
       console.error("CV-lasting feilet:", err);
+      setCvError("Kunne ikke laste CV-data. Prøv igjen senere.");
       setCvLoading(false);
       initialLoad.current = false;
     });
@@ -376,6 +379,17 @@ function CvPage() {
 
   if (cvLoading) {
     return <PageSkeleton variant="form" cards={5} />;
+  }
+
+  if (cvError) {
+    return (
+      <div className="max-w-5xl mx-auto p-4 md:p-6">
+        <ErrorState
+          message={cvError}
+          onRetry={() => window.location.reload()}
+        />
+      </div>
+    );
   }
 
   return (

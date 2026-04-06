@@ -83,11 +83,16 @@ export async function saveUserProfile(
 
 export function subscribeToUserProfile(
   userId: string,
-  callback: (profile: UserProfile | null) => void
+  callback: (profile: UserProfile | null) => void,
+  onError?: (error: Error) => void
 ): Unsubscribe {
-  return onSnapshot(doc(db, "profiles", userId), (snap) => {
-    callback(parseDoc(snap, UserProfileSchema) as UserProfile | null);
-  });
+  return onSnapshot(
+    doc(db, "profiles", userId),
+    (snap) => {
+      callback(parseDoc(snap, UserProfileSchema) as UserProfile | null);
+    },
+    onError
+  );
 }
 
 // ---------------------------------------------------------------------------

@@ -196,17 +196,22 @@ function AnalysePage() {
   const [loadError, setLoadError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     setLoadError(null);
-    try {
-      return subscribeToUserProfile(user.uid, (p) => {
+    return subscribeToUserProfile(
+      user.uid,
+      (p) => {
         setProfile(p);
         setLoading(false);
-      });
-    } catch (err) {
-      setLoadError(err instanceof Error ? err : new Error("Kunne ikke laste profil"));
-      setLoading(false);
-    }
+      },
+      (err) => {
+        setLoadError(err instanceof Error ? err : new Error("Kunne ikke laste profil"));
+        setLoading(false);
+      }
+    );
   }, [user]);
 
   const riasecCode = profile?.riasec ? getRiasecCode(profile.riasec) : null;
