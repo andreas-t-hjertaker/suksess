@@ -10,6 +10,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { FeatureGate } from "@/components/feature-gate";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { ErrorState } from "@/components/error-state";
+import { CvPreview } from "@/components/cv-preview";
+import { downloadCv } from "@/components/cv-download";
+import { CvDataSchema, DEFAULT_CV, STRENGTH_LABELS } from "@/components/cv-types";
+import type { CvData } from "@/components/cv-types";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { useGrades } from "@/hooks/use-grades";
 import { calculateGradePoints } from "@/lib/grades/calculator";
@@ -41,233 +45,6 @@ import {
 } from "lucide-react";
 import { getModel } from "@/lib/firebase/ai";
 import { cn } from "@/lib/utils";
-import { z } from "zod";
-
-// ---------------------------------------------------------------------------
-// CV-data typer
-// ---------------------------------------------------------------------------
-
-const CvDataSchema = z.object({
-  name: z.string(),
-  email: z.string(),
-  phone: z.string(),
-  location: z.string(),
-  website: z.string(),
-  summary: z.string(),
-  includeGrades: z.boolean(),
-  includeStrengths: z.boolean(),
-  includeRiasec: z.boolean(),
-  includeInterests: z.boolean(),
-  extraExperience: z.string(),
-  extraEducation: z.string(),
-  languages: z.string(),
-});
-
-type CvData = {
-  name: string;
-  email: string;
-  phone: string;
-  location: string;
-  website: string;
-  summary: string;
-  // Fylles automatisk fra profil/karakterer
-  includeGrades: boolean;
-  includeStrengths: boolean;
-  includeRiasec: boolean;
-  includeInterests: boolean;
-  extraExperience: string; // fritekst
-  extraEducation: string;  // fritekst
-  languages: string;       // fritekst
-};
-
-const DEFAULT_CV: CvData = {
-  name: "",
-  email: "",
-  phone: "",
-  location: "",
-  website: "",
-  summary: "",
-  includeGrades: true,
-  includeStrengths: true,
-  includeRiasec: false,
-  includeInterests: true,
-  extraExperience: "",
-  extraEducation: "",
-  languages: "Norsk (morsmål), Engelsk (flytende)",
-};
-
-const STRENGTH_LABELS: Record<string, string> = {
-  kreativitet: "Kreativitet",
-  nysgjerrighet: "Nysgjerrighet",
-  lederskap: "Lederskap",
-  empati: "Empati",
-  utholdenhet: "Utholdenhet",
-  humor: "Humor",
-  rettferdighet: "Rettferdighet",
-};
-
-// ---------------------------------------------------------------------------
-// CV Preview component (print-vennlig HTML)
-// ---------------------------------------------------------------------------
-
-function CvPreview({
-  cv,
-  profile,
-  gradeAvg,
-  topStrengths,
-  riasecCode,
-}: {
-  cv: CvData;
-  profile: UserProfile | null;
-  gradeAvg: number;
-  topStrengths: string[];
-  riasecCode: string | null;
-}) {
-  return (
-    <div
-      id="cv-preview"
-      className="bg-white text-gray-900 p-8 rounded-xl border shadow-sm font-sans text-sm leading-relaxed min-h-[29.7cm] max-w-[21cm] mx-auto"
-      style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
-    >
-      {/* Header */}
-      <div className="border-b-2 border-gray-800 pb-4 mb-5">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-          {cv.name || "Ditt navn"}
-        </h1>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-600">
-          {cv.email && (
-            <span>✉ {cv.email}</span>
-          )}
-          {cv.phone && (
-            <span>☎ {cv.phone}</span>
-          )}
-          {cv.location && (
-            <span>📍 {cv.location}</span>
-          )}
-          {cv.website && (
-            <span>🌐 {cv.website}</span>
-          )}
-        </div>
-      </div>
-
-      {/* Sammendrag */}
-      {cv.summary && (
-        <section className="mb-5">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-2">Profil</h2>
-          <p className="text-gray-800 leading-relaxed">{cv.summary}</p>
-        </section>
-      )}
-
-      {/* Styrker */}
-      {cv.includeStrengths && topStrengths.length > 0 && (
-        <section className="mb-5">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-2">Styrker</h2>
-          <div className="flex flex-wrap gap-2">
-            {topStrengths.map((s) => (
-              <span
-                key={s}
-                className="rounded border border-gray-300 px-2 py-0.5 text-xs text-gray-700"
-              >
-                {STRENGTH_LABELS[s] ?? s}
-              </span>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Interesser fra profil */}
-      {cv.includeInterests && profile?.interests && profile.interests.length > 0 && (
-        <section className="mb-5">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-2">Interesser</h2>
-          <p className="text-gray-800">{profile.interests.join(" · ")}</p>
-        </section>
-      )}
-
-      {/* RIASEC */}
-      {cv.includeRiasec && riasecCode && (
-        <section className="mb-5">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-2">Interesseprofil</h2>
-          <p className="text-gray-800">RIASEC-kode: <strong>{riasecCode}</strong></p>
-        </section>
-      )}
-
-      {/* Utdanning */}
-      <section className="mb-5">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-2">Utdanning</h2>
-        {cv.includeGrades && gradeAvg > 0 && (
-          <div className="mb-2">
-            <div className="flex items-baseline justify-between">
-              <p className="font-semibold text-gray-900">Videregående skole</p>
-              <p className="text-xs text-gray-500">Pågående</p>
-            </div>
-            <p className="text-gray-700">
-              Karaktersnitt: <strong>{gradeAvg.toFixed(2)}</strong>
-            </p>
-          </div>
-        )}
-        {cv.extraEducation && (
-          <div className="whitespace-pre-line text-gray-800 mt-2">{cv.extraEducation}</div>
-        )}
-      </section>
-
-      {/* Erfaring */}
-      {cv.extraExperience && (
-        <section className="mb-5">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-2">Erfaring</h2>
-          <div className="whitespace-pre-line text-gray-800">{cv.extraExperience}</div>
-        </section>
-      )}
-
-      {/* Språk */}
-      {cv.languages && (
-        <section className="mb-5">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-2">Språk</h2>
-          <p className="text-gray-800">{cv.languages}</p>
-        </section>
-      )}
-
-      <div className="mt-8 pt-4 border-t border-gray-200 text-[10px] text-gray-400 text-center">
-        Generert med Suksess-plattformen
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Hjelpefunksjon: print/download
-// ---------------------------------------------------------------------------
-
-function downloadCv(name: string) {
-  const el = document.getElementById("cv-preview");
-  if (!el) return;
-  const html = `<!DOCTYPE html>
-<html lang="no">
-<head>
-  <meta charset="UTF-8">
-  <title>CV – ${name || "Kandidat"}</title>
-  <style>
-    body { margin: 0; padding: 2cm; font-family: Georgia, serif; font-size: 12pt; color: #111; }
-    h1 { font-size: 20pt; margin-bottom: 4px; }
-    h2 { font-size: 9pt; text-transform: uppercase; letter-spacing: 0.1em; color: #666; margin: 16px 0 6px; }
-    section { margin-bottom: 16px; }
-    .header { border-bottom: 2px solid #222; padding-bottom: 12px; margin-bottom: 16px; }
-    .meta { font-size: 9pt; color: #555; margin-top: 6px; }
-    span.tag { border: 1px solid #ccc; padding: 2px 6px; margin-right: 4px; font-size: 9pt; }
-    @media print { body { padding: 0; } }
-  </style>
-</head>
-<body>
-  ${el.innerHTML}
-</body>
-</html>`;
-  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `CV_${(name || "Kandidat").replace(/\s+/g, "_")}.html`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
 
 // ---------------------------------------------------------------------------
 // Main page
@@ -538,7 +315,7 @@ function CvPage() {
                   ) : (
                     <Sparkles className="h-3 w-3" />
                   )}
-                  {generatingSummary ? "Genererer…" : "Generer med AI"}
+                  {generatingSummary ? "Genererer..." : "Generer med AI"}
                 </Button>
               </div>
             </CardContent>
