@@ -6,6 +6,7 @@
  */
 
 import { logger } from "@/lib/observability/logger";
+import { isExpiredMs, calculateAgeMs } from "@/lib/utils/ttl";
 
 // ─── Krisedeteksjon ──────────────────────────────────────────────────────────
 
@@ -161,14 +162,11 @@ function saveRateLimitStore(store: RateLimitStore): void {
 
 export function checkRateLimit(): { allowed: boolean; message: string | null } {
   const now = Date.now();
-  const oneHourAgo = now - 60 * 60 * 1000;
-  const oneDayAgo = now - 24 * 60 * 60 * 1000;
-
   const store = loadRateLimitStore();
 
   // Rens gamle timestamps
-  store.hourly = store.hourly.filter((t) => t > oneHourAgo);
-  store.daily = store.daily.filter((t) => t > oneDayAgo);
+  store.hourly = store.hourly.filter((t) => !isExpiredMs(t, 3_600_000));
+  store.daily = store.daily.filter((t) => !isExpiredMs(t, 86_400_000));
 
   if (store.hourly.length >= MESSAGE_LIMIT_PER_HOUR) {
     saveRateLimitStore(store);
@@ -208,8 +206,8 @@ export function shouldShowAiReminder(messageCount: number): boolean {
 
 // ─── Sesjonslengde-varsler (#141) ────────────────────────────────────────────
 
-const SESSION_WARN_30_MIN = 30 * 60 * 1000;
-const SESSION_WARN_60_MIN = 60 * 60 * 1000;
+const SESSION_WARN_30_MIN = 1_800_000; // 30 min
+const SESSION_WARN_60_MIN = 3_600_000; // 60 min
 
 export type SessionWarning = {
   level: "gentle" | "strong";
@@ -227,7 +225,7 @@ export function checkSessionLength(
   alreadyWarned30: boolean,
   alreadyWarned60: boolean
 ): SessionWarning | null {
-  const elapsed = Date.now() - sessionStartMs;
+  const elapsed = calculateAgeMs(sessionStartMs);
 
   if (!alreadyWarned60 && elapsed >= SESSION_WARN_60_MIN) {
     return {
