@@ -5,6 +5,8 @@
  * Brukes av både klient (use-chat.ts) og server (llm.ts).
  */
 
+import { logger } from "@/lib/observability/logger";
+
 // ─── Krisedeteksjon ──────────────────────────────────────────────────────────
 
 const CRISIS_PATTERNS = [
@@ -142,8 +144,8 @@ function loadRateLimitStore(): RateLimitStore {
   try {
     const stored = localStorage.getItem(RATE_LIMIT_KEY);
     if (stored) return JSON.parse(stored);
-  } catch {
-    // localStorage utilgjengelig eller korrupt
+  } catch (err) {
+    logger.warn("rate_limit_load_failed", { error: err instanceof Error ? err.message : "unknown" });
   }
   return { hourly: [], daily: [] };
 }
@@ -152,8 +154,8 @@ function saveRateLimitStore(store: RateLimitStore): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(store));
-  } catch {
-    // localStorage utilgjengelig
+  } catch (err) {
+    logger.warn("rate_limit_save_failed", { error: err instanceof Error ? err.message : "unknown" });
   }
 }
 

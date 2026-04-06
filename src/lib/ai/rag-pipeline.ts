@@ -20,6 +20,7 @@ import {
   type SearchResult,
 } from "@/lib/weaviate/client";
 import { getSemanticCache } from "@/lib/ai/semantic-cache";
+import { logger } from "@/lib/observability/logger";
 
 // ---------------------------------------------------------------------------
 // Typer
@@ -153,8 +154,8 @@ export async function retrieveRagContext(
     try {
       const parsed = JSON.parse(cachedResponse) as RagContext;
       return { ...parsed, fromCache: true };
-    } catch {
-      // Ignore malformed cache entry
+    } catch (err) {
+      logger.warn("rag_cache_parse_failed", { feature, error: err instanceof Error ? err.message : "unknown" });
     }
   }
 
