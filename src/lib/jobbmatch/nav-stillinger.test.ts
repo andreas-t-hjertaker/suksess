@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { styrkToRiasec, calculateJobMatchScore } from "./nav-stillinger";
+import { calculateJobMatchScore } from "./nav-stillinger";
+import { styrkToRiasec } from "@/lib/mappings/styrk-riasec";
 import type { RiasecScores } from "@/types/domain";
 
 describe("NAV stillinger jobbmatch (#129)", () => {
