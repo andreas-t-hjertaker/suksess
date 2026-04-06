@@ -27,6 +27,7 @@ import {
 import { db } from "@/lib/firebase/firestore";
 import { CacheEntrySchema } from "@/types/schemas";
 import { logger } from "@/lib/observability/logger";
+import { isExpired } from "@/lib/utils/ttl";
 
 // ---------------------------------------------------------------------------
 // Typer
@@ -41,16 +42,6 @@ export type CacheEntry = {
   ttlHours: number;
   createdAt: { toDate?: () => Date } | null;
 };
-
-// ---------------------------------------------------------------------------
-// Felles TTL-hjelpefunksjon
-// ---------------------------------------------------------------------------
-
-/** Sjekk om en tidsstempel er eldre enn angitt TTL (i timer) */
-function isExpiredHours(timestamp: Date | number, ttlHours: number): boolean {
-  const ms = typeof timestamp === "number" ? timestamp : timestamp.getTime();
-  return (Date.now() - ms) / 3_600_000 > ttlHours;
-}
 
 // ---------------------------------------------------------------------------
 // Nøkkel-hashing (enkel, ikke kryptografisk)
@@ -95,7 +86,7 @@ export async function getL1Cache(
     const createdAt = data.createdAt?.toDate?.() ?? null;
     if (!createdAt) return null;
 
-    if (isExpiredHours(createdAt, data.ttlHours)) return null;
+    if (isExpired(createdAt, data.ttlHours)) return null;
 
     return data.content;
   } catch (err) {
@@ -146,7 +137,7 @@ export async function getL2Cache(
     const generatedAt = data.generatedAt?.toDate?.() ?? null;
     if (!generatedAt) return null;
 
-    if (isExpiredHours(generatedAt, L2_TTL_HOURS)) return null;
+    if (isExpired(generatedAt, L2_TTL_HOURS)) return null;
 
     return data.content as string;
   } catch (err) {
@@ -195,7 +186,7 @@ export function getL3Cache(cacheKey: string): string | null {
       content: string;
       timestamp: number;
     };
-    if (isExpiredHours(timestamp, L3_TTL_HOURS)) {
+    if (isExpired(timestamp, L3_TTL_HOURS)) {
       localStorage.removeItem(L3_PREFIX + cacheKey);
       return null;
     }
@@ -286,7 +277,7 @@ export function pruneL3Cache(): void {
       const raw = localStorage.getItem(key);
       if (!raw) continue;
       const { timestamp } = JSON.parse(raw);
-      if (isExpiredHours(timestamp, L3_TTL_HOURS)) keysToDelete.push(key);
+      if (isExpired(timestamp, L3_TTL_HOURS)) keysToDelete.push(key);
     } catch {
       keysToDelete.push(key!);
     }
