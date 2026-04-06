@@ -4,10 +4,11 @@ import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { useXp } from "@/hooks/use-xp";
+import { useCareerData, useCareerLiveData } from "@/hooks/use-career-data";
 import { FeatureGate } from "@/components/feature-gate";
 import type { UserProfile, RiasecScores } from "@/types/domain";
+import type { EnrichedCareer } from "@/lib/karriere/data-service";
 import {
-  CAREER_NODES,
   SECTOR_COLORS,
   EDU_LABELS,
   DEMAND_LABELS,
@@ -49,6 +50,9 @@ import {
   Briefcase,
   Info,
   ChevronRight,
+  ExternalLink,
+  Loader2,
+  Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageSkeleton } from "@/components/page-skeleton";
@@ -69,7 +73,6 @@ const DEMAND_ICON: Record<Demand, string> = {
   low: "↓",
 };
 
-const ALL_SECTORS = Array.from(new Set(CAREER_NODES.map((c) => c.sector))).sort();
 const ALL_EDU_LEVELS: EducationLevel[] = ["vgs", "fagbrev", "bachelor", "master", "phd"];
 
 function formatSalary(n: number) {
@@ -162,17 +165,20 @@ function CareerCard({
 
 function CareerDetail({
   career,
+  allCareers,
   riasec,
   onClose,
 }: {
-  career: CareerNode;
+  career: EnrichedCareer;
+  allCareers: EnrichedCareer[];
   riasec: RiasecScores | null;
   onClose: () => void;
 }) {
   const score = riasec ? calcFitScore(career, riasec) : null;
   const advancedCareers = career.advancesTo
-    ? CAREER_NODES.filter((c) => career.advancesTo!.includes(c.id))
+    ? allCareers.filter((c) => career.advancesTo!.includes(c.id))
     : [];
+  const { data: liveData, loading: liveLoading } = useCareerLiveData(career.id);
 
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
@@ -247,7 +253,15 @@ function CareerDetail({
                 <span className="text-xs text-muted-foreground">Median lønn</span>
               </div>
               <p className="text-sm font-semibold">{formatSalary(career.medianSalary)}</p>
-              <p className="text-[10px] text-muted-foreground">per år</p>
+              {career.ssbSalaryData ? (
+                <p className="text-[10px] text-muted-foreground">
+                  {formatSalary(career.ssbSalaryData.p25)} – {formatSalary(career.ssbSalaryData.p75)}
+                  <br />
+                  <span className="text-muted-foreground/60">SSB {career.ssbSalaryData.year}</span>
+                </p>
+              ) : (
+                <p className="text-[10px] text-muted-foreground">per år</p>
+              )}
             </div>
             <div className="rounded-lg border bg-muted/30 p-3">
               <div className="flex items-center gap-1.5 mb-1">
@@ -257,6 +271,64 @@ function CareerDetail({
               <p className="text-sm font-semibold">{EDU_LABELS[career.educationLevel]}</p>
             </div>
           </div>
+
+          {/* Aktive stillinger fra NAV */}
+          <div className="rounded-lg border bg-muted/30 p-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Aktive stillinger (NAV)</span>
+            </div>
+            {liveLoading ? (
+              <div className="flex items-center gap-1.5">
+                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Henter...</span>
+              </div>
+            ) : (
+              <p className="text-sm font-semibold">
+                {liveData && liveData.activeJobs > 0 ? liveData.activeJobs : "Ingen funnet"}
+              </p>
+            )}
+          </div>
+
+          {/* Relevante studieprogram */}
+          {!liveLoading && liveData && liveData.studyPrograms.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                <GraduationCap className="h-4 w-4" />
+                Relevante studieprogram
+              </h3>
+              <ul className="space-y-2">
+                {liveData.studyPrograms.slice(0, 5).map((prog) => (
+                  <li key={`${prog.name}-${prog.institution}`} className="rounded-lg border bg-muted/20 px-3 py-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{prog.name}</p>
+                        <p className="text-xs text-muted-foreground">{prog.institution}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {prog.requiredGpa && (
+                          <span className="text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5">
+                            {prog.requiredGpa.toFixed(1)}
+                          </span>
+                        )}
+                        {prog.url && (
+                          <a
+                            href={prog.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:text-primary/80"
+                            aria-label={`Åpne ${prog.name}`}
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* RIASEC codes */}
           <div>
@@ -347,12 +419,13 @@ function KarrierePage() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState<Error | null>(null);
   const { earnXp } = useXp();
+  const { careers: careerData, loading: careerLoading, error: careerError, source: dataSource } = useCareerData();
 
   const [search, setSearch] = useState("");
   const [sectorFilter, setSectorFilter] = useState<string>("alle");
   const [eduFilter, setEduFilter] = useState<string>("alle");
   const [demandFilter, setDemandFilter] = useState<string>("alle");
-  const [selectedCareer, setSelectedCareer] = useState<CareerNode | null>(null);
+  const [selectedCareer, setSelectedCareer] = useState<EnrichedCareer | null>(null);
   const [sortBy, setSortBy] = useState<"match" | "salary" | "title">("match");
 
   useEffect(() => {
@@ -372,8 +445,13 @@ function KarrierePage() {
 
   const riasec = profile?.riasec ?? null;
 
+  const allSectors = useMemo(
+    () => Array.from(new Set(careerData.map((c) => c.sector))).sort(),
+    [careerData]
+  );
+
   const filtered = useMemo(() => {
-    let list = CAREER_NODES;
+    let list = careerData;
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -403,14 +481,14 @@ function KarrierePage() {
     }
 
     return list;
-  }, [search, sectorFilter, eduFilter, demandFilter, sortBy, riasec]);
+  }, [careerData, search, sectorFilter, eduFilter, demandFilter, sortBy, riasec]);
 
   const topMatches = useMemo(() => {
     if (!riasec) return [];
-    return [...CAREER_NODES]
+    return [...careerData]
       .sort((a, b) => calcFitScore(b, riasec) - calcFitScore(a, riasec))
       .slice(0, 3);
-  }, [riasec]);
+  }, [careerData, riasec]);
 
   const hasFilters =
     search.trim() !== "" ||
@@ -418,12 +496,12 @@ function KarrierePage() {
     eduFilter !== "alle" ||
     demandFilter !== "alle";
 
-  if (profileLoading) {
+  if (profileLoading || careerLoading) {
     return <PageSkeleton variant="grid" cards={6} />;
   }
 
-  if (profileError) {
-    return <ErrorState message={profileError.message} onRetry={() => window.location.reload()} />;
+  if (profileError || careerError) {
+    return <ErrorState message={(profileError ?? careerError)!.message} onRetry={() => window.location.reload()} />;
   }
 
   return (
@@ -434,6 +512,16 @@ function KarrierePage() {
         <p className="text-muted-foreground mt-1">
           Utforsk karriereveier basert på din RIASEC-profil og interesser.
         </p>
+        {dataSource && (
+          <div className="flex items-center gap-1.5 mt-1">
+            <Database className="h-3 w-3 text-muted-foreground" />
+            <span className="text-[10px] text-muted-foreground">
+              {dataSource === "firestore"
+                ? "Data fra utdanning.no, NAV og SSB"
+                : "Lokalt datasett (Firestore utilgjengelig)"}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Top matches */}
@@ -509,7 +597,7 @@ function KarrierePage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="alle">Alle bransjer</SelectItem>
-            {ALL_SECTORS.map((s) => (
+            {allSectors.map((s) => (
               <SelectItem key={s} value={s}>
                 {s}
               </SelectItem>
@@ -576,7 +664,7 @@ function KarrierePage() {
       <div className="flex items-center gap-2">
         <Briefcase className="h-4 w-4 text-muted-foreground" />
         <span className="text-sm text-muted-foreground">
-          {filtered.length} av {CAREER_NODES.length} yrker
+          {filtered.length} av {careerData.length} yrker
         </span>
       </div>
 
@@ -615,6 +703,7 @@ function KarrierePage() {
       {selectedCareer && (
         <CareerDetail
           career={selectedCareer}
+          allCareers={careerData}
           riasec={riasec}
           onClose={() => setSelectedCareer(null)}
         />
