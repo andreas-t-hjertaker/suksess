@@ -27,6 +27,7 @@ import {
 import { db } from "@/lib/firebase/firestore";
 import { CacheEntrySchema } from "@/types/schemas";
 import { logger } from "@/lib/observability/logger";
+import { isExpiredHours } from "@/lib/utils/ttl";
 
 // ---------------------------------------------------------------------------
 // Typer
@@ -41,16 +42,6 @@ export type CacheEntry = {
   ttlHours: number;
   createdAt: { toDate?: () => Date } | null;
 };
-
-// ---------------------------------------------------------------------------
-// Felles TTL-hjelpefunksjon
-// ---------------------------------------------------------------------------
-
-/** Sjekk om en tidsstempel er eldre enn angitt TTL (i timer) */
-function isExpiredHours(timestamp: Date | number, ttlHours: number): boolean {
-  const ms = typeof timestamp === "number" ? timestamp : timestamp.getTime();
-  return (Date.now() - ms) / 3_600_000 > ttlHours;
-}
 
 // ---------------------------------------------------------------------------
 // Nøkkel-hashing (enkel, ikke kryptografisk)

@@ -24,6 +24,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { logger } from "@/lib/observability/logger";
+import { isExpiredMs } from "@/lib/utils/ttl";
 
 // ---------------------------------------------------------------------------
 // N-gram fingeravtrykk (tekst → numerisk hash)
@@ -112,8 +113,7 @@ export async function getSemanticCache(
     for (const d of snap.docs) {
       const entry = d.data() as SemanticCacheEntry;
       // Sjekk TTL
-      const age = Date.now() - new Date(entry.createdAt).getTime();
-      if (age > SEMANTIC_TTL_MS) continue;
+      if (isExpiredMs(entry.createdAt, SEMANTIC_TTL_MS)) continue;
 
       const entryGrams = ngrams(entry.queryText);
       const similarity = diceCoefficient(queryGrams, entryGrams);
