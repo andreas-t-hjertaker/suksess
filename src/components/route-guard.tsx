@@ -36,8 +36,8 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
           const result = await firebaseUser.getIdTokenResult();
           isAdmin = !!result.claims.admin;
           isCounselor = result.claims.role === "counselor";
-        } catch {
-          // Token-feil — brukeren er innlogget men claims utilgjengelige
+        } catch (err) {
+          console.warn("[route-guard] Kunne ikke hente token claims:", err);
         }
       }
 

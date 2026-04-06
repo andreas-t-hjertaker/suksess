@@ -54,6 +54,7 @@ export function useThemeState() {
 
   // Lytt på endringer i system-preferanse
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const mql = window.matchMedia("(prefers-color-scheme: dark)");
     function handler() {
       if (theme === "system") {

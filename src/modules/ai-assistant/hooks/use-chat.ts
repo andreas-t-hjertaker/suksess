@@ -296,18 +296,23 @@ export function useChatSession(
         )
       );
 
-      // Lagre til Firestore
-      const message = messages.find((m) => m.id === messageId);
+      // Lagre til Firestore — bruk oppdatert state for å unngå stale closure
+      let messageContent = "";
+      setMessages((prev) => {
+        const message = prev.find((m) => m.id === messageId);
+        messageContent = message?.content?.slice(0, 500) ?? "";
+        return prev;
+      });
       await saveChatFeedback({
         userId: uid,
         conversationId: conversationIdRef.current,
         messageId,
         rating,
         reason: reason ?? null,
-        messageContent: message?.content?.slice(0, 500) ?? "",
+        messageContent,
       });
     },
-    [context.user?.uid, messages]
+    [context.user?.uid]
   );
 
   return { messages, sendMessage, sendFeedback, clearMessages, loadConversation, isStreaming, sessionWarning, conversationId: conversationIdRef.current };
