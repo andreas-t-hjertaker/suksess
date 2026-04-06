@@ -18,7 +18,7 @@
 
 import { doc, setDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
-import { nowISO } from "@/lib/utils/time";
+import { nowISO, expiresAtISO } from "@/lib/utils/time";
 import { logger } from "@/lib/observability/logger";
 
 // ---------------------------------------------------------------------------
@@ -201,10 +201,15 @@ export async function logAiDecision(
     timestamp: nowISO(),
   };
 
+  // EU AI Act Art. 12(2): minimum 5 års oppbevaring
+  const RETENTION_YEARS = 5;
+  const retentionExpiresAt = expiresAtISO(RETENTION_YEARS * 365.25 * 24 * 60 * 60 * 1000);
+
   try {
     await setDoc(doc(collection(db, "aiDecisionLogs"), logId), {
       ...entry,
       createdAt: serverTimestamp(),
+      retentionExpiresAt,
     });
 
     logger.info("ai_decision_logged", {
@@ -348,6 +353,7 @@ export async function createHumanOversightEvent(
       reviewedBy: null,
       reviewedAt: null,
       createdAt: serverTimestamp(),
+      retentionExpiresAt: expiresAtISO(5 * 365.25 * 24 * 60 * 60 * 1000),
     });
 
     logger.warn("human_oversight_created", {
