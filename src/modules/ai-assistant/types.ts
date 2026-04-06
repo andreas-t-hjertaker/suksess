@@ -20,6 +20,8 @@ export type AssistantContext = {
   appName: string;
   currentPath: string;
   customContext?: string;
+  /** Brukerens valgte språk (#131) */
+  locale?: "nb" | "nn" | "se";
 };
 
 export type ChatConfig = {

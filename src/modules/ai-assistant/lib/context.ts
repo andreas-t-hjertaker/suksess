@@ -4,7 +4,8 @@ import type { AssistantContext } from "../types";
 /** Bygg standard kontekst fra brukerdata og nåværende sti */
 export function getDefaultContext(
   user: User | null,
-  pathname: string
+  pathname: string,
+  locale?: "nb" | "nn" | "se"
 ): AssistantContext {
   return {
     user: user
@@ -16,5 +17,6 @@ export function getDefaultContext(
       : undefined,
     appName: "Suksess",
     currentPath: pathname,
+    locale: locale ?? "nb",
   };
 }

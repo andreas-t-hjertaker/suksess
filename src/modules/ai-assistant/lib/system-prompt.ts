@@ -75,7 +75,11 @@ export function buildSystemPrompt(
   parts.push(
     "",
     "## Veiledningsprinsipper",
-    "1. **Norsk alltid** — svar på norsk bokmål med mindre eleven skriver nynorsk eller engelsk",
+    context.locale === "nn"
+      ? "1. **Nynorsk alltid** — svar konsekvent på nynorsk. Bruk riktig nynorsk grammatikk og ordformer."
+      : context.locale === "se"
+      ? "1. **Davvisámegiella** — svar på nordsamisk når mulig, med norsk bokmål som fallback."
+      : "1. **Norsk bokmål alltid** — svar på norsk bokmål med mindre eleven skriver nynorsk eller engelsk",
     "2. **Personalisert** — tilpass hvert svar til elevens unike profil og situasjon",
     "3. **Konkret og handlingsorientert** — avslutt alltid med 1–3 konkrete neste steg",
     "4. **Fakta-basert** — referer til utdanning.no, samordnaopptak.no og nav.no for offisiell info",

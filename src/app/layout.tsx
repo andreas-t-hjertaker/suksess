@@ -15,6 +15,7 @@ import { AppCheckProvider } from "@/components/app-check-provider";
 import { ErrorReporter } from "@/components/error-reporter";
 import { ReducedMotionProvider } from "@/components/reduced-motion-provider";
 import { RouteGuard } from "@/components/route-guard";
+import { HtmlLangSync } from "@/components/html-lang-sync";
 
 const plusJakartaSans = localFont({
   src: [
@@ -90,6 +91,7 @@ export default function RootLayout({
           url="https://suksess.no"
           description="AI-drevet karriere- og utdanningsveiledning for norske VGS-elever."
         />
+        <HtmlLangSync />
         <ServiceWorkerRegistration />
         <AppCheckProvider />
         <ErrorReporter />

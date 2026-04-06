@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
+import { useLocale } from "@/hooks/use-locale";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Bot, X, Trash2, History } from "lucide-react";
@@ -20,13 +21,14 @@ export function AiAssistant(config?: ChatConfig) {
   const [showHistory, setShowHistory] = useState(false);
   const { user } = useAuth();
   const pathname = usePathname();
+  const { locale } = useLocale();
 
   const context = useMemo(() => {
     if (config?.contextProvider) {
       return config.contextProvider();
     }
-    return getDefaultContext(user, pathname);
-  }, [user, pathname, config]);
+    return getDefaultContext(user, pathname, locale);
+  }, [user, pathname, locale, config]);
 
   const { messages, sendMessage, sendFeedback, clearMessages, loadConversation, isStreaming, conversationId } =
     useChatSession(context, config);
