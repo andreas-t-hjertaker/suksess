@@ -8,9 +8,10 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useXp } from "@/hooks/use-xp";
+import { useCareerData } from "@/hooks/use-career-data";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { getRiasecCode } from "@/lib/personality/scoring";
-import { CAREER_NODES, calcFitScore } from "@/lib/karriere/data";
+import { calcFitScore } from "@/lib/karriere/data";
 import {
   Sheet,
   SheetContent,
@@ -181,6 +182,7 @@ function buildGraph(
 export default function KarriereGrafPage() {
   const { user } = useAuth();
   const { earnXp } = useXp();
+  const { careers: allCareers, loading: careerLoading } = useCareerData();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState<Error | null>(null);
@@ -211,15 +213,15 @@ export default function KarriereGrafPage() {
   const riasecCode = profile?.riasec ? getRiasecCode(profile.riasec) : null;
 
   const filteredCareers = useMemo(() => {
-    if (!profile?.riasec) return CAREER_NODES;
-    const scored = CAREER_NODES.map((c) => ({
+    if (!profile?.riasec) return allCareers;
+    const scored = allCareers.map((c) => ({
       ...c,
       score: calcFitScore(c, profile.riasec),
     }));
     if (filter === "topp") return scored.filter((c) => c.score >= 70);
     if (filter === "god") return scored.filter((c) => c.score >= 40);
     return scored;
-  }, [profile, filter]);
+  }, [allCareers, profile, filter]);
 
   const { nodes, edges } = useMemo(
     () => buildGraph(filteredCareers, profile?.riasec ?? null),
@@ -229,7 +231,7 @@ export default function KarriereGrafPage() {
   const W = 900;
   const H = 680;
 
-  if (profileLoading) {
+  if (profileLoading || careerLoading) {
     return <PageSkeleton variant="grid" cards={4} />;
   }
 
@@ -463,7 +465,7 @@ export default function KarriereGrafPage() {
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">Videreutvikling</p>
                     <div className="flex flex-wrap gap-1.5">
                       {selectedCareer.advancesTo.map((id) => {
-                        const next = CAREER_NODES.find((c) => c.id === id);
+                        const next = allCareers.find((c) => c.id === id);
                         return next ? (
                           <Badge key={id} variant="secondary" className="text-xs cursor-pointer" onClick={() => selectCareer(next)}>
                             {next.title}
