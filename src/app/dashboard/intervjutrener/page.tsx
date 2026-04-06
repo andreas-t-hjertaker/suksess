@@ -135,26 +135,42 @@ const INTERVIEW_CATEGORIES: InterviewCategory[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Generer AI-tilbakemelding (placeholder)
+// AI-tilbakemelding via Gemini
 // ---------------------------------------------------------------------------
 
-function generateFeedback(question: string, answer: string): string {
-  if (answer.length < 20) {
-    return "Prøv å utdype svaret ditt mer. Et godt intervjusvar er vanligvis 1–2 minutter langt.";
-  }
-  if (answer.length > 500) {
-    return "Bra med detaljer! Husk å holde svaret fokusert — 1–2 minutter er ideelt i et intervju.";
-  }
+async function generateAIFeedback(
+  question: string,
+  answer: string,
+  category: string
+): Promise<string> {
+  try {
+    const { generateText } = await import("@/lib/firebase/ai");
 
-  const tips = [
-    "Bra svar! Husk å gi konkrete eksempler når du beskriver erfaringer.",
-    "Godt strukturert. Prøv STAR-metoden: Situasjon, Oppgave, Aksjon, Resultat.",
-    "Fint at du er personlig. Husk å koble svaret til stillingen du søker på.",
-    "Godt svar. Tips: Start med det viktigste først, så kan du utdype etterpå.",
-    "Bra! Husk å vise entusiasme — det smitter over på intervjueren.",
-  ];
+    const prompt = `Du er en intervjutrener for norske VGS-elever. Gi kort, konkret tilbakemelding på et intervjusvar.
 
-  return tips[Math.floor(Math.random() * tips.length)];
+Intervjukategori: ${category}
+Spørsmål: "${question}"
+Kandidatens svar: "${answer}"
+
+Gi tilbakemelding på 2–4 setninger. Vær oppmuntrende men ærlig. Inkluder:
+1. Noe bra med svaret
+2. Ett konkret forbedringstips (f.eks. STAR-metoden, mer spesifikt eksempel, bedre struktur)
+
+Skriv på norsk bokmål. Ikke bruk markdown.`;
+
+    return await generateText(prompt);
+  } catch {
+    // Fallback ved AI-feil
+    if (answer.length < 20) {
+      return "Prøv å utdype svaret ditt mer. Et godt intervjusvar er vanligvis 1–2 minutter langt.";
+    }
+    const tips = [
+      "Bra svar! Husk å gi konkrete eksempler fra egne erfaringer.",
+      "Godt strukturert. Prøv STAR-metoden: Situasjon, Oppgave, Aksjon, Resultat.",
+      "Fint at du er personlig. Koble svaret til stillingen du søker på.",
+    ];
+    return tips[Math.floor(Math.random() * tips.length)];
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -194,11 +210,10 @@ export default function IntervjutrenerPage() {
     const question = selectedCategory.questions[currentQuestionIndex];
     setMessages((prev) => [...prev, { role: "candidate", content: answer }]);
 
-    // Generer tilbakemelding
+    // Generer AI-tilbakemelding
     setIsThinking(true);
-    await new Promise((r) => setTimeout(r, 800));
 
-    const feedback = generateFeedback(question, answer);
+    const feedback = await generateAIFeedback(question, answer, selectedCategory.title);
     setMessages((prev) => [
       ...prev,
       { role: "interviewer", content: feedback, feedback: "tip" },
@@ -207,14 +222,12 @@ export default function IntervjutrenerPage() {
     // Neste spørsmål
     const nextIndex = currentQuestionIndex + 1;
     if (nextIndex < selectedCategory.questions.length) {
-      await new Promise((r) => setTimeout(r, 500));
       setMessages((prev) => [
         ...prev,
         { role: "interviewer", content: selectedCategory!.questions[nextIndex] },
       ]);
       setCurrentQuestionIndex(nextIndex);
     } else {
-      await new Promise((r) => setTimeout(r, 500));
       setMessages((prev) => [
         ...prev,
         {
