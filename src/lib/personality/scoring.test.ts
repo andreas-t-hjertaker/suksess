@@ -101,6 +101,60 @@ describe("scoreBigFive", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Input-validering (#176)
+// ---------------------------------------------------------------------------
+
+describe("input-validering", () => {
+  it("kaster feil for svar utenfor 1-5 (for høy)", () => {
+    const q = BIG_FIVE_QUESTIONS[0];
+    expect(() => scoreBigFive({ [q.id]: 6 })).toThrow("Ugyldig personlighetssvar");
+  });
+
+  it("kaster feil for svar utenfor 1-5 (for lav)", () => {
+    const q = BIG_FIVE_QUESTIONS[0];
+    expect(() => scoreBigFive({ [q.id]: 0 })).toThrow("Ugyldig personlighetssvar");
+  });
+
+  it("kaster feil for negative verdier", () => {
+    const q = BIG_FIVE_QUESTIONS[0];
+    expect(() => scoreBigFive({ [q.id]: -1 })).toThrow("Ugyldig personlighetssvar");
+  });
+
+  it("kaster feil for NaN", () => {
+    const q = BIG_FIVE_QUESTIONS[0];
+    expect(() => scoreBigFive({ [q.id]: NaN })).toThrow("Ugyldig personlighetssvar");
+  });
+
+  it("kaster feil for desimaltall", () => {
+    const q = BIG_FIVE_QUESTIONS[0];
+    expect(() => scoreBigFive({ [q.id]: 3.5 })).toThrow("Ugyldig personlighetssvar");
+  });
+
+  it("aksepterer gyldige svar (1-5)", () => {
+    const q = BIG_FIVE_QUESTIONS[0];
+    expect(() => scoreBigFive({ [q.id]: 1 })).not.toThrow();
+    expect(() => scoreBigFive({ [q.id]: 3 })).not.toThrow();
+    expect(() => scoreBigFive({ [q.id]: 5 })).not.toThrow();
+  });
+
+  it("validerer scoreRiasec input", () => {
+    const q = RIASEC_QUESTIONS[0];
+    expect(() => scoreRiasec({ [q.id]: 0 })).toThrow("Ugyldig personlighetssvar");
+    expect(() => scoreRiasec({ [q.id]: 3 })).not.toThrow();
+  });
+
+  it("validerer scoreStrengths input", () => {
+    expect(() => scoreStrengths({ "s1": 6 })).toThrow("Ugyldig personlighetssvar");
+  });
+
+  it("aksepterer tomme svar (returnerer defaults)", () => {
+    expect(() => scoreBigFive({})).not.toThrow();
+    expect(() => scoreRiasec({})).not.toThrow();
+    expect(() => scoreStrengths({})).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // scoreRiasec
 // ---------------------------------------------------------------------------
 

@@ -192,6 +192,16 @@ export const StudieprogramSOSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
+// PersonalityAnswers — input-validering for scoring-funksjoner
+// ---------------------------------------------------------------------------
+
+/** Enkelt Likert-svar (heltall 1–5) */
+export const LikertAnswerSchema = z.number().int().min(1).max(5);
+
+/** Råsvar: spørsmålsId → Likert-verdi 1–5 */
+export const RawAnswersSchema = z.record(z.string(), LikertAnswerSchema);
+
+// ---------------------------------------------------------------------------
 // TestResult — users/{userId}/testResults/{resultId}
 // ---------------------------------------------------------------------------
 

@@ -7,6 +7,7 @@
  */
 
 import type { BigFiveScores, RiasecScores } from "@/types/domain";
+import { RawAnswersSchema } from "@/types/schemas";
 import {
   BIG_FIVE_QUESTIONS,
   RIASEC_QUESTIONS,
@@ -23,14 +24,23 @@ export type RawAnswers = Record<string, number>;
 // Interne hjelpere
 // ---------------------------------------------------------------------------
 
-function clampAnswer(value: number): number {
-  if (!Number.isFinite(value)) return 3; // NaN/Infinity → midtpunkt
-  return Math.max(1, Math.min(5, Math.round(value)));
+/**
+ * Valider råsvar med Zod. Kaster feil ved ugyldig input.
+ * Alle verdier må være heltall mellom 1 og 5.
+ */
+function validateAnswers(answers: RawAnswers): RawAnswers {
+  const result = RawAnswersSchema.safeParse(answers);
+  if (!result.success) {
+    const issues = result.error.issues
+      .map((i) => `${i.path.join(".")}: ${i.message}`)
+      .join("; ");
+    throw new Error(`Ugyldig personlighetssvar: ${issues}`);
+  }
+  return result.data;
 }
 
 function scoredValue(rawValue: number, reversed: boolean): number {
-  const clamped = clampAnswer(rawValue);
-  return reversed ? 6 - clamped : clamped;
+  return reversed ? 6 - rawValue : rawValue;
 }
 
 /**
@@ -46,6 +56,8 @@ function normalize(avg: number): number {
 // ---------------------------------------------------------------------------
 
 export function scoreBigFive(answers: RawAnswers): BigFiveScores {
+  const validated = Object.keys(answers).length > 0 ? validateAnswers(answers) : answers;
+
   const dimensions: BigFiveDimension[] = [
     "openness",
     "conscientiousness",
@@ -59,8 +71,8 @@ export function scoreBigFive(answers: RawAnswers): BigFiveScores {
   for (const dim of dimensions) {
     const qs = BIG_FIVE_QUESTIONS.filter((q) => q.dimension === dim);
     const scored = qs
-      .filter((q) => answers[q.id] !== undefined)
-      .map((q) => scoredValue(answers[q.id], q.reversed));
+      .filter((q) => validated[q.id] !== undefined)
+      .map((q) => scoredValue(validated[q.id], q.reversed));
 
     if (scored.length === 0) {
       result[dim] = 50; // default midt på
@@ -78,6 +90,8 @@ export function scoreBigFive(answers: RawAnswers): BigFiveScores {
 // ---------------------------------------------------------------------------
 
 export function scoreRiasec(answers: RawAnswers): RiasecScores {
+  const validated = Object.keys(answers).length > 0 ? validateAnswers(answers) : answers;
+
   const dimensions: RiasecDimension[] = [
     "realistic",
     "investigative",
@@ -92,8 +106,8 @@ export function scoreRiasec(answers: RawAnswers): RiasecScores {
   for (const dim of dimensions) {
     const qs = RIASEC_QUESTIONS.filter((q) => q.dimension === dim);
     const scored = qs
-      .filter((q) => answers[q.id] !== undefined)
-      .map((q) => scoredValue(answers[q.id], q.reversed));
+      .filter((q) => validated[q.id] !== undefined)
+      .map((q) => scoredValue(validated[q.id], q.reversed));
 
     if (scored.length === 0) {
       result[dim] = 50;
@@ -113,6 +127,8 @@ export function scoreRiasec(answers: RawAnswers): RiasecScores {
 export type StrengthScores = Record<StrengthCategory, number>;
 
 export function scoreStrengths(answers: RawAnswers): StrengthScores {
+  const validated = Object.keys(answers).length > 0 ? validateAnswers(answers) : answers;
+
   const categories: StrengthCategory[] = [
     "kreativitet",
     "nysgjerrighet",
@@ -128,8 +144,8 @@ export function scoreStrengths(answers: RawAnswers): StrengthScores {
   for (const cat of categories) {
     const qs = STRENGTH_QUESTIONS.filter((q) => q.category === cat);
     const scored = qs
-      .filter((q) => answers[q.id] !== undefined)
-      .map((q) => scoredValue(answers[q.id], q.reversed));
+      .filter((q) => validated[q.id] !== undefined)
+      .map((q) => scoredValue(validated[q.id], q.reversed));
 
     if (scored.length === 0) {
       result[cat] = 50;
