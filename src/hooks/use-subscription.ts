@@ -11,6 +11,8 @@ export function useSubscription() {
   const { user } = useAuth();
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     if (!user?.uid) {
@@ -18,6 +20,8 @@ export function useSubscription() {
       setLoading(false);
       return;
     }
+
+    setError(null);
 
     const unsub = onSnapshot(
       doc(db, "subscriptions", user.uid),
@@ -39,14 +43,23 @@ export function useSubscription() {
         }
         setLoading(false);
       },
-      () => setLoading(false)
+      (err) => {
+        console.error("[useSubscription] Feil:", err);
+        setError("Kunne ikke laste abonnement.");
+        setLoading(false);
+      }
     );
 
     return unsub;
-  }, [user?.uid]);
+  }, [user?.uid, retryCount]);
 
   const isActive = subscription?.status === "active" || subscription?.status === "trialing";
   const isPastDue = subscription?.status === "past_due";
 
-  return { subscription, loading, isActive, isPastDue };
+  function retry() {
+    setLoading(true);
+    setRetryCount((c) => c + 1);
+  }
+
+  return { subscription, loading, error, isActive, isPastDue, retry };
 }

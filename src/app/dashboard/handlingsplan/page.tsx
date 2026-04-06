@@ -42,6 +42,8 @@ import {
   Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageSkeleton } from "@/components/page-skeleton";
+import { ErrorState } from "@/components/error-state";
 import type { UserProfile } from "@/types/domain";
 
 // ---------------------------------------------------------------------------
@@ -231,6 +233,7 @@ export default function HandlingsplanPage() {
   const { user } = useAuth();
   const [plan, setPlan] = useState<ActionPlan | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
@@ -245,13 +248,14 @@ export default function HandlingsplanPage() {
   useEffect(() => {
     if (!user) return;
     async function loadPlan() {
+      setLoadError(null);
       try {
         const snap = await getDoc(doc(db, "users", user!.uid, "actionPlan", "current"));
         if (snap.exists()) {
           setPlan(snap.data() as ActionPlan);
         }
       } catch {
-        // Ingen plan ennå
+        setLoadError("Kunne ikke laste handlingsplanen.");
       }
       setLoading(false);
     }
@@ -299,11 +303,11 @@ export default function HandlingsplanPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <PageSkeleton variant="list" cards={5} />;
+  }
+
+  if (loadError) {
+    return <ErrorState message={loadError} onRetry={() => window.location.reload()} />;
   }
 
   const completedCount = plan?.steps.filter((s) => s.completed).length ?? 0;

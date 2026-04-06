@@ -39,6 +39,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { PageSkeleton } from "@/components/page-skeleton";
 import {
   Send,
   Loader2,
@@ -238,11 +239,7 @@ export default function ChatPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <PageSkeleton variant="chat" cards={4} />;
   }
 
   if (!tenantId) {

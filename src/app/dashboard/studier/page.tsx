@@ -32,6 +32,8 @@ import {
   Circle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageSkeleton } from "@/components/page-skeleton";
+import { ErrorState } from "@/components/error-state";
 import { useStudiedata } from "@/hooks/use-studiedata";
 import { useOpptaksdata } from "@/hooks/use-opptaksdata";
 import { useGrades } from "@/hooks/use-grades";
@@ -129,6 +131,7 @@ export default function StudierPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [newCredits, setNewCredits] = useState("10");
   const [newGrade, setNewGrade] = useState<string>("–");
@@ -154,6 +157,7 @@ export default function StudierPage() {
       setLoadingCourses(false);
       initialLoad.current = false;
     }).catch(() => {
+      setLoadError("Kunne ikke laste emner.");
       setLoadingCourses(false);
       initialLoad.current = false;
     });
@@ -223,15 +227,11 @@ export default function StudierPage() {
   };
 
   if (loadingCourses) {
-    return (
-      <div className="space-y-4 max-w-3xl">
-        <div className="h-8 w-48 rounded-md bg-muted animate-pulse" />
-        <div className="h-4 w-80 rounded-md bg-muted animate-pulse" />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[0, 1, 2, 3].map((i) => <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />)}
-        </div>
-      </div>
-    );
+    return <PageSkeleton variant="grid" cards={4} />;
+  }
+
+  if (loadError) {
+    return <ErrorState message={loadError} onRetry={() => window.location.reload()} />;
   }
 
   return (

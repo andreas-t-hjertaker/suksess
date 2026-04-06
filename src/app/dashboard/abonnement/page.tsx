@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
+import { PageSkeleton } from "@/components/page-skeleton";
+import { ErrorState } from "@/components/error-state";
 import { useSubscription } from "@/hooks/use-subscription";
 import { fetchApi } from "@/lib/api-client";
 import { showToast } from "@/lib/toast";
@@ -31,7 +33,7 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function AbonnementPage() {
-  const { subscription, loading, isActive, isPastDue } = useSubscription();
+  const { subscription, loading, isActive, isPastDue, error, retry } = useSubscription();
   const [portalLoading, setPortalLoading] = useState(false);
 
   /** Åpne Stripe kundeportal */
@@ -55,11 +57,11 @@ export default function AbonnementPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Spinner className="h-8 w-8" />
-      </div>
-    );
+    return <PageSkeleton variant="list" cards={3} />;
+  }
+
+  if (error) {
+    return <ErrorState message="Kunne ikke laste abonnement." onRetry={retry} />;
   }
 
   return (

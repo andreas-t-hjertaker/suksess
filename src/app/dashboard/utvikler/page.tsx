@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { PageSkeleton } from "@/components/page-skeleton";
 import {
   Table,
   TableHeader,
@@ -180,9 +181,7 @@ export default function UtviklerPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex justify-center py-8">
-              <Spinner />
-            </div>
+            <PageSkeleton variant="list" cards={2} title={false} />
           ) : keys.length === 0 ? (
             <p className="py-8 text-center text-muted-foreground">
               Ingen API-nøkler ennå. Opprett en for å komme i gang.

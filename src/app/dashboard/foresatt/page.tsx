@@ -42,6 +42,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { showToast } from "@/lib/toast";
+import { PageSkeleton } from "@/components/page-skeleton";
+import { ErrorState } from "@/components/error-state";
 import {
   Users,
   Shield,
@@ -87,6 +89,7 @@ type LinkedStudent = {
 export default function ParentPortalPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [linkedStudents, setLinkedStudents] = useState<LinkedStudent[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [insight, setInsight] = useState<StudentInsight | null>(null);
@@ -108,6 +111,7 @@ export default function ParentPortalPage() {
 
   async function loadLinkedStudents() {
     setLoading(true);
+    setLoadError(null);
     try {
       const linksSnap = await getDocs(
         query(
@@ -140,6 +144,7 @@ export default function ParentPortalPage() {
       }
     } catch (err) {
       console.error("[ParentPortal]", err);
+      setLoadError("Kunne ikke laste koblede elever.");
     } finally {
       setLoading(false);
     }
@@ -326,11 +331,11 @@ export default function ParentPortalPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex min-h-[300px] items-center justify-center" role="status" aria-label="Laster foresatt-portal">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <PageSkeleton variant="grid" cards={3} />;
+  }
+
+  if (loadError) {
+    return <ErrorState message={loadError} onRetry={loadLinkedStudents} />;
   }
 
   const student = linkedStudents.find((s) => s.uid === selectedStudent);

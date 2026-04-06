@@ -17,7 +17,8 @@ import { db } from "@/lib/firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PageSkeleton } from "@/components/page-skeleton";
+import { ErrorState } from "@/components/error-state";
 import {
   Card,
   CardContent,
@@ -100,11 +101,13 @@ export default function DokumenterPage() {
   const { user } = useAuth();
   const [rows, setRows] = useState<TestResultRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   async function fetchTestResults() {
     if (!user) return;
     setLoading(true);
+    setLoadError(null);
     try {
       const q = query(
         collection(db, "users", user.uid, "testResults"),
@@ -126,6 +129,8 @@ export default function DokumenterPage() {
         return acc;
       }, []);
       setRows(validated);
+    } catch {
+      setLoadError("Kunne ikke laste testresultater.");
     } finally {
       setLoading(false);
     }
@@ -180,19 +185,9 @@ export default function DokumenterPage() {
 
       {/* Innhold */}
       {loading ? (
-        <div className="space-y-3">
-          {[...Array(3)].map((_, i) => (
-            <Card key={i}>
-              <CardContent className="flex items-center gap-4 py-4">
-                <Skeleton className="h-10 w-10 rounded-full" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-48" />
-                  <Skeleton className="h-3 w-32" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <PageSkeleton variant="list" cards={3} title={false} />
+      ) : loadError ? (
+        <ErrorState message={loadError} onRetry={fetchTestResults} />
       ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed p-12 text-center">
           <Inbox className="h-10 w-10 mx-auto mb-3 text-muted-foreground opacity-40" />
