@@ -4,7 +4,7 @@ import type { DocumentReference } from "firebase-admin/firestore";
 import * as crypto from "crypto";
 import Stripe from "stripe";
 import { z } from "zod";
-import { success, fail, withAuth, withAdmin, withValidation, rateLimit, validateCsrf, withTenantAdmin, type RouteContext } from "./middleware";
+import { success, fail, withAuth, withAdmin, withValidation, rateLimit, validateCsrf, withTenantAdmin, withRateLimit, type RouteContext } from "./middleware";
 import { sendEmail } from "./email";
 import { processStripeInvoiceForEhf, getEhfStatus, retryEhfDelivery } from "./ehf";
 
@@ -259,8 +259,17 @@ const handleWebhook = async ({ req, res }: RouteContext) => {
           try {
             const ehfResult = await processStripeInvoiceForEhf(
               {
-                ...invoice,
+                id: invoice.id,
+                number: invoice.number,
+                created: invoice.created,
+                due_date: invoice.due_date,
+                amount_due: invoice.amount_due,
+                tax: (invoice.total_taxes ?? []).reduce((sum, t) => sum + (t.amount ?? 0), 0),
+                customer: invoice.customer as string,
                 metadata: { ...invoice.metadata, ...custMeta },
+                lines: invoice.lines,
+                period_start: invoice.period_start,
+                period_end: invoice.period_end,
               },
               { invoices: getStripe().invoices }
             );
@@ -406,7 +415,7 @@ const createB2BSubscription = withAdmin(async ({ req, res }) => {
   success(res, {
     subscriptionId: subscription.id,
     status: subscription.status,
-    currentPeriodEnd: subscription.current_period_end,
+    currentPeriodEnd: subscription.items.data[0]?.current_period_end ?? null,
   }, 201);
 });
 
@@ -438,7 +447,7 @@ const getB2BInvoices = withAdmin(async ({ req, res }) => {
     status: inv.status || "draft",
     amountDue: inv.amount_due / 100,
     amountPaid: inv.amount_paid / 100,
-    tax: (inv.tax || 0) / 100,
+    tax: ((inv.total_taxes ?? []).reduce((sum, t) => sum + (t.amount ?? 0), 0)) / 100,
     currency: "NOK",
     dueDate: inv.due_date ? new Date(inv.due_date * 1000).toISOString() : null,
     invoiceNumber: inv.number || inv.id,
