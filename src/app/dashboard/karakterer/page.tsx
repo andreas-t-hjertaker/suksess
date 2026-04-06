@@ -1,19 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
 import { useGrades } from "@/hooks/use-grades";
-import { useXp } from "@/hooks/use-xp";
-import {
-  calculateGradePoints,
-  calculateDualSystemPoints,
-  getAdmissionSystem,
-  simulateGradeChange,
-  STUDY_PROGRAMS,
-  type StudyProgramEntry,
-  type AdmissionSystem,
-} from "@/lib/grades/calculator";
+import { useGradeForm } from "@/hooks/use-grade-form";
+import { useGradeSimulator } from "@/hooks/use-grade-simulator";
+import { useStudySearch } from "@/hooks/use-study-search";
+import { useAdmissionSystem } from "@/hooks/use-admission-system";
 import { Button } from "@/components/ui/button";
-import { showToast } from "@/lib/toast";
 import { Input } from "@/components/ui/input";
 import {
   Card,
@@ -32,13 +24,14 @@ import {
   Calculator,
   Search,
   Wand2,
-  AlertTriangle,
-  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { ErrorState } from "@/components/error-state";
-import type { Grade } from "@/types/domain";
+import { PointCard } from "@/components/point-card";
+import { Delta } from "@/components/delta";
+import { StudyGroup } from "@/components/study-group";
+import { ProgramfagRisiko } from "@/components/programfag-risiko";
 
 // ---------------------------------------------------------------------------
 // Termin-valg
@@ -57,95 +50,41 @@ const YEARS = Array.from({ length: 4 }, (_, i) => CURRENT_YEAR - i);
 
 export default function KaraktererPage() {
   const { grades, loading, error: gradesError, addGrade, removeGrade } = useGrades();
-  const { earnXp } = useXp();
 
-  // Legg til ny karakter
-  const [newSubject, setNewSubject] = useState("");
-  const [newFagkode, setNewFagkode] = useState("");
-  const [newGrade, setNewGrade] = useState<number>(4);
-  const [newTerm, setNewTerm] = useState<"vt" | "ht">("ht");
-  const [newYear, setNewYear] = useState(CURRENT_YEAR);
-  const [adding, setAdding] = useState(false);
+  // Karakterskjema
+  const {
+    newSubject,
+    setNewSubject,
+    newFagkode,
+    setNewFagkode,
+    newGrade,
+    setNewGrade,
+    newTerm,
+    setNewTerm,
+    newYear,
+    setNewYear,
+    adding,
+    handleAddGrade,
+  } = useGradeForm(addGrade);
 
   // Simulator
-  const [simSubject, setSimSubject] = useState("");
-  const [simGrade, setSimGrade] = useState<number>(6);
+  const { simSubject, setSimSubject, simGrade, setSimGrade, simPoints } =
+    useGradeSimulator(grades);
+
+  // SO-reform og poengberegning
+  const {
+    graduationYear,
+    setGraduationYear,
+    activeSystem,
+    showBothSystems,
+    setShowBothSystems,
+    points,
+    dualPoints,
+  } = useAdmissionSystem(grades);
 
   // Studiesøk
-  const [search, setSearch] = useState("");
-
-  // SO-reform: avgangskull og aktivt system (Issue #114)
-  const [graduationYear, setGraduationYear] = useState<number>(CURRENT_YEAR + 1);
-  const activeSystem: AdmissionSystem = getAdmissionSystem(graduationYear);
-  const [showBothSystems, setShowBothSystems] = useState(false);
-
-  // ---------------------------------------------------------------------------
-  // Beregnede verdier
-  // ---------------------------------------------------------------------------
-  const points = useMemo(() => calculateGradePoints(grades), [grades]);
-  const dualPoints = useMemo(
-    () => calculateDualSystemPoints(grades, activeSystem),
-    [grades, activeSystem]
-  );
-
-  const simPoints = useMemo(() => {
-    if (!simSubject) return null;
-    const current = grades.find((g) => g.subject === simSubject);
-    if (!current) return null;
-    return simulateGradeChange(grades, {
-      subject: simSubject,
-      currentGrade: current.grade,
-      simulatedGrade: simGrade,
-    });
-  }, [grades, simSubject, simGrade]);
-
-  const filteredPrograms = useMemo<StudyProgramEntry[]>(() => {
-    const q = search.toLowerCase();
-    return STUDY_PROGRAMS.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.institution.toLowerCase().includes(q)
-    );
-  }, [search]);
-
-  // Kategoriser studier
-  const { reachable, almostReachable, outOfReach } = useMemo(() => {
-    const tp = dualPoints.activeTotal;
-    return {
-      reachable: filteredPrograms.filter((p) => tp >= p.requiredPoints),
-      almostReachable: filteredPrograms.filter(
-        (p) => tp < p.requiredPoints && tp >= p.requiredPoints - 5
-      ),
-      outOfReach: filteredPrograms.filter((p) => tp < p.requiredPoints - 5),
-    };
-  }, [filteredPrograms, dualPoints.activeTotal]);
-
-  // ---------------------------------------------------------------------------
-  // Handlinger
-  // ---------------------------------------------------------------------------
-
-  async function handleAddGrade() {
-    if (!newSubject.trim()) return;
-    setAdding(true);
-    try {
-      await addGrade({
-        subject: newSubject.trim(),
-        fagkode: newFagkode.trim() || null,
-        grade: newGrade as Grade["grade"],
-        term: newTerm,
-        year: newYear,
-        programSubjectId: null,
-      });
-      earnXp("grades_added");
-      setNewSubject("");
-      setNewFagkode("");
-      setNewGrade(4);
-    } catch {
-      showToast.error("Kunne ikke lagre karakter. Prøv igjen.");
-    } finally {
-      setAdding(false);
-    }
-  }
+  const { search, setSearch, reachable, almostReachable, outOfReach } =
+    useStudySearch(dualPoints.activeTotal);
 
   // ---------------------------------------------------------------------------
   // UI
@@ -550,203 +489,6 @@ export default function KaraktererPage() {
           )}
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Programfag-risikoanalyse (issue #10)
-// ---------------------------------------------------------------------------
-
-const KEY_SUBJECTS: { name: string; fagkode: string; required: string[] }[] = [
-  {
-    name: "Matematikk R2 (for tekniske studier)",
-    fagkode: "MAT3206",
-    required: ["Sivilingeniør, datateknikk", "Sivilingeniør, elektronikk", "Informatikk (bachelor)", "Fysikk (bachelor)", "Matematikk (bachelor)"],
-  },
-  {
-    name: "Matematikk R1 (for mange studier)",
-    fagkode: "MAT3205",
-    required: ["Sivilingeniør, bygg- og miljøteknikk", "Farmasi (master)", "Informatikk (bachelor)"],
-  },
-  {
-    name: "Fysikk (for ingeniørstudier)",
-    fagkode: "FYS3101",
-    required: ["Sivilingeniør, datateknikk", "Sivilingeniør, elektronikk"],
-  },
-  {
-    name: "Kjemi (for medisin/farmasi)",
-    fagkode: "KJE3101",
-    required: ["Medisin", "Farmasi (master)", "Odontologi"],
-  },
-  {
-    name: "Biologi (for helsefag)",
-    fagkode: "BIO3101",
-    required: ["Medisin", "Veterinærmedisin", "Ernæring (bachelor)"],
-  },
-];
-
-function ProgramfagRisiko({ grades }: { grades: { fagkode: string | null; subject: string }[] }) {
-  const fagkoder = new Set(grades.map((g) => g.fagkode).filter(Boolean));
-
-  const missing = KEY_SUBJECTS.filter((s) => !fagkoder.has(s.fagkode));
-  const present = KEY_SUBJECTS.filter((s) => fagkoder.has(s.fagkode));
-
-  if (missing.length === 0) return null;
-
-  return (
-    <Card className="border-orange-500/30">
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-orange-500" aria-hidden="true" />
-          <CardTitle className="text-base">Programfag-risikoanalyse</CardTitle>
-        </div>
-        <CardDescription>
-          Basert på fagkodene dine mangler du nøkkelfag for visse studier.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {present.length > 0 && (
-          <div className="space-y-1">
-            <p className="text-xs font-semibold text-green-600 uppercase tracking-wide">Du har:</p>
-            {present.map((s) => (
-              <div key={s.fagkode} className="flex items-start gap-2 text-sm">
-                <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" aria-hidden="true" />
-                <span>{s.name}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="space-y-1">
-          <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide">Du mangler (uten fagkode):</p>
-          {missing.map((s) => (
-            <div key={s.fagkode} className="space-y-0.5">
-              <div className="flex items-start gap-2 text-sm">
-                <AlertTriangle className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" aria-hidden="true" />
-                <div>
-                  <span className="font-medium">{s.name}</span>
-                  <p className="text-xs text-muted-foreground">
-                    Kreves for: {s.required.slice(0, 2).join(", ")}
-                    {s.required.length > 2 ? ` og ${s.required.length - 2} til` : ""}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <p className="text-xs text-muted-foreground border-t pt-2">
-          Tips: Legg til fagkode (f.eks. MAT3206) når du registrerer karakterer for å aktivere denne analysen fullt ut.
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Hjelpkomponenter
-// ---------------------------------------------------------------------------
-
-function PointCard({
-  icon: Icon,
-  label,
-  value,
-  sub,
-  highlight,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  sub: string;
-  highlight?: boolean;
-}) {
-  return (
-    <Card className={highlight ? "border-primary/40 bg-primary/5" : undefined}>
-      <CardContent className="p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Icon className={cn("h-4 w-4", highlight ? "text-primary" : "text-muted-foreground")} />
-          <span className="text-xs font-medium text-muted-foreground">{label}</span>
-        </div>
-        <p className={cn("text-2xl font-bold", highlight && "text-primary")}>{value}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function Delta({
-  current,
-  simulated,
-  decimals = 1,
-}: {
-  current: number;
-  simulated: number;
-  decimals?: number;
-}) {
-  const diff = simulated - current;
-  if (Math.abs(diff) < 0.01) return null;
-  const positive = diff > 0;
-  return (
-    <p className={cn("text-xs font-semibold", positive ? "text-green-600" : "text-red-500")}>
-      {positive ? "+" : ""}{diff.toFixed(decimals)}
-    </p>
-  );
-}
-
-function StudyGroup({
-  title,
-  variant,
-  programs,
-  userPoints,
-}: {
-  title: string;
-  variant: "success" | "warning" | "neutral";
-  programs: StudyProgramEntry[];
-  userPoints: number;
-}) {
-  const [expanded, setExpanded] = useState(variant !== "neutral");
-
-  const colorMap = {
-    success: "text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-950/30 dark:border-green-800",
-    warning: "text-yellow-700 bg-yellow-50 border-yellow-200 dark:text-yellow-400 dark:bg-yellow-950/30 dark:border-yellow-800",
-    neutral: "text-muted-foreground bg-muted border-border",
-  };
-
-  return (
-    <div>
-      <button
-        className="flex w-full items-center justify-between py-2"
-        onClick={() => setExpanded((v) => !v)}
-      >
-        <span className="text-sm font-semibold">{title}</span>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="text-xs">{programs.length}</Badge>
-          <span className="text-xs text-muted-foreground">{expanded ? "▲" : "▼"}</span>
-        </div>
-      </button>
-      {expanded && (
-        <div className="grid gap-2 sm:grid-cols-2">
-          {programs.map((p, i) => {
-            const missing = p.requiredPoints - userPoints;
-            return (
-              <div
-                key={i}
-                className={cn("rounded-lg border p-3 text-sm", colorMap[variant])}
-              >
-                <p className="font-semibold">{p.name}</p>
-                <p className="text-xs opacity-75">{p.institution}</p>
-                <div className="mt-1.5 flex items-center justify-between">
-                  <span className="text-xs">Grense: {p.requiredPoints.toFixed(1)}p</span>
-                  {variant === "warning" && (
-                    <span className="text-xs font-medium">
-                      Mangler {missing.toFixed(1)}p
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
