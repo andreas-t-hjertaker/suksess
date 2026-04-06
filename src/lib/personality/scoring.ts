@@ -7,6 +7,7 @@
  */
 
 import type { BigFiveScores, RiasecScores } from "@/types/domain";
+import { RawAnswersSchema } from "@/types/schemas";
 import {
   BIG_FIVE_QUESTIONS,
   RIASEC_QUESTIONS,
@@ -18,6 +19,21 @@ import {
 
 /** Råsvar: spørsmålsId → verdi 1–5 */
 export type RawAnswers = Record<string, number>;
+
+/**
+ * Validerer råsvar mot Likert-skala (heltall 1–5).
+ * Kaster feil med beskrivende melding ved ugyldig input.
+ */
+export function validateAnswers(answers: RawAnswers): RawAnswers {
+  const result = RawAnswersSchema.safeParse(answers);
+  if (!result.success) {
+    const issues = result.error.issues
+      .map((i) => `${i.path.join(".")}: ${i.message}`)
+      .join("; ");
+    throw new Error(`Ugyldig personlighetssvar: ${issues}`);
+  }
+  return result.data;
+}
 
 // ---------------------------------------------------------------------------
 // Interne hjelpere
@@ -46,6 +62,8 @@ function normalize(avg: number): number {
 // ---------------------------------------------------------------------------
 
 export function scoreBigFive(answers: RawAnswers): BigFiveScores {
+  validateAnswers(answers);
+
   const dimensions: BigFiveDimension[] = [
     "openness",
     "conscientiousness",
@@ -78,6 +96,8 @@ export function scoreBigFive(answers: RawAnswers): BigFiveScores {
 // ---------------------------------------------------------------------------
 
 export function scoreRiasec(answers: RawAnswers): RiasecScores {
+  validateAnswers(answers);
+
   const dimensions: RiasecDimension[] = [
     "realistic",
     "investigative",
@@ -113,6 +133,8 @@ export function scoreRiasec(answers: RawAnswers): RiasecScores {
 export type StrengthScores = Record<StrengthCategory, number>;
 
 export function scoreStrengths(answers: RawAnswers): StrengthScores {
+  validateAnswers(answers);
+
   const categories: StrengthCategory[] = [
     "kreativitet",
     "nysgjerrighet",

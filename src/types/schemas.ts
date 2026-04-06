@@ -192,6 +192,16 @@ export const StudieprogramSOSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
+// Personality answer validation — Likert 1–5
+// ---------------------------------------------------------------------------
+
+/** Zod-skjema for et enkelt svar på Likert-skala (heltall 1–5) */
+export const LikertAnswerSchema = z.number().int().min(1).max(5);
+
+/** Zod-skjema for råsvar: spørsmålsId → verdi 1–5 */
+export const RawAnswersSchema = z.record(z.string(), LikertAnswerSchema);
+
+// ---------------------------------------------------------------------------
 // TestResult — users/{userId}/testResults/{resultId}
 // ---------------------------------------------------------------------------
 
@@ -199,7 +209,7 @@ export const TestResultSchema = z.object({
   ...withFirestoreTimestamps,
   userId: z.string(),
   testType: TestTypeSchema,
-  rawAnswers: z.record(z.string(), z.number()),
+  rawAnswers: RawAnswersSchema,
   scores: z.record(z.string(), z.number()),
   completedAt: firestoreTimestamp,
 });
