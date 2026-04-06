@@ -20,6 +20,9 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import type { RiasecScores } from "@/types/domain";
+import { styrkToRiasec } from "@/lib/mappings/styrk-riasec";
+
+export { styrkToRiasec };
 
 // ---------------------------------------------------------------------------
 // Typer
@@ -57,67 +60,6 @@ export type JobSearchResult = {
   hasMore: boolean;
   cursor: QueryDocumentSnapshot | null;
 };
-
-// ---------------------------------------------------------------------------
-// STYRK-08 → RIASEC mapping
-// ---------------------------------------------------------------------------
-
-/**
- * Mapper STYRK-08 hovedgrupper (1. siffer) til primære RIASEC-koder.
- * Basert på Holland-kode forskning og norsk yrkesklassifisering.
- */
-const STYRK_RIASEC_MAP: Record<string, (keyof RiasecScores)[]> = {
-  "0": ["enterprising", "conventional"],       // Militære yrker
-  "1": ["enterprising", "conventional", "social"], // Ledere
-  "2": ["investigative", "social"],              // Akademiske yrker
-  "3": ["conventional", "social", "realistic"],  // Teknikere
-  "4": ["conventional", "enterprising"],         // Kontor og kundeservice
-  "5": ["social", "enterprising"],               // Salg, service, omsorg
-  "6": ["realistic", "conventional"],            // Bønder, fiskere
-  "7": ["realistic", "investigative"],           // Håndverkere
-  "8": ["realistic", "conventional"],            // Operatører, sjåfører
-  "9": ["realistic", "conventional"],            // Renholdere, hjelpearbeidere
-};
-
-/**
- * Mer spesifikk mapping for 2-sifrede STYRK-koder.
- */
-const STYRK_2_RIASEC_MAP: Record<string, (keyof RiasecScores)[]> = {
-  "21": ["investigative", "realistic"],           // Realfag og ingeniører
-  "22": ["investigative", "social"],              // Helseyrker
-  "23": ["social", "artistic"],                   // Undervisning
-  "24": ["conventional", "enterprising"],         // Økonomi, HR, juss
-  "25": ["investigative", "realistic", "conventional"], // IT
-  "26": ["social", "artistic", "investigative"],  // Kultur og samfunn
-  "31": ["realistic", "investigative"],           // Tekniske yrker
-  "32": ["social", "realistic"],                  // Helseteknikere
-  "33": ["conventional", "enterprising"],         // Forretning, finans
-  "34": ["social", "artistic"],                   // Juss, sosial, kultur
-  "35": ["realistic", "investigative"],           // IKT-teknikere
-  "51": ["social", "enterprising"],               // Personlig tjenesteyting
-  "52": ["enterprising", "social"],               // Selgere
-  "53": ["social", "realistic"],                  // Omsorg
-  "71": ["realistic", "artistic"],                // Bygg og anlegg
-  "72": ["realistic", "investigative"],           // Metall og maskin
-  "75": ["realistic", "artistic"],                // Mat og trearbeid
-};
-
-/**
- * Hent RIASEC-koder for en STYRK-08 kode.
- */
-export function styrkToRiasec(styrkCode: string | null): (keyof RiasecScores)[] {
-  if (!styrkCode) return [];
-
-  // Prøv 2-sifret kode først (mer spesifikk)
-  const twoDigit = styrkCode.substring(0, 2);
-  if (STYRK_2_RIASEC_MAP[twoDigit]) return STYRK_2_RIASEC_MAP[twoDigit];
-
-  // Fallback til 1-sifret kode
-  const oneDigit = styrkCode.substring(0, 1);
-  if (STYRK_RIASEC_MAP[oneDigit]) return STYRK_RIASEC_MAP[oneDigit];
-
-  return [];
-}
 
 /**
  * Beregn matchscore mellom en stilling og brukerens RIASEC-profil.

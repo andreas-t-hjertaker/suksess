@@ -22,6 +22,7 @@ import { db } from "@/lib/firebase/firestore";
 import { CAREER_NODES, type CareerNode } from "./data";
 import type { RiasecScores } from "@/types/domain";
 import { logger } from "@/lib/observability/logger";
+import { CAREER_STYRK_MAP } from "@/lib/mappings/styrk-riasec";
 
 // ---------------------------------------------------------------------------
 // Typer
@@ -96,20 +97,7 @@ const SSB_SALARY_DATA: Record<string, { median: number; p25: number; p75: number
   "3411": { median: 620000, p25: 520000, p75: 740000, year: 2025 }, // Politibetjent
 };
 
-// STYRK-08 → karriere-ID mapping (for SSB-kobling)
-const CAREER_STYRK_MAP: Record<string, string> = {
-  "software-engineer": "2511",
-  "data-scientist": "2512",
-  "sykepleier": "2221",
-  "lege": "2211",
-  "lektor": "2320",
-  "advokat": "2611",
-  "elektriker": "7411",
-  "mekaniker": "7231",
-  "grafisk-designer": "2166",
-  "sivilingenior": "2142",
-  "finansanalytiker": "2413",
-};
+// CAREER_STYRK_MAP importert fra @/lib/mappings/styrk-riasec
 
 // ---------------------------------------------------------------------------
 // Hent-funksjoner
