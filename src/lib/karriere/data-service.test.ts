@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { CAREER_NODES } from "./data";
+import { CAREER_STYRK_MAP } from "@/lib/mappings/styrk-riasec";
 
 /**
  * SSB lønnsdata-mapping (speilet fra data-service.ts).
@@ -9,13 +10,6 @@ const SSB_SALARY_DATA: Record<string, { median: number; p25: number; p75: number
   "2512": { median: 780000, p25: 650000, p75: 920000, year: 2025 },
   "2221": { median: 590000, p25: 530000, p75: 660000, year: 2025 },
   "2211": { median: 680000, p25: 580000, p75: 790000, year: 2025 },
-};
-
-const CAREER_STYRK_MAP: Record<string, string> = {
-  "software-engineer": "2511",
-  "data-scientist": "2512",
-  "sykepleier": "2221",
-  "lege": "2211",
 };
 
 describe("Karrieredata-tjeneste (#128)", () => {
