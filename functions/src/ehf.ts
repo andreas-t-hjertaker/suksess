@@ -7,7 +7,9 @@
 
 import * as admin from "firebase-admin";
 
-const db = admin.firestore();
+function getDb() {
+  return admin.firestore();
+}
 
 // ---------------------------------------------------------------------------
 // XML-generering (UBL 2.1 / Peppol BIS Billing 3.0)
@@ -284,7 +286,7 @@ export async function processStripeInvoiceForEhf(
   }
 
   // Hent tenant-data for adresse
-  const tenantDoc = await db.collection("tenants").doc(tenantId).get();
+  const tenantDoc = await getDb().collection("tenants").doc(tenantId).get();
   const tenantData = tenantDoc.data() || {};
 
   const invoiceNumber = stripeInvoice.number || `INV-${stripeInvoice.id.slice(-8)}`;
@@ -332,7 +334,7 @@ export async function processStripeInvoiceForEhf(
 
   // Lagre EHF XML i Firestore
   const buyerEndpoint = meta.glnNumber || meta.organizationNumber;
-  await db.collection("ehfInvoices").doc(stripeInvoice.id).set({
+  await getDb().collection("ehfInvoices").doc(stripeInvoice.id).set({
     stripeInvoiceId: stripeInvoice.id,
     invoiceNumber,
     tenantId,
@@ -349,7 +351,7 @@ export async function processStripeInvoiceForEhf(
   const ehfStatus = result.success ? "sent" : "failed";
 
   // Oppdater Firestore
-  await db.collection("ehfInvoices").doc(stripeInvoice.id).update({
+  await getDb().collection("ehfInvoices").doc(stripeInvoice.id).update({
     ehfStatus,
     deliveryMethod: result.method,
     deliveryMessageId: result.messageId || null,
@@ -367,7 +369,7 @@ export async function processStripeInvoiceForEhf(
   }
 
   // Logg til audit
-  await db.collection("consentAudit").add({
+  await getDb().collection("consentAudit").add({
     type: "ehf_invoice_sent",
     tenantId,
     invoiceId: stripeInvoice.id,
@@ -391,7 +393,7 @@ export async function getEhfStatus(stripeInvoiceId: string): Promise<{
   sentAt?: string;
   error?: string;
 } | null> {
-  const doc = await db.collection("ehfInvoices").doc(stripeInvoiceId).get();
+  const doc = await getDb().collection("ehfInvoices").doc(stripeInvoiceId).get();
   if (!doc.exists) return null;
 
   const data = doc.data()!;
@@ -408,7 +410,7 @@ export async function getEhfStatus(stripeInvoiceId: string): Promise<{
  * Prøv å sende en feilet EHF-faktura på nytt.
  */
 export async function retryEhfDelivery(stripeInvoiceId: string): Promise<PeppolResult> {
-  const doc = await db.collection("ehfInvoices").doc(stripeInvoiceId).get();
+  const doc = await getDb().collection("ehfInvoices").doc(stripeInvoiceId).get();
   if (!doc.exists) {
     return { success: false, method: "stored", error: "EHF-faktura ikke funnet" };
   }

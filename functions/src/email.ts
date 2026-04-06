@@ -9,7 +9,9 @@
 
 import * as admin from "firebase-admin";
 
-const db = admin.firestore();
+function getDb() {
+  return admin.firestore();
+}
 
 // ---------------------------------------------------------------------------
 // Typer
@@ -126,7 +128,7 @@ export async function sendEmail(payload: SendEmailPayload): Promise<EmailResult>
   }
 
   // Logg e-post i Firestore
-  await db.collection("emailLogs").add({
+  await getDb().collection("emailLogs").add({
     to: payload.to.map((r) => r.email),
     subject: payload.subject,
     provider: result.provider,
