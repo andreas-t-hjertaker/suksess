@@ -280,9 +280,8 @@ export default function KaraktererPage() {
               <div className="flex gap-2">
                 {/* Karakter 1–6 */}
                 <div className="space-y-1">
-                  {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
-                  <label className="text-xs text-muted-foreground">Karakter</label>
-                  <div className="flex gap-1" role="group" aria-label="Karakter">
+                  <span id="grade-label" className="text-xs text-muted-foreground">Karakter</span>
+                  <div className="flex gap-1" role="group" aria-labelledby="grade-label">
                     {([1, 2, 3, 4, 5, 6] as const).map((g) => (
                       <button
                         key={g}
@@ -301,9 +300,8 @@ export default function KaraktererPage() {
                 </div>
                 {/* Termin */}
                 <div className="space-y-1">
-                  {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
-                  <label className="text-xs text-muted-foreground">Termin</label>
-                  <div className="flex gap-1" role="group" aria-label="Termin">
+                  <span id="term-label" className="text-xs text-muted-foreground">Termin</span>
+                  <div className="flex gap-1" role="group" aria-labelledby="term-label">
                     {TERMS.map((t) => (
                       <button
                         key={t.value}
@@ -425,9 +423,8 @@ export default function KaraktererPage() {
 
                 {simSubject && (
                   <div className="space-y-2">
-                    {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
-                    <label className="text-sm font-medium">Ny karakter</label>
-                    <div className="flex gap-1" role="group" aria-label="Ny karakter">
+                    <span id="sim-grade-label" className="text-sm font-medium">Ny karakter</span>
+                    <div className="flex gap-1" role="group" aria-labelledby="sim-grade-label">
                       {([1, 2, 3, 4, 5, 6] as const).map((g) => (
                         <button
                           key={g}

@@ -370,10 +370,10 @@ export default function InnstillingerPage() {
         <CardContent className="space-y-6">
           {hasPasswordProvider && (
             <div className="space-y-4">
-              <h3 className="flex items-center gap-2 text-sm font-medium">
+              <h2 className="flex items-center gap-2 text-sm font-medium">
                 <Lock className="h-4 w-4" />
                 Endre passord
-              </h3>
+              </h2>
               <Form {...passwordForm}>
                 <form
                   onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}
@@ -433,7 +433,7 @@ export default function InnstillingerPage() {
           )}
 
           <div className="space-y-4">
-            <h3 className="text-sm font-medium">Tilkoblede kontoer</h3>
+            <h2 className="text-sm font-medium">Tilkoblede kontoer</h2>
             <div className="space-y-2">
               {firebaseUser?.providerData.map((provider) => (
                 <div
@@ -574,7 +574,7 @@ export default function InnstillingerPage() {
         <CardContent className="space-y-6">
           {/* Generer koblingskode */}
           <div className="space-y-3">
-            <h3 className="text-sm font-medium">Generer koblingskode</h3>
+            <h2 className="text-sm font-medium">Generer koblingskode</h2>
             <p className="text-xs text-muted-foreground">
               Del koden med foresatte slik at de kan koble seg til kontoen din. Koden er gyldig i 30 minutter.
             </p>
@@ -609,7 +609,7 @@ export default function InnstillingerPage() {
           {/* Koblede foresatte */}
           {guardians.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-sm font-medium">Koblede foresatte</h3>
+              <h2 className="text-sm font-medium">Koblede foresatte</h2>
               <div className="space-y-2">
                 {guardians.map((g) => (
                   <div
