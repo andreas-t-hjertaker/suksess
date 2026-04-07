@@ -5,6 +5,7 @@ import {
   scoreStrengths,
   getTopStrengths,
   getRiasecCode,
+  validateAnswers,
 } from "./scoring";
 import { BIG_FIVE_QUESTIONS, RIASEC_QUESTIONS, STRENGTH_QUESTIONS } from "./questions";
 
@@ -35,6 +36,44 @@ function _allRiasecAnswers(value: number): Record<string, number> {
 function _allStrengthAnswers(value: number): Record<string, number> {
   return Object.fromEntries(STRENGTH_QUESTIONS.map((q) => [q.id, value]));
 }
+
+// ---------------------------------------------------------------------------
+// validateAnswers — grenseverdier (#176)
+// ---------------------------------------------------------------------------
+
+describe("validateAnswers", () => {
+  it("aksepterer gyldige verdier (1–5)", () => {
+    expect(() => validateAnswers({ q1: 1, q2: 3, q3: 5 })).not.toThrow();
+  });
+
+  it("aksepterer tomme svar", () => {
+    expect(() => validateAnswers({})).not.toThrow();
+  });
+
+  it("avviser verdi 0", () => {
+    expect(() => validateAnswers({ q1: 0 })).toThrow("Ugyldig personlighetssvar");
+  });
+
+  it("avviser verdi 6", () => {
+    expect(() => validateAnswers({ q1: 6 })).toThrow("Ugyldig personlighetssvar");
+  });
+
+  it("avviser negative verdier", () => {
+    expect(() => validateAnswers({ q1: -1 })).toThrow("Ugyldig personlighetssvar");
+  });
+
+  it("avviser desimaltall", () => {
+    expect(() => validateAnswers({ q1: 2.5 })).toThrow("Ugyldig personlighetssvar");
+  });
+
+  it("avviser NaN", () => {
+    expect(() => validateAnswers({ q1: NaN })).toThrow("Ugyldig personlighetssvar");
+  });
+
+  it("avviser Infinity", () => {
+    expect(() => validateAnswers({ q1: Infinity })).toThrow("Ugyldig personlighetssvar");
+  });
+});
 
 // ---------------------------------------------------------------------------
 // scoreBigFive
