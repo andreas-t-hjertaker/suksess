@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Code, Plus, Copy, Eye, EyeOff, AlertTriangle } from "lucide-react";
+import { Code, Plus, Copy, Eye, EyeOff, AlertTriangle, Database, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -25,11 +25,14 @@ import {
 } from "@/components/ui/table";
 import { useApiKeys } from "@/hooks/use-api-keys";
 import { ErrorState } from "@/components/error-state";
+import { useAuth } from "@/hooks/use-auth";
 import { showToast } from "@/lib/toast";
 import { formatDate } from "@/lib/utils";
+import { seedTestUser, TEST_USER_SUMMARY, type SeedResult } from "@/lib/firebase/seed-test-user";
 
 export default function UtviklerPage() {
   const { keys, loading, error: loadError, createKey, revokeKey } = useApiKeys();
+  const { user } = useAuth();
 
   // Skjema-tilstand
   const [showForm, setShowForm] = useState(false);
@@ -39,6 +42,27 @@ export default function UtviklerPage() {
   // Vis nyopprettet nøkkel
   const [newKey, setNewKey] = useState<string | null>(null);
   const [showKey, setShowKey] = useState(true);
+
+  // Seed-tilstand
+  const [seeding, setSeeding] = useState(false);
+  const [seedResult, setSeedResult] = useState<SeedResult | null>(null);
+
+  async function handleSeed() {
+    if (!user?.uid) {
+      showToast.error("Du må være innlogget for å seede testdata.");
+      return;
+    }
+    setSeeding(true);
+    setSeedResult(null);
+    const result = await seedTestUser(user.uid);
+    setSeedResult(result);
+    setSeeding(false);
+    if (result.success) {
+      showToast.success(result.message);
+    } else {
+      showToast.error(result.message);
+    }
+  }
 
   /** Opprett ny nøkkel */
   async function handleCreate(e: React.FormEvent) {
@@ -244,6 +268,58 @@ export default function UtviklerPage() {
             </Table>
           )}
         </CardContent>
+      </Card>
+
+      {/* Seed testbruker */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Seed testbruker
+          </CardTitle>
+          <CardDescription>
+            Fyll din bruker med komplett testdata for å se alle funksjoner i aksjon.
+            Overskriver eksisterende data.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-md bg-muted p-4 text-sm space-y-2">
+            <p className="font-medium">{TEST_USER_SUMMARY.name} — {TEST_USER_SUMMARY.school}</p>
+            <ul className="space-y-1 text-muted-foreground">
+              <li>Personlighet: {TEST_USER_SUMMARY.personality.riasec}</li>
+              <li>Big Five: {TEST_USER_SUMMARY.personality.bigFive}</li>
+              <li>Styrker: {TEST_USER_SUMMARY.personality.strengths}</li>
+              <li>Karakterer: {TEST_USER_SUMMARY.grades.count} fag, snitt {TEST_USER_SUMMARY.grades.average} ({TEST_USER_SUMMARY.grades.highlights})</li>
+              <li>Gamification: {TEST_USER_SUMMARY.gamification.xp} XP ({TEST_USER_SUMMARY.gamification.level}), {TEST_USER_SUMMARY.gamification.achievements} achievements, {TEST_USER_SUMMARY.gamification.streak}-dagers streak</li>
+              <li>AI-samtaler: {TEST_USER_SUMMARY.conversations} samtaler med historikk</li>
+              <li>Feature flags: Alle aktivert</li>
+            </ul>
+          </div>
+
+          {seedResult && (
+            <div className={`rounded-md p-4 text-sm ${seedResult.success ? "bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800" : "bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800"}`}>
+              <div className="flex items-center gap-2 font-medium mb-2">
+                {seedResult.success ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+                )}
+                {seedResult.message}
+              </div>
+              <ul className="space-y-0.5 text-muted-foreground">
+                {seedResult.details.map((d, i) => (
+                  <li key={i}>- {d}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </CardContent>
+        <CardFooter>
+          <Button onClick={handleSeed} disabled={seeding} variant="outline">
+            {seeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
+            {seeding ? "Seeder data..." : "Seed testdata for min bruker"}
+          </Button>
+        </CardFooter>
       </Card>
 
       {/* Brukseksempel */}
