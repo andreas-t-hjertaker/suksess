@@ -273,7 +273,11 @@ function AnalysePage() {
   }
 
   if (loadError) {
-    return <ErrorState message={loadError.message} onRetry={() => window.location.reload()} />;
+    return (
+      <main className="max-w-4xl mx-auto p-4 md:p-6">
+        <ErrorState message={loadError.message} onRetry={() => window.location.reload()} />
+      </main>
+    );
   }
 
   if (!profile?.bigFive || !profile?.riasec) {

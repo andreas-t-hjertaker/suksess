@@ -144,6 +144,7 @@ function CvPage() {
     name: user?.displayName ?? "",
     email: user?.email ?? "",
   });
+  const [profileError, setProfileError] = useState<string | null>(null);
   const [generatingSummary, setGeneratingSummary] = useState(false);
 
   // Last CV-utkast fra Firestore
@@ -185,7 +186,17 @@ function CvPage() {
 
   useEffect(() => {
     if (!user) return;
-    return subscribeToUserProfile(user.uid, setProfile);
+    return subscribeToUserProfile(
+      user.uid,
+      (p) => {
+        setProfile(p);
+        setProfileError(null);
+      },
+      (err) => {
+        console.error("Profil-lasting feilet:", err);
+        setProfileError("Kunne ikke laste profildata. CV-en kan mangle styrker og interesser.");
+      }
+    );
   }, [user]);
 
   const { grades } = useGrades();
@@ -275,6 +286,14 @@ function CvPage() {
           </Button>
         </div>
       </div>
+
+      {/* Profilfeil-varsel (ikke-blokkerende) */}
+      {profileError && (
+        <ErrorState
+          message={profileError}
+          onRetry={() => window.location.reload()}
+        />
+      )}
 
       {/* Tab switcher */}
       <div className="flex rounded-lg border bg-muted/30 p-1 w-fit gap-1">
