@@ -224,7 +224,7 @@ export const getSchoolStats = withTenant(async ({ tenantId, user, res }) => {
 
 export function registerAdminStatsRoutes(
   req: import("firebase-functions/v2/https").Request,
-  res: import("express").Response,
+  _res: import("express").Response,
   ctx: RouteContext
 ) {
   if (req.method === "GET" && req.path === "/admin/school-stats") {
