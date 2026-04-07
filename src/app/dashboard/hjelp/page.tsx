@@ -355,7 +355,7 @@ export default function HjelpPage() {
             />
           ) : sent ? (
             <div className="text-center py-4">
-              <p className="text-sm text-green-600 font-medium">
+              <p className="text-sm text-green-600 dark:text-green-400 font-medium">
                 Takk for meldingen! Vi svarer innen 1–2 virkedager.
               </p>
             </div>

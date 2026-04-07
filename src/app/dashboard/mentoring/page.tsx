@@ -106,7 +106,7 @@ export default function MentoringPage() {
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">RIASEC: {mentor.riasecCode}</Badge>
                   <div className="flex items-center gap-0.5" aria-label="Verifisert mentor">
-                    <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" aria-hidden="true" />
+                    <Star className="h-3.5 w-3.5 text-yellow-500 dark:text-yellow-400 fill-yellow-500 dark:fill-yellow-400" aria-hidden="true" />
                     <span className="text-xs text-muted-foreground">Verifisert</span>
                   </div>
                 </div>

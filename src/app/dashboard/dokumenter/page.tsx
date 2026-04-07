@@ -53,22 +53,22 @@ const TEST_META: Record<TestType, { label: string; icon: typeof Brain; color: st
   big_five: {
     label: "Big Five personlighetstest",
     icon: Brain,
-    color: "text-violet-500",
+    color: "text-violet-500 dark:text-violet-400",
   },
   riasec: {
     label: "RIASEC interessetest",
     icon: Compass,
-    color: "text-blue-500",
+    color: "text-blue-500 dark:text-blue-400",
   },
   strengths: {
     label: "Styrketest",
     icon: Star,
-    color: "text-amber-500",
+    color: "text-amber-500 dark:text-amber-400",
   },
   learning_style: {
     label: "Læringstiltest",
     icon: FileText,
-    color: "text-green-500",
+    color: "text-green-500 dark:text-green-400",
   },
 };
 

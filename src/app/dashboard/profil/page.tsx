@@ -137,7 +137,7 @@ export default function ProfilPage() {
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
             {copied ? (
-              <><Check className="h-4 w-4 text-green-500" />Kopiert!</>
+              <><Check className="h-4 w-4 text-green-500 dark:text-green-400" />Kopiert!</>
             ) : (
               <><Share2 className="h-4 w-4" />Del profil</>
             )}
