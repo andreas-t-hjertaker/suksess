@@ -8,6 +8,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
+import { todayISO } from "@/lib/utils/time";
 import { useAuth } from "@/hooks/use-auth";
 import { useRealtimeStudents } from "@/hooks/use-realtime-students";
 import { UserProfileSchema } from "@/types/schemas";
@@ -114,7 +115,7 @@ function exportToCsv(stats: AggregateStats, trafficCounts: Record<TrafficLight, 
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `radgiver-rapport-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `radgiver-rapport-${todayISO()}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { doc, setDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
+import { nowISO } from "@/lib/utils/time";
 import { logger } from "@/lib/observability/logger";
 
 export type FeedbackRating = "positive" | "negative" | null;
@@ -81,7 +82,7 @@ export function AiFeedback({
       rating: newRating,
       comment: null,
       featureId,
-      timestamp: new Date().toISOString(),
+      timestamp: nowISO(),
     });
 
     setSubmitting(false);
@@ -103,7 +104,7 @@ export function AiFeedback({
       rating,
       comment: comment.trim(),
       featureId,
-      timestamp: new Date().toISOString(),
+      timestamp: nowISO(),
     });
 
     setSubmitting(false);

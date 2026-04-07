@@ -18,6 +18,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { ConversationSchema } from "@/types/schemas";
+import { nowISO, formatTimestamp } from "@/lib/utils/time";
 import type { ChatMessage } from "../types";
 
 export type StoredConversation = {
@@ -58,7 +59,7 @@ export async function saveConversationMessages(
     id: m.id,
     role: m.role,
     content: m.content,
-    timestamp: m.timestamp?.toISOString() ?? new Date().toISOString(),
+    timestamp: formatTimestamp(m.timestamp) ?? nowISO(),
   }));
   await updateDoc(ref, {
     messages: serialized,

@@ -8,6 +8,7 @@ import { updateProfile } from "firebase/auth";
 import { uploadFile } from "@/lib/firebase/storage";
 import { saveUserProfile, saveTestResult } from "@/lib/firebase/profiles";
 import { serverTimestamp as firestoreServerTimestamp } from "firebase/firestore";
+import { nowISO, todayISO } from "@/lib/utils/time";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -325,7 +326,7 @@ export function OnboardingStepper() {
           onboardingComplete: true,
           consentPersonality: true,
           consentAnalytics: consentAnalytics,
-          consentTimestamp: new Date().toISOString(),
+          consentTimestamp: nowISO(),
           displayName: displayName || firebaseUser.displayName,
           email: firebaseUser.email,
           uid: firebaseUser.uid,
@@ -343,7 +344,7 @@ export function OnboardingStepper() {
           totalXp: 110, // onboarding(50) + personality_test(30) + riasec_test(30)
           earnedAchievements: ["first_login", "profile_complete", "test_taker"],
           streak: 1,
-          lastLoginDate: new Date().toISOString().split("T")[0],
+          lastLoginDate: todayISO(),
           updatedAt: firestoreServerTimestamp(),
         },
         { merge: true }

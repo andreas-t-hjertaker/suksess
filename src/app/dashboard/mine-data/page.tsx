@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { deleteUser } from "firebase/auth";
+import { nowISO, todayISO } from "@/lib/utils/time";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -204,7 +205,7 @@ export default function MineDataPage() {
       const data = await exportUserData(firebaseUser.uid);
       const json = JSON.stringify(
         {
-          exportedAt: new Date().toISOString(),
+          exportedAt: nowISO(),
           userId: firebaseUser.uid,
           email: firebaseUser.email,
           data,
@@ -216,7 +217,7 @@ export default function MineDataPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `suksess-data-${new Date().toISOString().split("T")[0]}.json`;
+      a.download = `suksess-data-${todayISO()}.json`;
       a.click();
       URL.revokeObjectURL(url);
       showToast.success("Data eksportert");

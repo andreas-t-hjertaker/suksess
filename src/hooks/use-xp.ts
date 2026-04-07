@@ -13,6 +13,7 @@ import {
 import { db } from "@/lib/firebase/firestore";
 import { parseDoc } from "@/lib/firebase/parse-doc";
 import { XpDocSchema } from "@/types/schemas";
+import { todayISO } from "@/lib/utils/time";
 import { useAuth } from "@/hooks/use-auth";
 import {
   getLevelForXp,
@@ -115,7 +116,7 @@ export function useXp() {
   /** Registrer daglig innlogging og streak */
   const recordDailyLogin = useCallback(async () => {
     if (!firebaseUser) return;
-    const today = new Date().toISOString().split("T")[0];
+    const today = todayISO();
     const ref = doc(db, "users", firebaseUser.uid, "gamification", "xp");
     const snap = await getDoc(ref);
     const data = parseDoc(snap, XpDocSchema) as XpDoc | undefined;

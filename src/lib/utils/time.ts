@@ -18,6 +18,14 @@ export function nowISO(): string {
 }
 
 /**
+ * Returner dagens dato som ISO-streng (YYYY-MM-DD).
+ * Bruk for datosammenligninger og filnavn.
+ */
+export function todayISO(): string {
+  return new Date().toISOString().split("T")[0];
+}
+
+/**
  * Formater en Date, Firestore Timestamp eller unix ms til ISO 8601-streng.
  */
 export function formatTimestamp(

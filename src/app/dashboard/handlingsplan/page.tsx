@@ -15,6 +15,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
+import { nowISO } from "@/lib/utils/time";
 import { subscribeToUserProfile } from "@/lib/firebase/profiles";
 import { getRiasecCode } from "@/lib/personality/scoring";
 import {
@@ -285,7 +286,7 @@ export default function HandlingsplanPage() {
       steps: plan.steps.map((s) =>
         s.id === stepId ? { ...s, completed: !s.completed } : s
       ),
-      lastUpdatedAt: new Date().toISOString(),
+      lastUpdatedAt: nowISO(),
     };
     setPlan(updated);
     try {
