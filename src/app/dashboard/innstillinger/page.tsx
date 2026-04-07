@@ -213,7 +213,7 @@ export default function InnstillingerPage() {
       {/* Profil-kort */}
       <Card className="max-w-2xl">
         <CardHeader>
-          <CardTitle>Profil</CardTitle>
+          <CardTitle><h2>Profil</h2></CardTitle>
           <CardDescription>
             Oppdater visningsnavn og profilbilde.
           </CardDescription>
@@ -292,7 +292,7 @@ export default function InnstillingerPage() {
       {/* Sikkerhet-kort */}
       <Card className="max-w-2xl">
         <CardHeader>
-          <CardTitle>Sikkerhet</CardTitle>
+          <CardTitle><h2>Sikkerhet</h2></CardTitle>
           <CardDescription>
             Administrer passord og tilkoblede kontoer.
           </CardDescription>
@@ -300,10 +300,10 @@ export default function InnstillingerPage() {
         <CardContent className="space-y-6">
           {hasPasswordProvider && (
             <div className="space-y-4">
-              <h2 className="flex items-center gap-2 text-sm font-medium">
+              <h3 className="flex items-center gap-2 text-sm font-medium">
                 <Lock className="h-4 w-4" />
                 Endre passord
-              </h2>
+              </h3>
               <Form {...passwordForm}>
                 <form
                   onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}
@@ -363,7 +363,7 @@ export default function InnstillingerPage() {
           )}
 
           <div className="space-y-4">
-            <h2 className="text-sm font-medium">Tilkoblede kontoer</h2>
+            <h3 className="text-sm font-medium">Tilkoblede kontoer</h3>
             <div className="space-y-2">
               {firebaseUser?.providerData.map((provider) => (
                 <div
@@ -416,7 +416,7 @@ export default function InnstillingerPage() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Globe className="h-4 w-4 text-primary" aria-hidden="true" />
-            <CardTitle>Språk</CardTitle>
+            <CardTitle><h2>Språk</h2></CardTitle>
           </div>
           <CardDescription>
             Velg visningsspråk for plattformen.
@@ -453,7 +453,7 @@ export default function InnstillingerPage() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Sun className="h-4 w-4 text-primary" aria-hidden="true" />
-            <CardTitle>Utseende</CardTitle>
+            <CardTitle><h2>Utseende</h2></CardTitle>
           </div>
           <CardDescription>
             Velg mellom lyst, mørkt eller systembasert tema.
@@ -496,7 +496,7 @@ export default function InnstillingerPage() {
       {/* Faresone-kort */}
       <Card className="max-w-2xl border-destructive/50">
         <CardHeader>
-          <CardTitle className="text-destructive">Faresone</CardTitle>
+          <CardTitle className="text-destructive"><h2>Faresone</h2></CardTitle>
           <CardDescription>
             Irreversible handlinger som påvirker kontoen din.
           </CardDescription>
@@ -513,6 +513,7 @@ export default function InnstillingerPage() {
               value={deleteConfirm}
               onChange={(e) => setDeleteConfirm(e.target.value)}
               className="max-w-xs"
+              aria-label="Bekreftelse for sletting"
             />
             <Button
               variant="destructive"
