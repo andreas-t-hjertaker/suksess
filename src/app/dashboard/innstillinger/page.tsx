@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -37,17 +37,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { showToast } from "@/lib/toast";
-import { Loader2, Upload, Lock, Link2, Unlink, Trash2, Globe, Users, Copy, UserMinus, Sun, Moon, Monitor } from "lucide-react";
+import { Loader2, Upload, Lock, Link2, Unlink, Trash2, Globe, Sun, Moon, Monitor } from "lucide-react";
 import { useLocale } from "@/hooks/use-locale";
 import { useTheme, type Theme } from "@/hooks/use-theme";
-import {
-  formatInviteCode,
-  createParentInvite,
-  getLinkedGuardians,
-  unlinkGuardian,
-  type GuardianLink,
-} from "@/lib/foresatt/guardian-link";
-import { logGuardianAction, buildAuditAction } from "@/lib/foresatt/audit";
+import { GuardianSettingsCard } from "@/components/guardian-settings-card";
 
 // ─── Profil-skjema ──────────────────────────────────────────
 const profileSchema = z.object({
@@ -82,13 +75,6 @@ export default function InnstillingerPage() {
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Foresatt-tilgang
-  const [inviteCode, setInviteCode] = useState<string | null>(null);
-  const [generatingCode, setGeneratingCode] = useState(false);
-  const [guardians, setGuardians] = useState<GuardianLink[]>([]);
-  const [guardiansLoaded, setGuardiansLoaded] = useState(false);
-  const [unlinkingGuardian, setUnlinkingGuardian] = useState<string | null>(null);
 
   const hasPasswordProvider = firebaseUser?.providerData.some(
     (p) => p.providerId === "password"
@@ -188,62 +174,6 @@ export default function InnstillingerPage() {
       showToast.error("Kunne ikke frakoble Google");
     }
     setLinkingGoogle(false);
-  }
-
-  // ─── Foresatt-tilgang (#106) ─────────────────────────────
-  async function loadGuardians() {
-    if (!user?.uid) return;
-    try {
-      const links = await getLinkedGuardians(user.uid);
-      setGuardians(links);
-      setGuardiansLoaded(true);
-    } catch {
-      console.error("[Innstillinger] Kunne ikke laste foresatte");
-    }
-  }
-
-  useEffect(() => {
-    if (!user?.uid || guardiansLoaded) return;
-    loadGuardians();
-  }, [user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function handleGenerateCode() {
-    if (!user?.uid) return;
-    setGeneratingCode(true);
-    try {
-      const code = await createParentInvite(user.uid);
-      setInviteCode(code);
-      showToast.success("Koblingskode generert");
-    } catch {
-      showToast.error("Kunne ikke generere koblingskode");
-    }
-    setGeneratingCode(false);
-  }
-
-  function handleCopyCode() {
-    if (!inviteCode) return;
-    navigator.clipboard.writeText(inviteCode);
-    showToast.success("Kode kopiert til utklippstavlen");
-  }
-
-  async function handleUnlinkGuardian(parentUid: string) {
-    if (!user?.uid) return;
-    setUnlinkingGuardian(parentUid);
-    try {
-      await unlinkGuardian(user.uid, parentUid);
-      try {
-        await logGuardianAction(
-          buildAuditAction("link_removed", parentUid, user.uid)
-        );
-      } catch {
-        // Audit feiler ikke brukeropplevelsen
-      }
-      setGuardians((prev) => prev.filter((g) => g.parentUid !== parentUid));
-      showToast.success("Foresatt frakoblet");
-    } catch {
-      showToast.error("Kunne ikke frakoble foresatt");
-    }
-    setUnlinkingGuardian(null);
   }
 
   // ─── Slett konto ────────────────────────────────────────
@@ -561,91 +491,7 @@ export default function InnstillingerPage() {
       </Card>
 
       {/* Foresatt-tilgang (#106) */}
-      <Card className="max-w-2xl">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-primary" aria-hidden="true" />
-            <CardTitle>Foresatt-tilgang</CardTitle>
-          </div>
-          <CardDescription>
-            La foresatte følge med på karriereutforskingen din. De ser kun overordnet fremdrift — aldri AI-samtaler eller detaljerte testresultater.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Generer koblingskode */}
-          <div className="space-y-3">
-            <h2 className="text-sm font-medium">Generer koblingskode</h2>
-            <p className="text-xs text-muted-foreground">
-              Del koden med foresatte slik at de kan koble seg til kontoen din. Koden er gyldig i 30 minutter.
-            </p>
-            {inviteCode ? (
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg border bg-muted px-6 py-3">
-                  <span className="font-mono text-2xl font-bold tracking-[0.3em]">
-                    {formatInviteCode(inviteCode)}
-                  </span>
-                </div>
-                <Button variant="outline" size="sm" onClick={handleCopyCode} aria-label="Kopier koblingskode">
-                  <Copy className="h-4 w-4 mr-1" />
-                  Kopier
-                </Button>
-              </div>
-            ) : (
-              <Button
-                variant="outline"
-                onClick={handleGenerateCode}
-                disabled={generatingCode}
-              >
-                {generatingCode ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Users className="mr-2 h-4 w-4" />
-                )}
-                Generer kode
-              </Button>
-            )}
-          </div>
-
-          {/* Koblede foresatte */}
-          {guardians.length > 0 && (
-            <div className="space-y-3">
-              <h2 className="text-sm font-medium">Koblede foresatte</h2>
-              <div className="space-y-2">
-                {guardians.map((g) => (
-                  <div
-                    key={g.parentUid}
-                    className="flex items-center justify-between rounded-lg border p-3"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">Foresatt</Badge>
-                      <span className="text-sm">
-                        {g.parentDisplayName || g.parentUid.slice(0, 8) + "..."}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        Koblet {g.linkedAt.toLocaleDateString("nb-NO")}
-                      </span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleUnlinkGuardian(g.parentUid)}
-                      disabled={unlinkingGuardian === g.parentUid}
-                      aria-label={`Fjern kobling for ${g.parentDisplayName || "foresatt"}`}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      {unlinkingGuardian === g.parentUid ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <UserMinus className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {user?.uid && <GuardianSettingsCard userUid={user.uid} />}
 
       {/* Faresone-kort */}
       <Card className="max-w-2xl border-destructive/50">
