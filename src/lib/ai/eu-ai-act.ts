@@ -16,7 +16,7 @@
  * Frist: 2. august 2026 (EU AI Act full ikrafttredelse)
  */
 
-import { doc, setDoc, collection, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, collection, serverTimestamp, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { logger } from "@/lib/observability/logger";
 import { nowISO } from "@/lib/utils/time";
@@ -207,7 +207,9 @@ export async function logAiDecision(
 
   // Oppbevaringsperiode: 5 år jf. EU AI Act Art. 12(2), deretter GDPR Art. 5(1)(e) dataminimalisering
   const RETENTION_YEARS = 5;
-  const retentionExpiresAt = new Date(Date.now() + RETENTION_YEARS * 365.25 * 24 * 60 * 60 * 1000);
+  const retentionExpiresAt = Timestamp.fromDate(
+    new Date(Date.now() + RETENTION_YEARS * 365.25 * 24 * 60 * 60 * 1000)
+  );
 
   try {
     await setDoc(doc(collection(db, "aiDecisionLogs"), logId), {

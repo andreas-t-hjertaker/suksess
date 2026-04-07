@@ -132,5 +132,12 @@
       ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {
+      "collectionGroup": "aiDecisionLogs",
+      "fieldPath": "retentionExpiresAt",
+      "ttl": true,
+      "indexes": []
+    }
+  ]
 }
