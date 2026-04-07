@@ -6,64 +6,61 @@ Suksess er en AI-drevet karriereveiledningsplattform for norske VGS-elever. Livs
 
 **Eier:** KETL (andreas-t-hjertaker)
 
-## Status (april 2026)
+## Status (7. april 2026)
 
-**150 issues opprettet — ~117 lukket, 33 åpne.** Deploy til produksjon 25. mars 2026 (Firebase Hosting + Cloud Functions).
+**181 issues opprettet — ~163 lukket, 18 åpne i GitHub.** Deploy til produksjon 25. mars 2026 (Firebase Hosting + Cloud Functions).
 
 3 kodeauditer, 5 strategisk research, 3 UX-research, 1 B2B-research, 1 kodeaudit+sikkerhet-research gjennomført.
 
-### Åpne issues (33 stk)
+### Åpne issues i GitHub (18 stk)
 
-#### MUST-HAVE (9 stk)
-- **#110** — Stripe: EHF/Peppol betalingsintegrasjon for B2B skolelisenser
-- **#127** — B2B Skole-onboarding: self-service oppsett for skoler
-- **#128** — Ekte karrieredata: koble karrierestiutforsker til NAV/SSB/utdanning.no
-- **#134** — Skole self-service dashboard: lisensforvaltning og GDPR-oversikt
-- **#139** — Next.js Middleware: ruteautentisering og CSRF-beskyttelse
-- **#140** — Loading states og feilhåndtering: robusthet i alle dashboard-sider
-- **#141** — AI Chat-sikkerhet for mindreårige: påminnelser, sesjonslengde, guardrails
-- **#145** — Cloud Functions rate limiting: server-side bruker-basert
-- **#149** — Environment-konfigurasjon: .env.example, validering, secret management
+**10 av disse er ferdig implementert i kode og bør lukkes.** Se "Klar for lukking" nedenfor.
 
-#### SHOULD-HAVE (20 stk)
-- **#102** — PWA offline-strategi (Service Worker)
-- **#105** — Tilbakemeldingssystem: elev-feedback på AI-svar
-- **#106** — Foresatt-portal: innsyn for foreldre
-- **#107** — Samordna Opptak live-data
-- **#111** — E-postintegrasjon (transaksjonelle e-poster)
-- **#115** — Karrieredata-oppdatering (energiomstilling, AI/ML, bærekraft)
-- **#116** — PWA: offline-støtte med Serwist
-- **#129** — Jobbmatch med ekte stillinger fra NAV
-- **#130** — Personlig karrierehandlingsplan (AI-generert)
-- **#131** — Nynorsk-støtte (i18n)
-- **#133** — Karrierekompetanse-rammeverk (HK-dir)
-- **#135** — Feide gruppe-synkronisering
-- **#136** — Tenant-basert feature flags
-- **#137** — Brukerstøtte: in-app hjelpesenter
-- **#142** — FINT-integrasjon: fylkeskommunal felleskomponent for elevdata
-- **#143** — Onboarding analytics: fullføringsrate, TTV, aktivering
-- **#144** — Søknadscoach: ekte trenddata fra Samordna Opptak
-- **#146** — Tilgjengelighet: ARIA-attributter og tastaturnavigasjon
-- **#148** — Dark mode: konsistent implementering + personalityzation
-- **#150** — Sikkerhetstesting: OWASP-scanning og penetrasjonstest
+#### MUST-HAVE (3 stk — alle ferdig implementert)
+- **#179** — CI/CD: E2E-tester + npm audit ✅ KLAR FOR LUKKING
+- **#167** — Sikkerhet: Peppol-hemmeligheter fjernet fra klient ✅ KLAR FOR LUKKING
+- **#166** — Refaktorering: functions/src/index.ts splittet (91 linjer, 9 handler-moduler) ✅ KLAR FOR LUKKING
+
+#### SHOULD-HAVE (11 stk)
+- **#181** — TypeScript: Strengere tsconfig — DELVIS (noImplicitAny mangler)
+- **#180** — Testing: hooks-tester lagt til — DELVIS (Firebase auth/Firestore-tester mangler)
+- **#178** — GDPR: E-postlogger anonymisert ✅ KLAR FOR LUKKING
+- **#177** — Compliance: Firestore TTL for AI Act-logger ✅ KLAR FOR LUKKING
+- **#176** — Bug: Input-validering i personality/scoring ✅ KLAR FOR LUKKING
+- **#174** — Tilgjengelighet: Label-input-kobling — DELVIS (3 sider fikset)
+- **#170** — UX: Error states — DELVIS (7 av ~15 sider har ErrorState)
+- **#169** — Refaktorering: Ekstraher komponenter — DELVIS (3 sider > 600 linjer gjenstår)
+- **#168** — Observabilitet: Tomme catch-blokker erstattet ✅ KLAR FOR LUKKING
+- **#150** — Sikkerhetstesting: OWASP-scanning — IKKE STARTET
+- **#142** — FINT-integrasjon — IKKE STARTET
 
 #### NICE-TO-HAVE (4 stk)
-- **#108** — Rådgiver-elev sanntidschat
-- **#132** — AI Intervjutrener
-- **#138** — Statusside og systemovervåking
-- **#147** — Nasjonal vitnemålsdatabase (NVB): automatisk karakterimport
+- **#175** — Refaktorering: Konsistent timestamp-håndtering ✅ KLAR FOR LUKKING
+- **#173** — Refaktorering: Felles TTL/cache-logikk ✅ KLAR FOR LUKKING
+- **#172** — Refaktorering: Felles STYRK-RIASEC mapping ✅ KLAR FOR LUKKING
+- **#147** — Nasjonal vitnemålsdatabase (NVB) — IKKE STARTET
 
-### Lukkede issues (utvalg, nyeste)
+### Issues klar for lukking (10 stk)
+#166, #167, #168, #172, #173, #175, #176, #177, #178, #179
+
+### Stale PRs som bør lukkes (3 stk)
+- **PR #186** — Alle endringer allerede på main (15 issues)
+- **PR #185** — #179-fiksen allerede på main
+- **PR #184** — #167 superseded av sterkere fiks på main
+
+### Nylig lukkede issues (utvalg)
+- **#128** — Ekte karrieredata: koblet til Firestore ✅
+- **#130** — AI-generert karrierehandlingsplan ✅
+- **#131** — Nynorsk-støtte ✅
+- **#132** — AI Intervjutrener ✅
+- **#139** — Klient-side rutebeskyttelse ✅
+- **#140** — Loading states og feilhåndtering ✅
+- **#141** — AI Chat-sikkerhet for mindreårige ✅
+- **#145** — Server-side rate limiting ✅
+- **#146** — Tilgjengelighet (ARIA + tastatur) ✅
+- **#148** — Dark mode tema-velger ✅
+- **#149** — Zod env-validering ✅
 - **#112** — Fjern hardkodede Firebase-credentials ✅
-- **#104** — Ytelsesoptimalisering ✅
-- **#101** — Bundle-optimalisering ✅
-- **#100** — Produksjonsovervåking ✅
-- **#99** — SEO og metadata ✅
-- **#97** — Content Security Policy ✅
-- **#96** — Feilsider ✅
-- **#94** — Krisedeteksjon ✅
-- **#93** — AI Chat sikkerhet ✅
-- **#92** — Sikkerhets-hardening ✅
 - **#57–#82** — Kodeaudit, strategisk research, UX-research ✅
 
 ## Repo og issues
@@ -130,8 +127,8 @@ suksess/
 │   │   │   ├── innstillinger/page.tsx # Innstillinger ✅
 │   │   │   ├── jobbmatch/page.tsx     # Jobbmatch (#129 — hardkodet)
 │   │   │   ├── karakterer/page.tsx    # Karakterer (#10) ✅
-│   │   │   ├── karriere/page.tsx      # Karrierestier (#128 — hardkodet)
-│   │   │   ├── karrieregraf/page.tsx  # Karrieregraf (#128 — hardkodet)
+│   │   │   ├── karriere/page.tsx      # Karrierestier (#128 — Firestore-koblet) ✅
+│   │   │   ├── karrieregraf/page.tsx  # Karrieregraf (#128 — Firestore-koblet) ✅
 │   │   │   ├── mentoring/page.tsx     # Karrierementoring (NY — mock-data)
 │   │   │   ├── mine-data/page.tsx     # GDPR dataeksport (#109)
 │   │   │   ├── profil/page.tsx        # Brukerprofil ✅
@@ -153,10 +150,15 @@ suksess/
 │   ├── components/
 │   │   ├── analytics-provider.tsx     # Firebase Analytics ✅
 │   │   ├── auth-provider.tsx          # Auth-kontekst ✅
+│   │   ├── career-card.tsx            # Gjenbrukbar karrierekort (#169) ✅
 │   │   ├── consent-banner.tsx         # GDPR-samtykke ✅
+│   │   ├── cv-preview.tsx             # CV-forhåndsvisning (#169) ✅
 │   │   ├── error-boundary.tsx         # Error Boundary ✅
+│   │   ├── html-lang-sync.tsx         # Nynorsk/bokmål lang-attributt (#131) ✅
 │   │   ├── json-ld.tsx                # Structured data (#99) ✅
 │   │   ├── personality-provider.tsx   # Personlighetskontekst ✅
+│   │   ├── route-guard.tsx            # Klient-side rutebeskyttelse (#139) ✅
+│   │   ├── stat-card.tsx              # Gjenbrukbar statistikkort (#169) ✅
 │   │   └── motion/                    # Framer Motion (11 komponenter) ✅
 │   │
 │   ├── hooks/                         # React hooks ✅
@@ -169,8 +171,11 @@ suksess/
 │   │   │   ├── quests.ts              # Ukentlige oppdrag (NY)
 │   │   │   └── xp.ts                  # XP-system ✅
 │   │   ├── gdpr/minor-consent.ts      # Samtykke mindreårige ✅
-│   │   ├── i18n/locales.ts            # Bokmål (nynorsk: #131)
-│   │   ├── karriere/data.ts           # 70+ karrierenoder (#128 — hardkodet)
+│   │   ├── i18n/locales.ts            # Bokmål + nynorsk (#131) ✅
+│   │   ├── karriere/data.ts           # 70+ karrierenoder (#128 — Firestore-koblet) ✅
+│   │   ├── mappings/styrk-riasec.ts   # Felles STYRK-RIASEC mapping (#172) ✅
+│   │   ├── utils/time.ts              # Felles timestamp-utils (#175) ✅
+│   │   ├── utils/ttl.ts               # Felles TTL/cache-utils (#173) ✅
 │   │   ├── observability/logger.ts    # Strukturert logging ✅
 │   │   ├── personality/               # Big Five/RIASEC ✅
 │   │   ├── stripe/                    # Stripe (#110)
@@ -186,6 +191,11 @@ suksess/
 │       └── schemas.ts                 # Zod-skjemaer (NY, #113)
 │
 ├── functions/                         # Firebase Cloud Functions Gen 2 ✅
+│   └── src/
+│       ├── index.ts                   # Entry point (91 linjer, #166) ✅
+│       ├── handlers/                  # 9 domenebaserte handler-moduler ✅
+│       ├── router.ts                  # Stibasert ruting ✅
+│       └── constants.ts              # Delte konstanter ✅
 │
 ├── .github/workflows/                 # CI/CD ✅
 ├── firestore.rules                    # Multi-tenant sikkerhet ✅
@@ -193,58 +203,31 @@ suksess/
 └── CLAUDE.md                          # Denne filen
 ```
 
-## Avhengigheter mellom åpne issues
+## Gjenværende arbeid (8 reelle åpne issues)
+
+Etter lukking av 10 ferdig-implementerte issues gjenstår:
 
 ```
-B2B PIPELINE (kritisk for revenue):
-  #110 (Stripe EHF/Peppol) → #127 (Skole-onboarding) → #134 (Skole-dashboard)
-  #111 (E-post) → #127, #134, #137
-  #135 (Feide grupper) → #127, #134
-  #136 (Tenant feature flags) → #134
+DELVIS FERDIG (trenger mer arbeid):
+  #181 (Strengere TypeScript) — mangler noImplicitAny
+  #180 (Tester) — mangler Firebase auth/Firestore-tester
+  #174 (Tilgjengelighet) — 3 sider fikset, flere gjenstår
+  #170 (Error states) — 7 av ~15 sider har ErrorState
+  #169 (Komponent-ekstraksjon) — 3 sider > 600 linjer gjenstår (foresatt 712, innstillinger 688, karriere 633)
 
-DATAKVALITET (erstatte mock med ekte):
-  #128 (Ekte karrieredata) → #129 (Ekte stillinger) → #130 (Handlingsplan)
-  #107 (Samordna Opptak live) → #128
-  #115 (Karrieredata-oppdatering) → #128
-
-COMPLIANCE:
-  #103 (EU AI Act) — frist august 2026
-  #109 (GDPR dataportabilitet)
-  #114 (Samordna Opptak 2028-reform)
-  #131 (Nynorsk) — krav for fylkeskommunalt salg
-
-AI / UX:
-  #117 (Gemini 2.5 migrasjon)
-  #105 (Tilbakemeldingssystem) → #130, #132
-  #130 (Handlingsplan) → #133 (Karrierekompetanse)
-  #132 (Intervjutrener)
-
-TESTING / KVALITET:
-  #98 (Komponent-tester)
-  #113 (Zod-validering)
-
-PWA:
-  #102 + #116 (offline + Serwist)
-
-NICE-TO-HAVE:
-  #108 (Rådgiver-elev chat)
-  #137 (Hjelpesenter)
-  #138 (Statusside)
+IKKE STARTET:
+  #150 (OWASP-scanning)
+  #142 (FINT-integrasjon)
+  #147 (NVB karakterimport)
 ```
 
-### Anbefalt implementeringsrekkefølge
+### Anbefalt neste steg
 
-**Fase 1 — COMPLIANCE + TESTING (april 2026):**
-#103 (EU AI Act) → #109 (GDPR portabilitet) → #98 (tester) → #113 (Zod)
-
-**Fase 2 — B2B PIPELINE (april–mai 2026):**
-#111 (E-post) → #110 (Stripe) → #127 (Skole-onboarding) → #134 (Skole-dashboard) → #135 (Feide grupper) → #136 (Feature flags)
-
-**Fase 3 — DATAKVALITET (mai–juni 2026):**
-#128 (Ekte karrieredata) → #129 (Ekte stillinger) → #115 (Karrieredata) → #107 (Samordna Opptak) → #114 (2028-reform)
-
-**Fase 4 — AI + VERDI (juni–august 2026):**
-#117 (Gemini 2.5) → #105 (Feedback) → #130 (Handlingsplan) → #132 (Intervjutrener) → #133 (Karrierekompetanse)
+**Umiddelbart (april 2026):**
+1. Lukk 10 ferdige issues + 3 stale PRs i GitHub
+2. Fullfør #170 (error states i resterende dashboard-sider)
+3. Fullfør #169 (ekstraher komponenter fra 3 gjenværende store sider)
+4. Fullfør #174 (a11y i alle dashboard-sider)
 
 **Fase 5 — LOKALISERING + SUPPORT (august 2026):**
 #131 (Nynorsk) → #137 (Hjelpesenter) → #138 (Statusside)
