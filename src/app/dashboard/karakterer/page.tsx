@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useGrades } from "@/hooks/use-grades";
-import { useXp } from "@/hooks/use-xp";
+import { useGradeForm } from "@/hooks/use-grade-form";
 import {
   calculateGradePoints,
   calculateDualSystemPoints,
@@ -13,7 +12,6 @@ import {
   type AdmissionSystem,
 } from "@/lib/grades/calculator";
 import { Button } from "@/components/ui/button";
-import { showToast } from "@/lib/toast";
 import { Input } from "@/components/ui/input";
 import {
   Card,
@@ -38,7 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { ErrorState } from "@/components/error-state";
-import type { Grade } from "@/types/domain";
+import { StatCard } from "@/components/stat-card";
 
 // ---------------------------------------------------------------------------
 // Termin-valg
@@ -56,23 +54,30 @@ const YEARS = Array.from({ length: 4 }, (_, i) => CURRENT_YEAR - i);
 // ---------------------------------------------------------------------------
 
 export default function KaraktererPage() {
-  const { grades, loading, error, addGrade, removeGrade } = useGrades();
-  const { earnXp } = useXp();
-
-  // Legg til ny karakter
-  const [newSubject, setNewSubject] = useState("");
-  const [newFagkode, setNewFagkode] = useState("");
-  const [newGrade, setNewGrade] = useState<number>(4);
-  const [newTerm, setNewTerm] = useState<"vt" | "ht">("ht");
-  const [newYear, setNewYear] = useState(CURRENT_YEAR);
-  const [adding, setAdding] = useState(false);
-
-  // Simulator
-  const [simSubject, setSimSubject] = useState("");
-  const [simGrade, setSimGrade] = useState<number>(6);
-
-  // Studiesøk
-  const [search, setSearch] = useState("");
+  const {
+    grades,
+    loading,
+    error,
+    removeGrade,
+    newSubject,
+    setNewSubject,
+    newFagkode,
+    setNewFagkode,
+    newGrade,
+    setNewGrade,
+    newTerm,
+    setNewTerm,
+    newYear,
+    setNewYear,
+    adding,
+    handleAddGrade,
+    simSubject,
+    setSimSubject,
+    simGrade,
+    setSimGrade,
+    search,
+    setSearch,
+  } = useGradeForm();
 
   // SO-reform: avgangskull og aktivt system (Issue #114)
   const [graduationYear, setGraduationYear] = useState<number>(CURRENT_YEAR + 1);
@@ -119,33 +124,6 @@ export default function KaraktererPage() {
       outOfReach: filteredPrograms.filter((p) => tp < p.requiredPoints - 5),
     };
   }, [filteredPrograms, dualPoints.activeTotal]);
-
-  // ---------------------------------------------------------------------------
-  // Handlinger
-  // ---------------------------------------------------------------------------
-
-  async function handleAddGrade() {
-    if (!newSubject.trim()) return;
-    setAdding(true);
-    try {
-      await addGrade({
-        subject: newSubject.trim(),
-        fagkode: newFagkode.trim() || null,
-        grade: newGrade as Grade["grade"],
-        term: newTerm,
-        year: newYear,
-        programSubjectId: null,
-      });
-      earnXp("grades_added");
-      setNewSubject("");
-      setNewFagkode("");
-      setNewGrade(4);
-    } catch {
-      showToast.error("Kunne ikke lagre karakter. Prøv igjen.");
-    } finally {
-      setAdding(false);
-    }
-  }
 
   // ---------------------------------------------------------------------------
   // UI
@@ -206,25 +184,25 @@ export default function KaraktererPage() {
 
       {/* Poeng-oversikt */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <PointCard
+        <StatCard
           icon={GraduationCap}
           label="Karaktersnitt"
           value={points.average > 0 ? points.average.toFixed(2) : "—"}
           sub={`${points.subjectCount} fag`}
         />
-        <PointCard
+        <StatCard
           icon={Calculator}
           label="SO-poeng"
           value={points.quotaPoints > 0 ? points.quotaPoints.toFixed(1) : "—"}
           sub="Samordna opptak"
         />
-        <PointCard
+        <StatCard
           icon={FlaskConical}
           label="Realfagspoeng"
           value={`+${dualPoints.sciencePoints}`}
           sub="Maks 4 poeng"
         />
-        <PointCard
+        <StatCard
           icon={TrendingUp}
           label="Totalt"
           value={dualPoints.activeTotal > 0 ? dualPoints.activeTotal.toFixed(1) : "—"}
@@ -645,33 +623,6 @@ function ProgramfagRisiko({ grades }: { grades: { fagkode: string | null; subjec
 // ---------------------------------------------------------------------------
 // Hjelpkomponenter
 // ---------------------------------------------------------------------------
-
-function PointCard({
-  icon: Icon,
-  label,
-  value,
-  sub,
-  highlight,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  sub: string;
-  highlight?: boolean;
-}) {
-  return (
-    <Card className={highlight ? "border-primary/40 bg-primary/5" : undefined}>
-      <CardContent className="p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Icon className={cn("h-4 w-4", highlight ? "text-primary" : "text-muted-foreground")} />
-          <span className="text-xs font-medium text-muted-foreground">{label}</span>
-        </div>
-        <p className={cn("text-2xl font-bold", highlight && "text-primary")}>{value}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
-      </CardContent>
-    </Card>
-  );
-}
 
 function Delta({
   current,
