@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { useSubscription } from "@/hooks/use-subscription";
+import { ErrorState } from "@/components/error-state";
 import { fetchApi } from "@/lib/api-client";
 import { showToast } from "@/lib/toast";
 
@@ -31,7 +32,7 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function AbonnementPage() {
-  const { subscription, loading, isActive, isPastDue } = useSubscription();
+  const { subscription, loading, error: loadError, isActive, isPastDue } = useSubscription();
   const [portalLoading, setPortalLoading] = useState(false);
 
   /** Åpne Stripe kundeportal */
@@ -58,6 +59,14 @@ export default function AbonnementPage() {
     return (
       <div className="flex items-center justify-center py-20">
         <Spinner className="h-8 w-8" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <ErrorState message={loadError} onRetry={() => window.location.reload()} />
       </div>
     );
   }

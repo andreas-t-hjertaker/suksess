@@ -11,6 +11,7 @@ export function useSubscription() {
   const { user } = useAuth();
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.uid) {
@@ -39,7 +40,10 @@ export function useSubscription() {
         }
         setLoading(false);
       },
-      () => setLoading(false)
+      (err) => {
+        setError(err.message || "Kunne ikke laste abonnement");
+        setLoading(false);
+      }
     );
 
     return unsub;
@@ -48,5 +52,5 @@ export function useSubscription() {
   const isActive = subscription?.status === "active" || subscription?.status === "trialing";
   const isPastDue = subscription?.status === "past_due";
 
-  return { subscription, loading, isActive, isPastDue };
+  return { subscription, loading, error, isActive, isPastDue };
 }

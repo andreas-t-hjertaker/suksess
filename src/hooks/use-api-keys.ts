@@ -11,14 +11,18 @@ export function useApiKeys() {
   const { user } = useAuth();
   const [keys, setKeys] = useState<ApiKeyListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   /** Hent alle API-nøkler for innlogget bruker */
   const fetchKeys = useCallback(async () => {
     if (!user?.uid) return;
     setLoading(true);
+    setError(null);
     const res = await fetchApi<ApiKeyListItem[]>("/api-keys");
     if (res.success) {
       setKeys(res.data);
+    } else {
+      setError(res.error || "Kunne ikke laste API-nøkler");
     }
     setLoading(false);
   }, [user?.uid]);
@@ -58,5 +62,5 @@ export function useApiKeys() {
     return false;
   }
 
-  return { keys, loading, createKey, revokeKey, refetch: fetchKeys };
+  return { keys, loading, error, createKey, revokeKey, refetch: fetchKeys };
 }

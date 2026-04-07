@@ -28,6 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AiDisclosure } from "@/components/ai-disclosure";
+import { ErrorState } from "@/components/error-state";
 import {
   Target,
   CheckCircle2,
@@ -232,6 +233,7 @@ export default function HandlingsplanPage() {
   const { user } = useAuth();
   const [plan, setPlan] = useState<ActionPlan | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
@@ -251,8 +253,8 @@ export default function HandlingsplanPage() {
         if (snap.exists()) {
           setPlan(snap.data() as ActionPlan);
         }
-      } catch {
-        // Ingen plan ennå
+      } catch (err) {
+        setLoadError(err instanceof Error ? err.message : "Kunne ikke laste handlingsplan");
       }
       setLoading(false);
     }
@@ -303,6 +305,14 @@ export default function HandlingsplanPage() {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="mx-auto max-w-3xl p-4 md:p-6">
+        <ErrorState message={loadError} onRetry={() => window.location.reload()} />
       </div>
     );
   }

@@ -36,6 +36,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/hooks/use-locale";
+import { ErrorState } from "@/components/error-state";
 import type { UserProfile } from "@/types/domain";
 
 // ---------------------------------------------------------------------------
@@ -95,10 +96,13 @@ export default function DashboardPage() {
   const { totalXp, level, streak } = useXp();
   const { grades } = useGrades();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
-    return subscribeToUserProfile(user.uid, setProfile);
+    return subscribeToUserProfile(user.uid, setProfile, (err) => {
+      setLoadError(err.message || "Kunne ikke laste profildata");
+    });
   }, [user]);
 
   const gradePoints = useMemo(() => calculateGradePoints(grades), [grades]);
@@ -116,6 +120,14 @@ export default function DashboardPage() {
 
   if (authLoading) {
     return <PageSkeleton variant="grid" cards={6} />;
+  }
+
+  if (loadError) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <ErrorState message={loadError} onRetry={() => window.location.reload()} />
+      </div>
+    );
   }
 
   return (

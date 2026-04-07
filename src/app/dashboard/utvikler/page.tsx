@@ -24,11 +24,12 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { useApiKeys } from "@/hooks/use-api-keys";
+import { ErrorState } from "@/components/error-state";
 import { showToast } from "@/lib/toast";
 import { formatDate } from "@/lib/utils";
 
 export default function UtviklerPage() {
-  const { keys, loading, createKey, revokeKey } = useApiKeys();
+  const { keys, loading, error: loadError, createKey, revokeKey } = useApiKeys();
 
   // Skjema-tilstand
   const [showForm, setShowForm] = useState(false);
@@ -71,6 +72,14 @@ export default function UtviklerPage() {
     } else {
       showToast.error("Kunne ikke tilbakekalle nøkkelen.");
     }
+  }
+
+  if (loadError) {
+    return (
+      <div className="max-w-2xl mx-auto p-4">
+        <ErrorState message={loadError} onRetry={() => window.location.reload()} />
+      </div>
+    );
   }
 
   return (
