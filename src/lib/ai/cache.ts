@@ -278,7 +278,8 @@ export function pruneL3Cache(): void {
       if (!raw) continue;
       const { timestamp } = JSON.parse(raw);
       if (isExpired(timestamp, L3_TTL_HOURS)) keysToDelete.push(key);
-    } catch {
+    } catch (err) {
+      logger.warn("l3_cache_prune_parse_failed", { key, error: err instanceof Error ? err.message : "unknown" });
       keysToDelete.push(key!);
     }
   }
