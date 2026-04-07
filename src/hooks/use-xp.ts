@@ -45,6 +45,7 @@ export function useXp() {
   const { firebaseUser } = useAuth();
   const [xpDoc, setXpDoc] = useState<XpDoc | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!firebaseUser) {
@@ -53,6 +54,7 @@ export function useXp() {
       return;
     }
 
+    setError(null);
     const unsub: Unsubscribe = onSnapshot(
       doc(db, "users", firebaseUser.uid, "gamification", "xp"),
       (snap) => {
@@ -61,6 +63,10 @@ export function useXp() {
         } else {
           setXpDoc({ totalXp: 0, earnedAchievements: [], streak: 0, lastLoginDate: null, updatedAt: null });
         }
+        setLoading(false);
+      },
+      (err) => {
+        setError(err.message);
         setLoading(false);
       }
     );
@@ -149,6 +155,7 @@ export function useXp() {
 
   return {
     loading,
+    error,
     totalXp,
     level,
     progress,

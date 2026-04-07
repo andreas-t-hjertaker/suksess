@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Flame, Trophy, Zap, Star, Lock } from "lucide-react";
 import { PageSkeleton } from "@/components/page-skeleton";
+import { ErrorState } from "@/components/error-state";
 
 // ---------------------------------------------------------------------------
 // Nivå-farger / bakgrunner
@@ -57,13 +58,27 @@ const XP_GUIDE = [
 // ---------------------------------------------------------------------------
 
 export default function FremgangPage() {
-  const { totalXp, level, streak, earnedAchievements, loading } = useXp();
+  const { totalXp, level, streak, earnedAchievements, loading, error } = useXp();
   const progress = getXpProgress(totalXp);
   const nextLevel = getNextLevel(level.name);
   const levelStyle = LEVEL_STYLES[level.name] ?? LEVEL_STYLES.nybegynner;
 
   if (loading) {
     return <PageSkeleton variant="list" cards={4} />;
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8 max-w-2xl">
+        <div>
+          <h1 className="text-2xl font-bold">Fremgang</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Se XP, nivå, achievements og daglig streak.
+          </p>
+        </div>
+        <ErrorState message="Kunne ikke laste fremgangsdata." />
+      </div>
+    );
   }
 
   return (

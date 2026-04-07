@@ -37,6 +37,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { showToast } from "@/lib/toast";
+import { ErrorState } from "@/components/error-state";
 import { Loader2, Upload, Lock, Link2, Unlink, Trash2, Globe, Sun, Moon, Monitor } from "lucide-react";
 import { useLocale } from "@/hooks/use-locale";
 import { useTheme, type Theme } from "@/hooks/use-theme";
@@ -67,7 +68,7 @@ const passwordSchema = z
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 export default function InnstillingerPage() {
-  const { user, firebaseUser } = useAuth();
+  const { user, firebaseUser, loading: authLoading } = useAuth();
   const { locale, setLocale, locales } = useLocale();
   const { theme, setTheme } = useTheme();
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -190,6 +191,20 @@ export default function InnstillingerPage() {
       );
     }
     setDeleting(false);
+  }
+
+  if (!authLoading && !firebaseUser) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Innstillinger</h1>
+          <p className="text-muted-foreground">
+            Administrer profil, sikkerhet og kontoinnstillinger.
+          </p>
+        </div>
+        <ErrorState message="Du må være logget inn for å endre innstillinger." />
+      </div>
+    );
   }
 
   const initials = user?.displayName

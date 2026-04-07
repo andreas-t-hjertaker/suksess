@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
+import { ErrorState } from "@/components/error-state";
 import { Users, Heart, Search, Star, ChevronRight } from "lucide-react";
 
 const EXAMPLE_MENTORS = [
@@ -41,6 +42,7 @@ const EXAMPLE_MENTORS = [
 
 export default function MentoringPage() {
   const [hasMatch, _setHasMatch] = useState(false);
+  const [error, _setError] = useState<string | null>(null);
 
   return (
     <div className="space-y-8">
@@ -53,6 +55,10 @@ export default function MentoringPage() {
           som jobber med det du drømmer om.
         </p>
       </div>
+
+      {error && (
+        <ErrorState message={error} />
+      )}
 
       {!hasMatch && (
         <EmptyState

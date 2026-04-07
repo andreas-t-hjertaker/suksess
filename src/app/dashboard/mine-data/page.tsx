@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { showToast } from "@/lib/toast";
+import { ErrorState } from "@/components/error-state";
 import {
   Download,
   Trash2,
@@ -192,11 +193,25 @@ const DATA_LAYERS = [
 // ---------------------------------------------------------------------------
 
 export default function MineDataPage() {
-  const { firebaseUser } = useAuth();
+  const { firebaseUser, loading } = useAuth();
   const [exporting, setExporting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmText, setConfirmText] = useState("");
+
+  if (!loading && !firebaseUser) {
+    return (
+      <div className="space-y-6 p-4 md:p-6 max-w-2xl">
+        <div>
+          <h1 className="text-2xl font-bold">Mine data</h1>
+          <p className="text-muted-foreground">
+            Se, eksporter og slett alle dine persondata — i tråd med GDPR.
+          </p>
+        </div>
+        <ErrorState message="Du må være logget inn for å se dine data." />
+      </div>
+    );
+  }
 
   async function handleExport() {
     if (!firebaseUser) return;

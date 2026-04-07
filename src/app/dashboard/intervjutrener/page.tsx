@@ -36,6 +36,7 @@ import {
   Palette,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ErrorState } from "@/components/error-state";
 
 // ---------------------------------------------------------------------------
 // Typer
@@ -184,6 +185,7 @@ export default function IntervjutrenerPage() {
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const [interviewComplete, setInterviewComplete] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function startInterview(category: InterviewCategory) {
     setSelectedCategory(category);
@@ -212,8 +214,16 @@ export default function IntervjutrenerPage() {
 
     // Generer AI-tilbakemelding
     setIsThinking(true);
+    setError(null);
 
-    const feedback = await generateAIFeedback(question, answer, selectedCategory.title);
+    let feedback: string;
+    try {
+      feedback = await generateAIFeedback(question, answer, selectedCategory.title);
+    } catch {
+      setError("Kunne ikke generere tilbakemelding. Prøv igjen.");
+      setIsThinking(false);
+      return;
+    }
     setMessages((prev) => [
       ...prev,
       { role: "interviewer", content: feedback, feedback: "tip" },
@@ -384,6 +394,11 @@ export default function IntervjutrenerPage() {
           </div>
         )}
       </div>
+
+      {/* Feilmelding */}
+      {error && (
+        <ErrorState message={error} onRetry={() => setError(null)} />
+      )}
 
       {/* Input */}
       {!interviewComplete && (
