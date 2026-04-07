@@ -89,10 +89,7 @@ describe("rolloutHash", () => {
   });
 
   it("gir forskjellig resultat for ulike brukere", () => {
-    const a = rolloutHash("user-1", "feature");
-    const b = rolloutHash("user-2", "feature");
-    // Ikke nødvendigvis forskjellig, men sannsynlig
-    // Test at funksjonen i det minste produserer variert output
+    // Test at funksjonen produserer variert output over mange brukere
     const results = new Set<number>();
     for (let i = 0; i < 50; i++) {
       results.add(rolloutHash(`user-${i}`, "feature"));
@@ -101,9 +98,7 @@ describe("rolloutHash", () => {
   });
 
   it("gir forskjellig resultat for ulike flagg", () => {
-    const a = rolloutHash("user-1", "flag-a");
-    const b = rolloutHash("user-1", "flag-b");
-    // Sannsynligvis forskjellig
+    // Test at funksjonen produserer variert output over mange flagg
     const results = new Set<number>();
     for (let i = 0; i < 50; i++) {
       results.add(rolloutHash("user-1", `flag-${i}`));
