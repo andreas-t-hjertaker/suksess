@@ -263,6 +263,27 @@ jobs:
       - name: Setup Firebase credentials
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa.json
 
+      - name: Authenticate gcloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Sync Notion secrets to Google Secret Manager
+        run: |
+          # Opprett/oppdater NOTION_API_TOKEN
+          echo -n "${{ secrets.NOTION_API_TOKEN }}" | gcloud secrets create NOTION_API_TOKEN \
+            --data-file=- --project=${{ env.FIREBASE_PROJECT_ID }} 2>/dev/null || \
+          echo -n "${{ secrets.NOTION_API_TOKEN }}" | gcloud secrets versions add NOTION_API_TOKEN \
+            --data-file=- --project=${{ env.FIREBASE_PROJECT_ID }}
+          # Opprett/oppdater NOTION_FEEDBACK_DB_ID (same as NOTION_DATABASE_ID)
+          echo -n "${{ secrets.NOTION_DATABASE_ID }}" | gcloud secrets create NOTION_FEEDBACK_DB_ID \
+            --data-file=- --project=${{ env.FIREBASE_PROJECT_ID }} 2>/dev/null || \
+          echo -n "${{ secrets.NOTION_DATABASE_ID }}" | gcloud secrets versions add NOTION_FEEDBACK_DB_ID \
+            --data-file=- --project=${{ env.FIREBASE_PROJECT_ID }}
+
       - name: Deploy Cloud Functions
         run: >
           npx firebase-tools@latest deploy
