@@ -12,11 +12,9 @@ import {
   linkWithPopup,
   unlink,
   GoogleAuthProvider,
-  deleteUser,
 } from "firebase/auth";
 import { useAuth } from "@/hooks/use-auth";
 import { uploadFile } from "@/lib/firebase/storage";
-import { apiDelete } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -38,10 +36,11 @@ import {
 } from "@/components/ui/form";
 import { showToast } from "@/lib/toast";
 import { ErrorState } from "@/components/error-state";
-import { Loader2, Upload, Lock, Link2, Unlink, Trash2, Globe, Sun, Moon, Monitor } from "lucide-react";
+import { Loader2, Upload, Lock, Link2, Unlink, Globe, Sun, Moon, Monitor } from "lucide-react";
 import { useLocale } from "@/hooks/use-locale";
 import { useTheme, type Theme } from "@/hooks/use-theme";
 import { GuardianSettingsCard } from "@/components/guardian-settings-card";
+import { DangerZoneCard } from "./danger-zone-card";
 
 // ─── Profil-skjema ──────────────────────────────────────────
 const profileSchema = z.object({
@@ -73,8 +72,6 @@ export default function InnstillingerPage() {
   const { theme, setTheme } = useTheme();
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [linkingGoogle, setLinkingGoogle] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState("");
-  const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const hasPasswordProvider = firebaseUser?.providerData.some(
@@ -177,21 +174,6 @@ export default function InnstillingerPage() {
     setLinkingGoogle(false);
   }
 
-  // ─── Slett konto ────────────────────────────────────────
-  async function handleDeleteAccount() {
-    if (deleteConfirm !== "SLETT" || !firebaseUser) return;
-    setDeleting(true);
-    try {
-      await apiDelete("/account");
-      await deleteUser(firebaseUser);
-      showToast.success("Kontoen din er slettet");
-    } catch {
-      showToast.error(
-        "Kunne ikke slette konto. Du kan trenge å logge inn på nytt."
-      );
-    }
-    setDeleting(false);
-  }
 
   if (!authLoading && !firebaseUser) {
     return (
@@ -509,42 +491,7 @@ export default function InnstillingerPage() {
       {user?.uid && <GuardianSettingsCard userUid={user.uid} />}
 
       {/* Faresone-kort */}
-      <Card className="max-w-2xl border-destructive/50">
-        <CardHeader>
-          <CardTitle className="text-destructive"><h2>Faresone</h2></CardTitle>
-          <CardDescription>
-            Irreversible handlinger som påvirker kontoen din.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Sletting av kontoen din fjerner alle data permanent, inkludert
-            abonnementer, API-nøkler og dokumenter. Denne handlingen kan ikke
-            angres.
-          </p>
-          <div className="flex items-center gap-3">
-            <Input
-              placeholder="Skriv SLETT for å bekrefte"
-              value={deleteConfirm}
-              onChange={(e) => setDeleteConfirm(e.target.value)}
-              className="max-w-xs"
-              aria-label="Bekreftelse for sletting"
-            />
-            <Button
-              variant="destructive"
-              onClick={handleDeleteAccount}
-              disabled={deleteConfirm !== "SLETT" || deleting}
-            >
-              {deleting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Trash2 className="mr-2 h-4 w-4" />
-              )}
-              Slett konto
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {firebaseUser && <DangerZoneCard firebaseUser={firebaseUser} />}
     </div>
   );
 }
