@@ -43,7 +43,7 @@ describe("useAsyncData", () => {
 
   it("konverterer ikke-Error til Error", async () => {
     const fetcher = vi.fn(async () => {
-      throw "streng-feil"; // eslint-disable-line no-throw-literal
+      throw "streng-feil";
     });
     const { result } = renderHook(() => useAsyncData(fetcher, []));
 
