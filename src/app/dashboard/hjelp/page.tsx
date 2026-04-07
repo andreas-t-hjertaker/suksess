@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { ErrorState } from "@/components/error-state";
 import {
   HelpCircle,
   Search,
@@ -195,6 +196,7 @@ export default function HjelpPage() {
   const [contactEmail, setContactEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [contactError, setContactError] = useState(false);
 
   const filteredFaq = FAQ_ITEMS.filter((item) => {
     const matchesSearch =
@@ -208,12 +210,18 @@ export default function HjelpPage() {
   async function handleContact() {
     if (!contactMessage.trim()) return;
     setSending(true);
-    // Simuler sending — i produksjon sendes til e-post/Firestore
-    await new Promise((r) => setTimeout(r, 1000));
-    setSending(false);
-    setSent(true);
-    setContactMessage("");
-    setContactEmail("");
+    setContactError(false);
+    try {
+      // Simuler sending — i produksjon sendes til e-post/Firestore
+      await new Promise((r) => setTimeout(r, 1000));
+      setSent(true);
+      setContactMessage("");
+      setContactEmail("");
+    } catch {
+      setContactError(true);
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -340,7 +348,12 @@ export default function HjelpPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {sent ? (
+          {contactError ? (
+            <ErrorState
+              message="Kunne ikke sende meldingen. Prøv igjen."
+              onRetry={handleContact}
+            />
+          ) : sent ? (
             <div className="text-center py-4">
               <p className="text-sm text-green-600 font-medium">
                 Takk for meldingen! Vi svarer innen 1–2 virkedager.
