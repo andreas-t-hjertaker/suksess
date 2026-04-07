@@ -59,6 +59,7 @@ import {
   Compass,
   AlertTriangle,
 } from "lucide-react";
+import { ErrorState } from "@/components/error-state";
 import type { StudentInsight } from "@/lib/foresatt/insight";
 import {
   getTopRiasecCategories,
@@ -91,6 +92,8 @@ export default function ParentPortalPage() {
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null);
   const [insight, setInsight] = useState<StudentInsight | null>(null);
   const [insightLoading, setInsightLoading] = useState(false);
+  const [insightError, setInsightError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Koble elev
   const [showLinkForm, setShowLinkForm] = useState(false);
@@ -108,6 +111,7 @@ export default function ParentPortalPage() {
 
   async function loadLinkedStudents() {
     setLoading(true);
+    setLoadError(null);
     try {
       const linksSnap = await getDocs(
         query(
@@ -140,6 +144,7 @@ export default function ParentPortalPage() {
       }
     } catch (err) {
       console.error("[ParentPortal]", err);
+      setLoadError("Kunne ikke laste koblede elever. Prøv igjen senere.");
     } finally {
       setLoading(false);
     }
@@ -147,6 +152,7 @@ export default function ParentPortalPage() {
 
   async function loadStudentInsight(studentUid: string) {
     setInsightLoading(true);
+    setInsightError(null);
     try {
       // Hent XP
       const xpDoc = await getDoc(doc(db, `users/${studentUid}/gamification/xp`));
@@ -230,6 +236,7 @@ export default function ParentPortalPage() {
     } catch (err) {
       console.error("[ParentPortal] Insight feil:", err);
       setInsight(null);
+      setInsightError("Kunne ikke laste innsiktsdata for eleven. Prøv igjen.");
     } finally {
       setInsightLoading(false);
     }
@@ -329,6 +336,17 @@ export default function ParentPortalPage() {
     return (
       <div className="flex min-h-[300px] items-center justify-center" role="status" aria-label="Laster foresatt-portal">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-4 md:p-6">
+        <ErrorState
+          message={loadError}
+          onRetry={() => loadLinkedStudents()}
+        />
       </div>
     );
   }
@@ -465,6 +483,11 @@ export default function ParentPortalPage() {
                 <div className="flex justify-center py-8" role="status" aria-label="Laster innsiktsdata">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
+              ) : insightError ? (
+                <ErrorState
+                  message={insightError}
+                  onRetry={() => selectedStudent && loadStudentInsight(selectedStudent)}
+                />
               ) : insight ? (
                 <>
                   {/* Statistikk-kort */}
