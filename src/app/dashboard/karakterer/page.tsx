@@ -30,13 +30,14 @@ import {
   Calculator,
   Search,
   Wand2,
-  AlertTriangle,
-  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageSkeleton } from "@/components/page-skeleton";
 import { ErrorState } from "@/components/error-state";
 import { StatCard } from "@/components/stat-card";
+import { ProgramfagRisiko } from "./programfag-risiko";
+import { StudyGroup } from "./study-group";
+import { Delta } from "./delta";
 
 // ---------------------------------------------------------------------------
 // Termin-valg
@@ -532,172 +533,3 @@ export default function KaraktererPage() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Programfag-risikoanalyse (issue #10)
-// ---------------------------------------------------------------------------
-
-const KEY_SUBJECTS: { name: string; fagkode: string; required: string[] }[] = [
-  {
-    name: "Matematikk R2 (for tekniske studier)",
-    fagkode: "MAT3206",
-    required: ["Sivilingeniør, datateknikk", "Sivilingeniør, elektronikk", "Informatikk (bachelor)", "Fysikk (bachelor)", "Matematikk (bachelor)"],
-  },
-  {
-    name: "Matematikk R1 (for mange studier)",
-    fagkode: "MAT3205",
-    required: ["Sivilingeniør, bygg- og miljøteknikk", "Farmasi (master)", "Informatikk (bachelor)"],
-  },
-  {
-    name: "Fysikk (for ingeniørstudier)",
-    fagkode: "FYS3101",
-    required: ["Sivilingeniør, datateknikk", "Sivilingeniør, elektronikk"],
-  },
-  {
-    name: "Kjemi (for medisin/farmasi)",
-    fagkode: "KJE3101",
-    required: ["Medisin", "Farmasi (master)", "Odontologi"],
-  },
-  {
-    name: "Biologi (for helsefag)",
-    fagkode: "BIO3101",
-    required: ["Medisin", "Veterinærmedisin", "Ernæring (bachelor)"],
-  },
-];
-
-function ProgramfagRisiko({ grades }: { grades: { fagkode: string | null; subject: string }[] }) {
-  const fagkoder = new Set(grades.map((g) => g.fagkode).filter(Boolean));
-
-  const missing = KEY_SUBJECTS.filter((s) => !fagkoder.has(s.fagkode));
-  const present = KEY_SUBJECTS.filter((s) => fagkoder.has(s.fagkode));
-
-  if (missing.length === 0) return null;
-
-  return (
-    <Card className="border-orange-500/30">
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-orange-500" aria-hidden="true" />
-          <CardTitle className="text-base">Programfag-risikoanalyse</CardTitle>
-        </div>
-        <CardDescription>
-          Basert på fagkodene dine mangler du nøkkelfag for visse studier.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {present.length > 0 && (
-          <div className="space-y-1">
-            <p className="text-xs font-semibold text-green-600 uppercase tracking-wide">Du har:</p>
-            {present.map((s) => (
-              <div key={s.fagkode} className="flex items-start gap-2 text-sm">
-                <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" aria-hidden="true" />
-                <span>{s.name}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="space-y-1">
-          <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide">Du mangler (uten fagkode):</p>
-          {missing.map((s) => (
-            <div key={s.fagkode} className="space-y-0.5">
-              <div className="flex items-start gap-2 text-sm">
-                <AlertTriangle className="h-4 w-4 text-orange-500 shrink-0 mt-0.5" aria-hidden="true" />
-                <div>
-                  <span className="font-medium">{s.name}</span>
-                  <p className="text-xs text-muted-foreground">
-                    Kreves for: {s.required.slice(0, 2).join(", ")}
-                    {s.required.length > 2 ? ` og ${s.required.length - 2} til` : ""}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <p className="text-xs text-muted-foreground border-t pt-2">
-          Tips: Legg til fagkode (f.eks. MAT3206) når du registrerer karakterer for å aktivere denne analysen fullt ut.
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Hjelpkomponenter
-// ---------------------------------------------------------------------------
-
-function Delta({
-  current,
-  simulated,
-  decimals = 1,
-}: {
-  current: number;
-  simulated: number;
-  decimals?: number;
-}) {
-  const diff = simulated - current;
-  if (Math.abs(diff) < 0.01) return null;
-  const positive = diff > 0;
-  return (
-    <p className={cn("text-xs font-semibold", positive ? "text-green-600" : "text-red-500")}>
-      {positive ? "+" : ""}{diff.toFixed(decimals)}
-    </p>
-  );
-}
-
-function StudyGroup({
-  title,
-  variant,
-  programs,
-  userPoints,
-}: {
-  title: string;
-  variant: "success" | "warning" | "neutral";
-  programs: StudyProgramEntry[];
-  userPoints: number;
-}) {
-  const [expanded, setExpanded] = useState(variant !== "neutral");
-
-  const colorMap = {
-    success: "text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-950/30 dark:border-green-800",
-    warning: "text-yellow-700 bg-yellow-50 border-yellow-200 dark:text-yellow-400 dark:bg-yellow-950/30 dark:border-yellow-800",
-    neutral: "text-muted-foreground bg-muted border-border",
-  };
-
-  return (
-    <div>
-      <button
-        className="flex w-full items-center justify-between py-2"
-        onClick={() => setExpanded((v) => !v)}
-      >
-        <span className="text-sm font-semibold">{title}</span>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="text-xs">{programs.length}</Badge>
-          <span className="text-xs text-muted-foreground">{expanded ? "▲" : "▼"}</span>
-        </div>
-      </button>
-      {expanded && (
-        <div className="grid gap-2 sm:grid-cols-2">
-          {programs.map((p, i) => {
-            const missing = p.requiredPoints - userPoints;
-            return (
-              <div
-                key={i}
-                className={cn("rounded-lg border p-3 text-sm", colorMap[variant])}
-              >
-                <p className="font-semibold">{p.name}</p>
-                <p className="text-xs opacity-75">{p.institution}</p>
-                <div className="mt-1.5 flex items-center justify-between">
-                  <span className="text-xs">Grense: {p.requiredPoints.toFixed(1)}p</span>
-                  {variant === "warning" && (
-                    <span className="text-xs font-medium">
-                      Mangler {missing.toFixed(1)}p
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
