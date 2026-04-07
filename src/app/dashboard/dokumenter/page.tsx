@@ -189,6 +189,7 @@ export default function DokumenterPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-8"
+          aria-label="Søk i testresultater"
         />
       </div>
 

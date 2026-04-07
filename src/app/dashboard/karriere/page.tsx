@@ -222,11 +222,12 @@ function KarrierePage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-8"
+            aria-label="Søk etter yrke eller bransje"
           />
         </div>
 
         <Select value={sectorFilter} onValueChange={(v) => setSectorFilter(v ?? "alle")}>
-          <SelectTrigger className="w-full sm:w-44">
+          <SelectTrigger className="w-full sm:w-44" aria-label="Filtrer på bransje">
             <SelectValue placeholder="Bransje" />
           </SelectTrigger>
           <SelectContent>
@@ -240,7 +241,7 @@ function KarrierePage() {
         </Select>
 
         <Select value={eduFilter} onValueChange={(v) => setEduFilter(v ?? "alle")}>
-          <SelectTrigger className="w-full sm:w-40">
+          <SelectTrigger className="w-full sm:w-40" aria-label="Filtrer på utdanningsnivå">
             <SelectValue placeholder="Utdanning" />
           </SelectTrigger>
           <SelectContent>
@@ -254,7 +255,7 @@ function KarrierePage() {
         </Select>
 
         <Select value={demandFilter} onValueChange={(v) => setDemandFilter(v ?? "alle")}>
-          <SelectTrigger className="w-full sm:w-44">
+          <SelectTrigger className="w-full sm:w-44" aria-label="Filtrer på etterspørsel">
             <SelectValue placeholder="Etterspørsel" />
           </SelectTrigger>
           <SelectContent>
@@ -266,7 +267,7 @@ function KarrierePage() {
         </Select>
 
         <Select value={sortBy} onValueChange={(v) => setSortBy((v ?? "match") as typeof sortBy)}>
-          <SelectTrigger className="w-full sm:w-36">
+          <SelectTrigger className="w-full sm:w-36" aria-label="Sorteringsrekkefølge">
             <SelectValue placeholder="Sorter" />
           </SelectTrigger>
           <SelectContent>

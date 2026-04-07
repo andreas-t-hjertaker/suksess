@@ -425,6 +425,7 @@ export default function ChatPage() {
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 disabled={sending}
+                aria-label="Skriv en melding"
                 autoFocus
               />
               <Button type="submit" disabled={!newMessage.trim() || sending} size="icon">

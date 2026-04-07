@@ -313,6 +313,7 @@ export default function StudierPage() {
                 onChange={(e) => setNewName(e.target.value)}
                 className="flex-1 min-w-32"
                 onKeyDown={(e) => e.key === "Enter" && addCourse()}
+                aria-label="Emnenavn"
               />
               <Input
                 type="number"
@@ -322,6 +323,7 @@ export default function StudierPage() {
                 className="w-20"
                 min={1}
                 max={30}
+                aria-label="Studiepoeng (ECTS)"
               />
               <select
                 value={newGrade}
@@ -338,6 +340,7 @@ export default function StudierPage() {
                 value={newSemester}
                 onChange={(e) => setNewSemester(e.target.value)}
                 className="w-20"
+                aria-label="Semester"
               />
               <Button onClick={addCourse} size="sm" className="gap-1.5">
                 <Plus className="h-4 w-4" />

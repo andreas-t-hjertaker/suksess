@@ -440,6 +440,7 @@ export default function SoknadsCoachPage() {
                 className="pl-9"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                aria-label="Søk studieprogram eller institusjon"
               />
             </div>
             <Button

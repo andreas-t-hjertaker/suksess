@@ -307,13 +307,14 @@ Beskrivelse: ${job.description}`;
           className="pl-9"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          aria-label="Søk etter stilling, bedrift eller sted"
         />
       </div>
 
       {/* Filtre */}
       <div className="flex gap-2 flex-wrap">
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-[160px]" aria-label="Filtrer på stillingstype">
             <SelectValue placeholder="Alle typer" />
           </SelectTrigger>
           <SelectContent>
@@ -324,7 +325,7 @@ Beskrivelse: ${job.description}`;
         </Select>
 
         <Select value={locationFilter} onValueChange={setLocationFilter}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px]" aria-label="Filtrer på sted">
             <SelectValue placeholder="Alle steder" />
           </SelectTrigger>
           <SelectContent>

@@ -321,9 +321,11 @@ export default function ParentPortalPage() {
               {linkedStudents.map((s) => (
                 <button
                   key={s.uid}
+                  id={`tab-${s.uid}`}
                   onClick={() => handleSelectStudent(s.uid)}
                   role="tab"
                   aria-selected={selectedStudent === s.uid}
+                  aria-controls="student-tabpanel"
                   aria-label={`Vis ${s.displayName}`}
                   className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
                     selectedStudent === s.uid
@@ -338,7 +340,13 @@ export default function ParentPortalPage() {
           )}
 
           {student && (
-            <div className="space-y-4" aria-live="polite">
+            <div
+              id="student-tabpanel"
+              role="tabpanel"
+              aria-labelledby={`tab-${selectedStudent}`}
+              className="space-y-4"
+              aria-live="polite"
+            >
               {/* Elev-info */}
               <Card>
                 <CardContent className="pt-6">
