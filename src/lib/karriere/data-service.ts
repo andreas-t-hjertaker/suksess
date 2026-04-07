@@ -97,8 +97,6 @@ const SSB_SALARY_DATA: Record<string, { median: number; p25: number; p75: number
   "3411": { median: 620000, p25: 520000, p75: 740000, year: 2025 }, // Politibetjent
 };
 
-// CAREER_STYRK_MAP importert fra @/lib/mappings/styrk-riasec
-
 // ---------------------------------------------------------------------------
 // Hent-funksjoner
 // ---------------------------------------------------------------------------
