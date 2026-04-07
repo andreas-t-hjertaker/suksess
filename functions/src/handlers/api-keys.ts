@@ -1,8 +1,7 @@
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
 import { success, fail, withAuth } from "../middleware";
-
-const db = admin.firestore();
+import { db } from "../constants";
 
 // ============================================================
 // API-nøkkel-handlers

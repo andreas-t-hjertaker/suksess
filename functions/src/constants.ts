@@ -3,6 +3,21 @@
  * Extracted from inline magic numbers for maintainability.
  */
 
+import * as admin from "firebase-admin";
+
+// ============================================================
+// Firebase initialization (must run before any handler accesses Firestore/Auth)
+// ============================================================
+
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+
+const db = admin.firestore();
+
+/** Shared Firestore instance — safe to use from any handler module. */
+export { db };
+
 // ============================================================
 // API Key Management (#100)
 // ============================================================

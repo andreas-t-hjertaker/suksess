@@ -1,8 +1,6 @@
-import * as admin from "firebase-admin";
 import type { DocumentReference } from "firebase-admin/firestore";
 import { success, withAuth } from "../middleware";
-
-const db = admin.firestore();
+import { db } from "../constants";
 
 // ============================================================
 // Konto-sletting

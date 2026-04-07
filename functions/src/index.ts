@@ -1,11 +1,8 @@
 import { onRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { fail, rateLimit, validateCsrf } from "./middleware";
+import { db } from "./constants";
 import { routes, findParamRoute } from "./router";
-
-admin.initializeApp();
-
-const db = admin.firestore();
 
 // Tillatte CORS-origins (produksjon + dev)
 const ALLOWED_ORIGINS = [

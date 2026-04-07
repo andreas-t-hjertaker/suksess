@@ -1,8 +1,7 @@
 import * as admin from "firebase-admin";
 import { success, fail, withAdmin, type RouteContext } from "../middleware";
 import { deleteSubcollection } from "./account";
-
-const db = admin.firestore();
+import { db } from "../constants";
 
 // ============================================================
 // Admin-handlers

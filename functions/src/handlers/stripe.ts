@@ -2,8 +2,7 @@ import * as admin from "firebase-admin";
 import Stripe from "stripe";
 import { success, fail, withAuth, withAdmin, type RouteContext } from "../middleware";
 import { processStripeInvoiceForEhf, getEhfStatus, retryEhfDelivery } from "../ehf";
-
-const db = admin.firestore();
+import { db } from "../constants";
 
 // ============================================================
 // Stripe-konfigurasjon

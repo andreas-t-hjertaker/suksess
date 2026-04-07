@@ -2,8 +2,7 @@ import * as admin from "firebase-admin";
 import * as crypto from "crypto";
 import { success, fail, withTenantAdmin } from "../middleware";
 import { deleteSubcollection } from "./account";
-
-const db = admin.firestore();
+import { db } from "../constants";
 
 // ============================================================
 // School-admin endepunkter (#134)

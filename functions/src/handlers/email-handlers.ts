@@ -2,8 +2,7 @@ import * as admin from "firebase-admin";
 import * as crypto from "crypto";
 import { success, fail, withAuth, withAdmin, withRateLimit } from "../middleware";
 import { sendEmail } from "../email";
-
-const db = admin.firestore();
+import { db } from "../constants";
 
 // ============================================================
 // E-post (#111)

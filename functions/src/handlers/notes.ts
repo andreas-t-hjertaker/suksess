@@ -1,8 +1,7 @@
 import * as admin from "firebase-admin";
 import { z } from "zod";
 import { success, withAuth, withAdmin, withValidation, type RouteContext } from "../middleware";
-
-const db = admin.firestore();
+import { db } from "../constants";
 
 // ============================================================
 // Zod-skjemaer

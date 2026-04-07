@@ -1,7 +1,6 @@
 import * as admin from "firebase-admin";
 import { success, fail, withAuth, withRateLimit } from "../middleware";
-
-const db = admin.firestore();
+import { db } from "../constants";
 
 // ============================================================
 // XP-system

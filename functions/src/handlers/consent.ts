@@ -6,8 +6,7 @@
 
 import * as admin from "firebase-admin";
 import { fail, type RouteContext } from "../middleware";
-
-const db = admin.firestore();
+import { db } from "../constants";
 
 /** GET /consent/verify/:token — Verifiser foresatt-samtykke via e-post-lenke */
 export async function verifyConsent({ req, res }: RouteContext): Promise<void> {
