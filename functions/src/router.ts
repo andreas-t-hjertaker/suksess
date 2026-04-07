@@ -26,6 +26,10 @@ import {
 } from "./handlers/school-admin";
 import { deleteAccount } from "./handlers/account";
 import { awardXp, getXp } from "./handlers/xp";
+import { verifyConsent } from "./handlers/consent";
+import { revokeApiKey } from "./handlers/api-keys";
+import { getAdminUser, disableAdminUser, deleteAdminUser, updateFeatureFlag } from "./handlers/admin";
+import { setSchoolUserRole, disableSchoolUser, deleteSchoolUser } from "./handlers/school-admin";
 
 // ============================================================
 // Typer
@@ -36,6 +40,15 @@ export type RouteHandler = (ctx: RouteContext) => Promise<void> | void;
 export interface Route {
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   path: string;
+  handler: RouteHandler;
+}
+
+/** Parametrisk rute — matcher med startsWith i stedet for eksakt match */
+export interface ParamRoute {
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+  prefix: string;
+  /** Ekstra betingelse for sti-matching (f.eks. endsWith) */
+  match?: (path: string) => boolean;
   handler: RouteHandler;
 }
 
@@ -90,6 +103,31 @@ export const routes: Route[] = [
 ];
 
 // ============================================================
+// Parametriske ruter — matcher prefix + valgfri betingelse
+// ============================================================
+
+export const paramRoutes: ParamRoute[] = [
+  // API-nøkler: DELETE /api-keys/:id
+  { method: "DELETE", prefix: "/api-keys/", handler: revokeApiKey },
+  // Admin bruker-ruter: GET /admin/users/:uid
+  { method: "GET", prefix: "/admin/users/", handler: getAdminUser },
+  // Admin bruker-ruter: POST /admin/users/:uid/disable
+  { method: "POST", prefix: "/admin/users/", match: (p) => p.endsWith("/disable"), handler: disableAdminUser },
+  // Admin bruker-ruter: DELETE /admin/users/:uid
+  { method: "DELETE", prefix: "/admin/users/", handler: deleteAdminUser },
+  // Admin feature-flags: PUT /admin/feature-flags/:id
+  { method: "PUT", prefix: "/admin/feature-flags/", handler: updateFeatureFlag },
+  // Samtykke: GET /consent/verify/:token (#106)
+  { method: "GET", prefix: "/consent/verify/", handler: verifyConsent },
+  // School-admin: POST /school-admin/users/:uid/role
+  { method: "POST", prefix: "/school-admin/users/", match: (p) => p.endsWith("/role") && p !== "/school-admin/users/bulk-import", handler: setSchoolUserRole },
+  // School-admin: POST /school-admin/users/:uid/disable
+  { method: "POST", prefix: "/school-admin/users/", match: (p) => p.endsWith("/disable"), handler: disableSchoolUser },
+  // School-admin: DELETE /school-admin/users/:uid
+  { method: "DELETE", prefix: "/school-admin/users/", handler: deleteSchoolUser },
+];
+
+// ============================================================
 // Rute-matching
 // ============================================================
 
@@ -98,4 +136,15 @@ export const routes: Route[] = [
  */
 export function findRoute(method: string, path: string): Route | null {
   return routes.find((r) => r.method === method && r.path === path) || null;
+}
+
+/**
+ * Finn en parametrisk rute-match (prefix + valgfri betingelse).
+ */
+export function findParamRoute(method: string, path: string): ParamRoute | null {
+  return paramRoutes.find((r) =>
+    r.method === method &&
+    path.startsWith(r.prefix) &&
+    (!r.match || r.match(path))
+  ) || null;
 }
