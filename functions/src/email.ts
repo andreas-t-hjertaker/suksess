@@ -8,10 +8,24 @@
  */
 
 import * as admin from "firebase-admin";
+import * as crypto from "crypto";
 
 function getDb() {
   return admin.firestore();
 }
+
+/** Hash e-postadresse med SHA-256 for GDPR-kompatibel logging */
+function hashEmail(email: string): string {
+  return crypto.createHash("sha256").update(email.toLowerCase().trim()).digest("hex").slice(0, 16);
+}
+
+/** Ekstraher domene fra e-post for debugging uten PII */
+function emailDomain(email: string): string {
+  return email.split("@")[1] || "unknown";
+}
+
+/** TTL for e-postlogger: 30 dager (Art. 6(1)(f) berettiget interesse) */
+const EMAIL_LOG_TTL_DAYS = 30;
 
 // ---------------------------------------------------------------------------
 // Typer
@@ -121,19 +135,25 @@ export async function sendEmail(payload: SendEmailPayload): Promise<EmailResult>
   } else {
     // I utvikling/test: logg og returner uten å sende
     console.log("[email] Ingen e-posttransport konfigurert. Logget e-post:", {
-      to: payload.to.map((r) => r.email),
+      to: payload.to.map((r) => `${hashEmail(r.email)}@${emailDomain(r.email)}`),
       subject: payload.subject,
     });
     result = { messageId: `dev-${Date.now()}`, provider: "console" };
   }
 
-  // Logg e-post i Firestore
+  // Logg e-post i Firestore (anonymisert — GDPR Art. 6(1)(f))
+  const expiresAt = new Date(Date.now() + EMAIL_LOG_TTL_DAYS * 24 * 60 * 60 * 1000);
   await getDb().collection("emailLogs").add({
-    to: payload.to.map((r) => r.email),
+    to: payload.to.map((r) => ({
+      hash: hashEmail(r.email),
+      domain: emailDomain(r.email),
+    })),
+    recipientCount: payload.to.length,
     subject: payload.subject,
     provider: result.provider,
     messageId: result.messageId,
     sentAt: admin.firestore.FieldValue.serverTimestamp(),
+    expiresAt,
   });
 
   return result;
