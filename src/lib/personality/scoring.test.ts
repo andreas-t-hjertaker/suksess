@@ -66,6 +66,74 @@ describe("validateAnswers", () => {
   it("avviser Infinity", () => {
     expect(() => validateAnswers({ q1: Infinity })).toThrow("Ugyldig personlighetssvar");
   });
+
+  it("avviser -Infinity", () => {
+    expect(() => validateAnswers({ q1: -Infinity })).toThrow("Ugyldig personlighetssvar");
+  });
+
+  it("avviser svært store verdier", () => {
+    expect(() => validateAnswers({ q1: 999 })).toThrow("Ugyldig personlighetssvar");
+  });
+
+  it("returnerer validerte data ved gyldig input", () => {
+    const input = { q1: 1, q2: 5, q3: 3 };
+    const result = validateAnswers(input);
+    expect(result).toEqual(input);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// scoreBigFive — input-validering (#176)
+// ---------------------------------------------------------------------------
+
+describe("scoreBigFive — input-validering", () => {
+  it("kaster feil for verdi 0", () => {
+    expect(() => scoreBigFive({ bf_o1: 0 })).toThrow("Ugyldig personlighetssvar");
+  });
+
+  it("kaster feil for verdi 6", () => {
+    expect(() => scoreBigFive({ bf_o1: 6 })).toThrow("Ugyldig personlighetssvar");
+  });
+
+  it("kaster feil for NaN", () => {
+    expect(() => scoreBigFive({ bf_o1: NaN })).toThrow("Ugyldig personlighetssvar");
+  });
+
+  it("kaster feil for desimaltall", () => {
+    expect(() => scoreBigFive({ bf_o1: 3.7 })).toThrow("Ugyldig personlighetssvar");
+  });
+
+  it("kaster feil for negative verdier", () => {
+    expect(() => scoreBigFive({ bf_o1: -1 })).toThrow("Ugyldig personlighetssvar");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// scoreRiasec — input-validering (#176)
+// ---------------------------------------------------------------------------
+
+describe("scoreRiasec — input-validering", () => {
+  it("kaster feil for ugyldig verdi", () => {
+    expect(() => scoreRiasec({ r_r1: 0 })).toThrow("Ugyldig personlighetssvar");
+  });
+
+  it("kaster feil for NaN", () => {
+    expect(() => scoreRiasec({ r_r1: NaN })).toThrow("Ugyldig personlighetssvar");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// scoreStrengths — input-validering (#176)
+// ---------------------------------------------------------------------------
+
+describe("scoreStrengths — input-validering", () => {
+  it("kaster feil for ugyldig verdi", () => {
+    expect(() => scoreStrengths({ s_kr1: 6 })).toThrow("Ugyldig personlighetssvar");
+  });
+
+  it("kaster feil for desimaltall", () => {
+    expect(() => scoreStrengths({ s_kr1: 2.5 })).toThrow("Ugyldig personlighetssvar");
+  });
 });
 
 // ---------------------------------------------------------------------------
