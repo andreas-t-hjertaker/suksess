@@ -190,6 +190,10 @@ export type AiDecisionLog = {
  * Logg en AI-beslutning til Firestore for compliance-formål.
  * Oppbevares i minimum 5 år jf. EU AI Act Art. 12(2).
  * Samling: aiDecisionLogs/{logId}
+ *
+ * TTL-policy må konfigureres i Firestore:
+ *   gcloud firestore fields ttls update retentionExpiresAt \
+ *     --collection-group=aiDecisionLogs --project=suksess-842ed
  */
 export async function logAiDecision(
   decision: Omit<AiDecisionLog, "logId" | "timestamp">
@@ -201,10 +205,15 @@ export async function logAiDecision(
     timestamp: nowISO(),
   };
 
+  // Oppbevaringsperiode: 5 år jf. EU AI Act Art. 12(2), deretter GDPR Art. 5(1)(e) dataminimalisering
+  const RETENTION_YEARS = 5;
+  const retentionExpiresAt = new Date(Date.now() + RETENTION_YEARS * 365.25 * 24 * 60 * 60 * 1000);
+
   try {
     await setDoc(doc(collection(db, "aiDecisionLogs"), logId), {
       ...entry,
       createdAt: serverTimestamp(),
+      retentionExpiresAt,
     });
 
     logger.info("ai_decision_logged", {
