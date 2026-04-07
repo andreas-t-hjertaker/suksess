@@ -25,6 +25,7 @@ import {
   Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ErrorState } from "@/components/error-state";
 import { showToast } from "@/lib/toast";
 import { usePersonality } from "@/components/personality-provider";
 import { ShareCard } from "@/components/share-card";
@@ -268,6 +269,7 @@ export default function ProfilPage() {
   const { config } = usePersonality();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [shareFormat, setShareFormat] = useState<"stories" | "feed">("stories");
 
@@ -276,10 +278,18 @@ export default function ProfilPage() {
       setLoading(false);
       return;
     }
-    const unsub = subscribeToUserProfile(firebaseUser.uid, (p) => {
-      setProfile(p);
-      setLoading(false);
-    });
+    const unsub = subscribeToUserProfile(
+      firebaseUser.uid,
+      (p) => {
+        setProfile(p);
+        setLoading(false);
+      },
+      (err) => {
+        console.error("[Profil] Feil ved lasting av profil:", err);
+        setLoadError("Kunne ikke laste profilen din. Prøv igjen senere.");
+        setLoading(false);
+      }
+    );
     return unsub;
   }, [firebaseUser]);
 
@@ -297,6 +307,14 @@ export default function ProfilPage() {
 
   if (loading) {
     return <PageSkeleton variant="grid" cards={4} />;
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-4 md:p-6">
+        <ErrorState message={loadError} onRetry={() => window.location.reload()} />
+      </div>
+    );
   }
 
   if (!profile) {

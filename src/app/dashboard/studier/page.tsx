@@ -32,6 +32,7 @@ import {
   Circle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ErrorState } from "@/components/error-state";
 import { useStudiedata } from "@/hooks/use-studiedata";
 import { useOpptaksdata } from "@/hooks/use-opptaksdata";
 import { useGrades } from "@/hooks/use-grades";
@@ -129,6 +130,7 @@ export default function StudierPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [newCredits, setNewCredits] = useState("10");
   const [newGrade, setNewGrade] = useState<string>("–");
@@ -153,7 +155,9 @@ export default function StudierPage() {
       }
       setLoadingCourses(false);
       initialLoad.current = false;
-    }).catch(() => {
+    }).catch((err) => {
+      console.error("[Studier] Feil ved lasting av emner:", err);
+      setLoadError("Kunne ikke laste emner. Prøv igjen senere.");
       setLoadingCourses(false);
       initialLoad.current = false;
     });
@@ -230,6 +234,14 @@ export default function StudierPage() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[0, 1, 2, 3].map((i) => <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />)}
         </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-4 md:p-6">
+        <ErrorState message={loadError} onRetry={() => window.location.reload()} />
       </div>
     );
   }

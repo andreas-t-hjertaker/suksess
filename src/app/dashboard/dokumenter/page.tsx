@@ -34,6 +34,7 @@ import {
   Inbox,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ErrorState } from "@/components/error-state";
 import { TestResultSchema } from "@/types/schemas";
 import type { TestType } from "@/types/domain";
 
@@ -100,11 +101,13 @@ export default function DokumenterPage() {
   const { user } = useAuth();
   const [rows, setRows] = useState<TestResultRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   async function fetchTestResults() {
     if (!user) return;
     setLoading(true);
+    setError(null);
     try {
       const q = query(
         collection(db, "users", user.uid, "testResults"),
@@ -126,6 +129,9 @@ export default function DokumenterPage() {
         return acc;
       }, []);
       setRows(validated);
+    } catch (err) {
+      console.error("[Dokumenter] Feil ved henting av testresultater:", err);
+      setError("Kunne ikke laste dokumenter. Prøv igjen senere.");
     } finally {
       setLoading(false);
     }
@@ -144,6 +150,14 @@ export default function DokumenterPage() {
       r.testType.toLowerCase().includes(q)
     );
   });
+
+  if (error) {
+    return (
+      <div className="p-4 md:p-6">
+        <ErrorState message={error} onRetry={fetchTestResults} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

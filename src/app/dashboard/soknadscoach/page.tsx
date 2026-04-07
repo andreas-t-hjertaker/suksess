@@ -38,6 +38,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ErrorState } from "@/components/error-state";
 import { useOpptaksdata, type LiveStudyProgram } from "@/hooks/use-opptaksdata";
 import { TrendSparkline } from "@/components/trend-sparkline";
 import type { UserProfile } from "@/types/domain";
@@ -268,6 +269,7 @@ export default function SoknadsCoachPage() {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [checklist, setChecklist] = useState<CheckItem[]>(DEFAULT_CHECKLIST);
   const [tab, setTab] = useState<"programmer" | "sjekkliste">("programmer");
+  const [loadError, setLoadError] = useState<string | null>(null);
   const dataLoaded = useRef(false);
 
   // Last favoritter og sjekkliste fra Firestore
@@ -283,7 +285,9 @@ export default function SoknadsCoachPage() {
         }
       }
       dataLoaded.current = true;
-    }).catch(() => {
+    }).catch((err) => {
+      console.error("[SøknadsCoach] Feil ved lasting av data:", err);
+      setLoadError("Kunne ikke laste søknadsdata. Prøv igjen senere.");
       dataLoaded.current = true;
     });
   }, [user]);
@@ -343,6 +347,14 @@ export default function SoknadsCoachPage() {
 
   if (gradesLoading) {
     return <PageSkeleton variant="list" cards={5} />;
+  }
+
+  if (loadError) {
+    return (
+      <div className="p-4 md:p-6">
+        <ErrorState message={loadError} onRetry={() => window.location.reload()} />
+      </div>
+    );
   }
 
   return (
