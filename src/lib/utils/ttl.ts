@@ -21,9 +21,16 @@ export function isExpired(createdAt: Date | number, ttlHours: number): boolean {
 }
 
 /**
+ * Beregn alder i millisekunder fra et tidspunkt.
+ */
+export function calculateAgeMs(createdAt: Date | number): number {
+  const ms = typeof createdAt === "number" ? createdAt : createdAt.getTime();
+  return Date.now() - ms;
+}
+
+/**
  * Sjekk om et tidspunkt er eldre enn angitt TTL (i millisekunder).
  */
 export function isExpiredMs(createdAt: Date | number, ttlMs: number): boolean {
-  const ms = typeof createdAt === "number" ? createdAt : createdAt.getTime();
-  return Date.now() - ms > ttlMs;
+  return calculateAgeMs(createdAt) > ttlMs;
 }
