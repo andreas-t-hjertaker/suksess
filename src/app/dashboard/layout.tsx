@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { ProtectedRoute } from "@/components/protected-route";
 import { Sidebar, MobileSidebar, MobileBottomNav } from "@/components/sidebar";
 import { useAuth } from "@/hooks/use-auth";
@@ -19,6 +20,7 @@ import { useImplicitProfiling } from "@/hooks/use-implicit-profiling";
 import { PageTransition } from "@/components/motion";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { ScrollToTop } from "@/components/scroll-to-top";
+import { leggTilBrodsmuler } from "@/lib/brodsmule-samler";
 
 // Lazy-loaded komponenter — reduserer initial bundle
 const AiAssistant = dynamic(
@@ -41,10 +43,22 @@ const BadgeToastListener = dynamic(
   () => import("@/components/badge-toast").then((m) => ({ default: m.BadgeToastListener })),
   { ssr: false }
 );
+const FeedbackFAB = dynamic(
+  () => import("@/components/feedback-fab").then((m) => ({ default: m.FeedbackFAB })),
+  { ssr: false }
+);
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   useImplicitProfiling(); // Sporer atferd og justerer UI gradvis
+
+  // Spor navigasjonsendringer som brødsmler for feedback-kontekst
+  React.useEffect(() => {
+    const path = typeof window !== "undefined" ? window.location.pathname : "";
+    if (path) {
+      leggTilBrodsmuler("navigasjon", { sti: path });
+    }
+  }, [children]); // children endres ved rutebytte
 
   // Lag initialer fra visningsnavn eller e-post
   const initials = user?.displayName
@@ -131,6 +145,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       <ScrollToTop />
       <LevelUpOverlay />
       <BadgeToastListener />
+      <FeedbackFAB />
     </div>
   );
 }

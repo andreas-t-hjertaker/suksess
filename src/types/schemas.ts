@@ -313,6 +313,10 @@ export const ChatFeedbackSchema = z.object({
   rating: z.enum(["thumbs_up", "thumbs_down"]),
   reason: z.enum(["wrong_info", "not_relevant", "unclear", "other"]).nullable(),
   messageContent: z.string(),
+  /** Side/funksjon feedback ble gitt fra (f.eks. "karriere", "veileder") */
+  pageContext: z.string().nullable().optional(),
+  /** Brukerens rolle (elev, foresatt, rådgiver) */
+  userRole: z.string().nullable().optional(),
   createdAt: firestoreTimestamp,
 });
 
@@ -336,4 +340,34 @@ export const SchoolStatsSchema = z.object({
   }),
   llmCostNok: z.number(),
   updatedAt: firestoreTimestamp,
+});
+
+// ---------------------------------------------------------------------------
+// Tilbakemelding — feedback/{feedbackId}
+// ---------------------------------------------------------------------------
+
+export const BrodsmuleSchema = z.object({
+  handling: z.string(),
+  tidspunkt: z.number(),
+  data: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const TilbakemeldingSchema = z.object({
+  type: z.enum(["feil", "forslag", "ros"]),
+  tittel: z.string(),
+  beskrivelse: z.string(),
+  prioritet: z.enum(["lav", "middels", "hoy", "kritisk"]).nullable().optional(),
+  kilde: z.enum(["fab", "sidebar", "error-boundary", "toast"]),
+  side: z.string(),
+  nettleser: z.string(),
+  skjermstorrelse: z.string(),
+  uid: z.string(),
+  epost: z.string().nullable().optional(),
+  feilmelding: z.string().nullable().optional(),
+  stackTrace: z.string().nullable().optional(),
+  komponentStack: z.string().nullable().optional(),
+  brodsmler: z.array(BrodsmuleSchema).nullable().optional(),
+  status: z.enum(["ny", "under_behandling", "lost", "avvist"]),
+  notionSideId: z.string().nullable().optional(),
+  createdAt: firestoreTimestamp,
 });

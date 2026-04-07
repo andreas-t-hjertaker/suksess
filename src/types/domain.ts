@@ -242,3 +242,56 @@ export type Conversation = WithFirestoreTimestamps & {
   messages: ChatMessage[];
   lastMessageAt: Timestamp | null;
 };
+
+// ---------------------------------------------------------------------------
+// Tilbakemelding — feedback/{feedbackId}
+// ---------------------------------------------------------------------------
+
+/** Feedbacktype: feilrapport, forslag eller ros */
+export type TilbakemeldingType = "feil" | "forslag" | "ros";
+
+/** Kilde som utløste feedback-dialogen */
+export type TilbakemeldingKilde = "fab" | "sidebar" | "error-boundary" | "toast";
+
+/** Prioritet for feilrapporter */
+export type TilbakemeldingPrioritet = "lav" | "middels" | "hoy" | "kritisk";
+
+/** Status for oppfølging */
+export type TilbakemeldingStatus = "ny" | "under_behandling" | "lost" | "avvist";
+
+/** Brødsmule — sporer brukerhandlinger for feilrapport-kontekst */
+export type Brodsmuler = {
+  handling: string;
+  tidspunkt: number;
+  data?: Record<string, unknown>;
+};
+
+/** Fullstendig tilbakemelding lagret i Firestore */
+export type Tilbakemelding = {
+  id: string;
+  type: TilbakemeldingType;
+  tittel: string;
+  beskrivelse: string;
+  prioritet?: TilbakemeldingPrioritet;
+  kilde: TilbakemeldingKilde;
+
+  // Automatisk kontekst
+  side: string;
+  tidspunkt: Date;
+  nettleser: string;
+  skjermstorrelse: string;
+
+  // Brukerinfo
+  uid: string;
+  epost?: string;
+
+  // Feil-spesifikk kontekst
+  feilmelding?: string;
+  stackTrace?: string;
+  komponentStack?: string;
+  brodsmler?: Brodsmuler[];
+
+  // Oppfølging
+  status: TilbakemeldingStatus;
+  notionSideId?: string;
+};
