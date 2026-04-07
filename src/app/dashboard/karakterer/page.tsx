@@ -413,7 +413,7 @@ export default function KaraktererPage() {
 
                 {simSubject && (
                   <div className="space-y-2">
-                    <span id="ny-karakter-label" className="text-sm font-medium">Ny karakter</span>
+                    <label id="ny-karakter-label" className="text-sm font-medium">Ny karakter</label>
                     <div className="flex gap-1" role="group" aria-labelledby="ny-karakter-label">
                       {([1, 2, 3, 4, 5, 6] as const).map((g) => (
                         <button
