@@ -86,7 +86,7 @@ export default function AbonnementPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
+                <CreditCard className="h-5 w-5" aria-hidden="true" />
                 Ditt abonnement
               </CardTitle>
               <Badge variant={isActive ? "default" : isPastDue ? "destructive" : "secondary"}>

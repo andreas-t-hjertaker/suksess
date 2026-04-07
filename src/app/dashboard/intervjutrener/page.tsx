@@ -277,7 +277,7 @@ export default function IntervjutrenerPage() {
 
         <div className="grid gap-3 sm:grid-cols-2">
           {INTERVIEW_CATEGORIES.map((cat) => (
-            <button key={cat.id} onClick={() => startInterview(cat)} className="text-left">
+            <button key={cat.id} onClick={() => startInterview(cat)} className="text-left" aria-label={`Start intervjuøvelse: ${cat.title}`}>
               <Card className="h-full transition-colors hover:bg-muted/50">
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-3">
@@ -418,8 +418,8 @@ export default function IntervjutrenerPage() {
             aria-label="Ditt intervjusvar"
             disabled={isThinking}
           />
-          <Button onClick={handleSend} disabled={!input.trim() || isThinking}>
-            <Send className="h-4 w-4" />
+          <Button onClick={handleSend} disabled={!input.trim() || isThinking} aria-label="Send svar">
+            <Send className="h-4 w-4" aria-hidden="true" />
           </Button>
         </div>
       )}
@@ -427,7 +427,7 @@ export default function IntervjutrenerPage() {
       {interviewComplete && (
         <Card className="border-green-200 dark:border-green-800">
           <CardContent className="flex items-center gap-4 py-6 text-center">
-            <CheckCircle2 className="h-8 w-8 text-green-600 shrink-0" />
+            <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400 shrink-0" aria-hidden="true" />
             <div className="flex-1">
               <p className="font-medium">Øvingen er fullført!</p>
               <p className="text-sm text-muted-foreground">
