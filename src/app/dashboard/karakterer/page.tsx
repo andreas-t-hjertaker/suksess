@@ -217,9 +217,10 @@ export default function KaraktererPage() {
         <button
           onClick={() => setShowBothSystems((v) => !v)}
           className="flex w-full items-center justify-between text-sm font-medium hover:text-primary transition-colors"
+          aria-expanded={showBothSystems}
         >
           <span>Sammenlign begge opptakssystemer</span>
-          <span className="text-muted-foreground">{showBothSystems ? "▲ Skjul" : "▼ Vis"}</span>
+          <span className="text-muted-foreground" aria-hidden="true">{showBothSystems ? "▲ Skjul" : "▼ Vis"}</span>
         </button>
         {showBothSystems && (
           <div className="grid gap-3 sm:grid-cols-2 pt-2">
@@ -255,13 +256,17 @@ export default function KaraktererPage() {
             <div className="rounded-lg border p-4 space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 <div className="col-span-2">
+                  <label htmlFor="grade-subject" className="sr-only">Fagnavn</label>
                   <Input
+                    id="grade-subject"
                     placeholder="Fagnavn, f.eks. Matematikk R2"
                     value={newSubject}
                     onChange={(e) => setNewSubject(e.target.value)}
                   />
                 </div>
+                <label htmlFor="grade-fagkode" className="sr-only">Fagkode</label>
                 <Input
+                  id="grade-fagkode"
                   placeholder="Fagkode (valgfritt, f.eks. MAT3206)"
                   value={newFagkode}
                   onChange={(e) => setNewFagkode(e.target.value.toUpperCase())}
@@ -366,6 +371,7 @@ export default function KaraktererPage() {
                       <button
                         onClick={() => removeGrade(g.id)}
                         className="rounded p-1 text-muted-foreground hover:text-destructive transition-colors"
+                        aria-label={`Slett ${g.subject}`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -490,6 +496,7 @@ export default function KaraktererPage() {
                 className="pl-8 h-8 text-sm"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                aria-label="Søk studier"
               />
             </div>
           </div>
