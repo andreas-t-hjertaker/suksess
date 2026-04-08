@@ -212,10 +212,12 @@ export default function StudierPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b">
+      <div className="flex gap-2 border-b" role="tablist" aria-label="Studier-faner">
         {(["progresjon", "anbefalinger", "studietips", "eksamen"] as const).map((t) => (
           <button
             key={t}
+            role="tab"
+            aria-selected={tab === t}
             onClick={() => setTab(t)}
             className={cn(
               "px-4 py-2 text-sm font-medium capitalize border-b-2 transition-colors",

@@ -281,7 +281,7 @@ export default function HjelpPage() {
         </h2>
 
         {/* Kategorifilter */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrer FAQ-kategorier">
           {(["alle", "generelt", "personvern", "ai", "karriere", "teknisk"] as const).map(
             (cat) => (
               <Button
@@ -289,6 +289,7 @@ export default function HjelpPage() {
                 variant={activeCategory === cat ? "default" : "outline"}
                 size="sm"
                 onClick={() => setActiveCategory(cat)}
+                aria-pressed={activeCategory === cat}
                 className="text-xs"
               >
                 {cat === "alle" ? "Alle" : CATEGORY_LABELS[cat]}

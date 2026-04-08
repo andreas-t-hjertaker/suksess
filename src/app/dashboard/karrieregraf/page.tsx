@@ -252,13 +252,14 @@ export default function KarriereGrafPage() {
 
       {/* Kontroller */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex gap-1">
+        <div className="flex gap-1" role="group" aria-label="Filtrer karrierematch">
           {(["alle", "god", "topp"] as const).map((f) => (
             <Button
               key={f}
               size="sm"
               variant={filter === f ? "default" : "outline"}
               onClick={() => setFilter(f)}
+              aria-pressed={filter === f}
               className="capitalize text-xs"
             >
               {f === "alle" ? "Alle karrierer" : f === "god" ? "≥ 40% match" : "≥ 70% match (topp)"}

@@ -309,11 +309,12 @@ export default function ProfilPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2 mb-6">
+          <div className="flex gap-2 mb-6" role="group" aria-label="Velg delingsformat">
             <Button
               variant={shareFormat === "stories" ? "default" : "outline"}
               size="sm"
               onClick={() => setShareFormat("stories")}
+              aria-pressed={shareFormat === "stories"}
             >
               Stories (9:16)
             </Button>
@@ -321,6 +322,7 @@ export default function ProfilPage() {
               variant={shareFormat === "feed" ? "default" : "outline"}
               size="sm"
               onClick={() => setShareFormat("feed")}
+              aria-pressed={shareFormat === "feed"}
             >
               Feed (1:1)
             </Button>

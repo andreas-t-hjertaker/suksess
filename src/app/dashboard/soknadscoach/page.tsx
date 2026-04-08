@@ -407,10 +407,12 @@ export default function SoknadsCoachPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b">
+      <div className="flex gap-2 border-b" role="tablist" aria-label="Søknadscoach-faner">
         {(["programmer", "sjekkliste"] as const).map((t) => (
           <button
             key={t}
+            role="tab"
+            aria-selected={tab === t}
             onClick={() => setTab(t)}
             className={cn(
               "px-4 py-2 text-sm font-medium capitalize border-b-2 transition-colors",
@@ -447,6 +449,7 @@ export default function SoknadsCoachPage() {
               variant={showFavoritesOnly ? "default" : "outline"}
               size="sm"
               onClick={() => setShowFavoritesOnly((v) => !v)}
+              aria-pressed={showFavoritesOnly}
               className="gap-1.5 shrink-0"
             >
               <Star className="h-4 w-4" />

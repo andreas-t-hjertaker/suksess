@@ -372,16 +372,16 @@ export default function MineDataPage() {
             </Button>
           ) : (
             <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-              <p className="text-sm font-medium text-destructive">
+              <label htmlFor="delete-confirm" className="text-sm font-medium text-destructive block">
                 Skriv <strong>SLETT ALT</strong> for å bekrefte
-              </p>
+              </label>
               <input
+                id="delete-confirm"
                 type="text"
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
                 placeholder="SLETT ALT"
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono"
-                aria-label="Bekreftelse for sletting"
               />
               <div className="flex gap-2">
                 <Button
