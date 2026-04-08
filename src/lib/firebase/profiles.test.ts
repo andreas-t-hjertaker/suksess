@@ -255,6 +255,8 @@ describe("saveGrade", () => {
       term: "vt",
       year: 2026,
       programSubjectId: null,
+      source: "manual",
+      nvbImportedAt: null,
     });
 
     expect(mockSetDoc).toHaveBeenCalledWith(

@@ -36,6 +36,8 @@ export function useGradeForm() {
         term: newTerm,
         year: newYear,
         programSubjectId: null,
+        source: "manual",
+        nvbImportedAt: null,
       });
       earnXp("grades_added");
       setNewSubject("");

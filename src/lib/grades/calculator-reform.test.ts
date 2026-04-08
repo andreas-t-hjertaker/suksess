@@ -30,6 +30,8 @@ const makeGrade = (
   year: 2024,
   programSubjectId: null,
   fagkode: fagkode ?? null,
+  source: "manual",
+  nvbImportedAt: null,
   createdAt: null,
   updatedAt: null,
 });

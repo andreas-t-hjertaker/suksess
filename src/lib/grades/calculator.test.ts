@@ -14,6 +14,8 @@ function makeGrade(
     year: overrides.year ?? 2024,
     fagkode: overrides.fagkode ?? null,
     programSubjectId: overrides.programSubjectId ?? null,
+    source: overrides.source ?? "manual",
+    nvbImportedAt: overrides.nvbImportedAt ?? null,
     createdAt: null,
     updatedAt: null,
   };

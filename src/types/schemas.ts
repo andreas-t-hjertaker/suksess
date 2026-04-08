@@ -123,6 +123,8 @@ export const UserProfileSchema = z.object({
 // Grade — users/{userId}/grades/{gradeId}
 // ---------------------------------------------------------------------------
 
+export const GradeSourceSchema = z.enum(["manual", "nvb"]);
+
 export const GradeSchema = z.object({
   ...withFirestoreTimestamps,
   userId: z.string(),
@@ -132,6 +134,8 @@ export const GradeSchema = z.object({
   term: TermTypeSchema,
   year: z.number().int(),
   programSubjectId: z.string().nullable(),
+  source: GradeSourceSchema.optional().default("manual"),
+  nvbImportedAt: firestoreTimestamp,
 });
 
 // ---------------------------------------------------------------------------

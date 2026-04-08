@@ -262,6 +262,8 @@ export type GeneratedContent = WithFirestoreTimestamps & {
 
 export type TermType = "vt" | "ht"; // vår / høst
 
+export type GradeSource = "manual" | "nvb";
+
 export type Grade = WithFirestoreTimestamps & {
   userId: string;
   subject: string;
@@ -270,6 +272,10 @@ export type Grade = WithFirestoreTimestamps & {
   term: TermType;
   year: number;
   programSubjectId: string | null;
+  /** Kilde for karakteren: manuelt registrert eller importert fra NVB (#147) */
+  source: GradeSource;
+  /** Tidspunkt for NVB-import (kun for source="nvb") */
+  nvbImportedAt: Timestamp | null;
 };
 
 // ---------------------------------------------------------------------------
