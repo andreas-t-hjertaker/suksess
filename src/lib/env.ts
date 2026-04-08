@@ -56,28 +56,44 @@ const clientEnvSchema = z.object({
 export type ClientEnv = z.infer<typeof clientEnvSchema>;
 
 // ---------------------------------------------------------------------------
+// Inline env-verdier
+// ---------------------------------------------------------------------------
+// VIKTIG: Next.js (Turbopack) erstatter bare individuelle
+// process.env.NEXT_PUBLIC_*-referanser med faktiske verdier under build.
+// «process.env» som et objekt BLIR IKKE erstattet — det er et tomt objekt
+// på klientsiden. Derfor må hver variabel hentes ut eksplisitt.
+// ---------------------------------------------------------------------------
+
+const inlinedEnv = {
+  NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "",
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? "",
+  NEXT_PUBLIC_FIREBASE_DATABASE_URL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ?? "",
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "",
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? "",
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? "",
+  NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? "",
+  NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID ?? "",
+  NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY: process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_SITE_KEY ?? "",
+  NEXT_PUBLIC_FEIDE_PROVIDER_ID: process.env.NEXT_PUBLIC_FEIDE_PROVIDER_ID ?? "",
+  NEXT_PUBLIC_WEAVIATE_URL: process.env.NEXT_PUBLIC_WEAVIATE_URL ?? "",
+  NEXT_PUBLIC_WEAVIATE_PROXY: process.env.NEXT_PUBLIC_WEAVIATE_PROXY ?? "",
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "",
+  NEXT_PUBLIC_STRIPE_PRICE_PRO: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO ?? "",
+  NEXT_PUBLIC_STRIPE_PRICE_SKOLE: process.env.NEXT_PUBLIC_STRIPE_PRICE_SKOLE ?? "",
+  NEXT_PUBLIC_CF_BASE_URL: process.env.NEXT_PUBLIC_CF_BASE_URL ?? "",
+  NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME ?? "",
+  NEXT_PUBLIC_APP_VERSION: process.env.NEXT_PUBLIC_APP_VERSION ?? "",
+  NEXT_PUBLIC_REGION: process.env.NEXT_PUBLIC_REGION ?? "",
+};
+
+// ---------------------------------------------------------------------------
 // Validering — kjøres ved import (lazy, én gang)
 // ---------------------------------------------------------------------------
 
 let _env: ClientEnv | null = null;
 
 function validateEnv(): ClientEnv {
-  // Under bygging (SSG) er env vars kanskje ikke tilgjengelig
-  const isBuildTime =
-    typeof window === "undefined" &&
-    !process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-
-  if (isBuildTime) {
-    // Returner placeholder-verdier for build-time
-    return clientEnvSchema.parse({
-      NEXT_PUBLIC_FIREBASE_API_KEY: "build-placeholder",
-      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "build-placeholder",
-      NEXT_PUBLIC_FIREBASE_PROJECT_ID: "build-placeholder",
-      NEXT_PUBLIC_FIREBASE_APP_ID: "build-placeholder",
-    });
-  }
-
-  const result = clientEnvSchema.safeParse(process.env);
+  const result = clientEnvSchema.safeParse(inlinedEnv);
 
   if (!result.success) {
     const missing = result.error.issues
@@ -89,22 +105,27 @@ function validateEnv(): ClientEnv {
         `Kopier .env.local.example til .env.local og fyll inn verdier.\n`
     );
 
-    // I produksjon: kast feil
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(`Manglende miljøvariabler:\n${missing}`);
+    // I produksjon: ikke kast feil — logg og bruk defaults slik at SSR fungerer
+    // Klient-side Firebase-init feiler uansett uten gyldig apiKey
+    if (typeof window !== "undefined") {
+      console.warn(
+        "[env] Kjører klient-side uten gyldige Firebase-variabler — appen vil ikke fungere korrekt."
+      );
     }
-
-    // I utvikling: returner delvis validert med defaults
-    return clientEnvSchema.parse({
-      ...process.env,
-      NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "missing",
-      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "missing",
-      NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "missing",
-      NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "missing",
-    });
   }
 
-  return result.data;
+  // Alltid returner parsed (med defaults) — unngå at build/SSR krasjer
+  return clientEnvSchema.parse({
+    ...inlinedEnv,
+    NEXT_PUBLIC_FIREBASE_API_KEY:
+      inlinedEnv.NEXT_PUBLIC_FIREBASE_API_KEY || "placeholder",
+    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN:
+      inlinedEnv.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "placeholder",
+    NEXT_PUBLIC_FIREBASE_PROJECT_ID:
+      inlinedEnv.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "placeholder",
+    NEXT_PUBLIC_FIREBASE_APP_ID:
+      inlinedEnv.NEXT_PUBLIC_FIREBASE_APP_ID || "placeholder",
+  });
 }
 
 /** Type-sikre miljøvariabler — validert med Zod (v2) */
