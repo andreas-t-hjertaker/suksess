@@ -272,6 +272,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Sync Notion secrets to Google Secret Manager
+        continue-on-error: true
         run: |
           # Opprett/oppdater NOTION_API_TOKEN
           echo -n "${{ secrets.NOTION_API_TOKEN }}" | gcloud secrets create NOTION_API_TOKEN \
