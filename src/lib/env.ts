@@ -107,7 +107,7 @@ function validateEnv(): ClientEnv {
   return result.data;
 }
 
-/** Type-sikre miljøvariabler — validert med Zod */
+/** Type-sikre miljøvariabler — validert med Zod (v2) */
 export const env: ClientEnv = (() => {
   if (!_env) _env = validateEnv();
   return _env;
