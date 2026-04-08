@@ -15,6 +15,7 @@ import {
 const ALLOWED_ORIGINS = [
   "https://suksess.no",
   "https://www.suksess.no",
+  "https://karriere.ketl.cloud",
   "https://suksess-842ed.web.app",
   "https://suksess-842ed.firebaseapp.com",
   /^http:\/\/localhost(:\d+)?$/,
