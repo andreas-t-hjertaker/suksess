@@ -27,6 +27,9 @@ import { ingestAllYrkesfag } from "./yrkesfag";
 // Re-eksporter NAV stillinger (allerede definert i nav-stillinger.ts)
 export { ingestNavStillingerScheduled } from "./nav-stillinger";
 
+// Re-eksporter FINT-integrasjon (#142)
+export { ingestFintScheduled, triggerFintSync } from "./fint";
+
 const db = admin.firestore();
 
 // ---------------------------------------------------------------------------

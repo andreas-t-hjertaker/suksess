@@ -12,17 +12,17 @@ const mockGetDoc = vi.fn();
 const mockSetDoc = vi.fn();
 const mockUpdateDoc = vi.fn();
 const mockOnSnapshot = vi.fn();
-const mockDoc = vi.fn((...segments: string[]) => ({ path: segments.join("/") }));
-const mockCollection = vi.fn((...segments: string[]) => ({ path: segments.join("/") }));
+const mockDoc = vi.fn((...args: unknown[]) => ({ path: (args as string[]).join("/") }));
+const mockCollection = vi.fn((...args: unknown[]) => ({ path: (args as string[]).join("/") }));
 
 vi.mock("firebase/firestore", () => ({
   getFirestore: () => ({}),
   enableMultiTabIndexedDbPersistence: () => Promise.resolve(),
-  doc: (...args: unknown[]) => mockDoc(...args),
+  doc: (...args: unknown[]) => mockDoc(...args as string[]),
   getDoc: (...args: unknown[]) => mockGetDoc(...args),
   setDoc: (...args: unknown[]) => mockSetDoc(...args),
   updateDoc: (...args: unknown[]) => mockUpdateDoc(...args),
-  collection: (...args: unknown[]) => mockCollection(...args),
+  collection: (...args: unknown[]) => mockCollection(...args as string[]),
   serverTimestamp: () => "SERVER_TS",
   onSnapshot: (...args: unknown[]) => mockOnSnapshot(...args),
   query: vi.fn(),
