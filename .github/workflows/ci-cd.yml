@@ -271,6 +271,13 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Generate functions .env
+        run: |
+          printf 'NOTION_API_TOKEN=%s\nNOTION_FEEDBACK_DB_ID=%s\n' "$NOTION_API_TOKEN" "$NOTION_FEEDBACK_DB_ID" > functions/.env.suksess-842ed
+        env:
+          NOTION_API_TOKEN: ${{ secrets.NOTION_API_TOKEN }}
+          NOTION_FEEDBACK_DB_ID: ${{ secrets.NOTION_FEEDBACK_DB_ID }}
+
       - name: Deploy Cloud Functions
         run: >
           npx firebase-tools@latest deploy

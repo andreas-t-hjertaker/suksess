@@ -1,5 +1,6 @@
 import { onRequest } from "firebase-functions/v2/https";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
+import { logger } from "firebase-functions";
 import * as admin from "firebase-admin";
 import { fail, rateLimit, validateCsrf } from "./middleware";
 import { db } from "./constants";
@@ -118,7 +119,7 @@ export const onChatFeedbackCreated = onDocumentCreated(
     const feedbackId = event.params.feedbackId;
     const data = snapshot.data();
 
-    await syncChatFeedbackToNotion(feedbackId, {
+    const notionId = await syncChatFeedbackToNotion(feedbackId, {
       userId: data.userId ?? "",
       conversationId: data.conversationId ?? null,
       messageId: data.messageId ?? "",
@@ -127,6 +128,11 @@ export const onChatFeedbackCreated = onDocumentCreated(
       messageContent: data.messageContent ?? "",
       createdAt: data.createdAt,
     });
+
+    if (notionId) {
+      await db.collection("chatFeedback").doc(feedbackId).update({ notionSideId: notionId });
+      logger.info(`[onChatFeedbackCreated] Synkronisert ${feedbackId} → Notion ${notionId}`);
+    }
   }
 );
 
@@ -151,7 +157,7 @@ export const onTilbakemeldingCreated = onDocumentCreated(
     const feedbackId = event.params.feedbackId;
     const data = snapshot.data();
 
-    await syncTilbakemeldingToNotion(feedbackId, {
+    const notionId = await syncTilbakemeldingToNotion(feedbackId, {
       type: data.type ?? "forslag",
       tittel: data.tittel ?? "(uten tittel)",
       beskrivelse: data.beskrivelse ?? "",
@@ -167,5 +173,119 @@ export const onTilbakemeldingCreated = onDocumentCreated(
       status: data.status ?? "ny",
       createdAt: data.createdAt,
     });
+
+    if (notionId) {
+      await db.collection("feedback").doc(feedbackId).update({ notionSideId: notionId });
+      logger.info(`[onTilbakemeldingCreated] Synkronisert ${feedbackId} → Notion ${notionId}`);
+    }
+  }
+);
+
+// ============================================================
+// Backfill: HTTP-endepunkt for å synke eksisterende feedback
+// ============================================================
+
+/**
+ * HTTP-trigger: backfill eksisterende feedback til Notion.
+ * Itererer over feedback- og chatFeedback-samlingene og oppretter
+ * Notion-sider for dokumenter som mangler notionSideId.
+ *
+ * Kall: GET/POST https://europe-west1-suksess-842ed.cloudfunctions.net/backfillFeedbackTilNotion
+ */
+export const backfillFeedbackTilNotion = onRequest(
+  { region: FUNCTIONS_REGION, cors: true, timeoutSeconds: 300 },
+  async (_req, res) => {
+    const notionToken = process.env.NOTION_API_TOKEN;
+    const notionDbId = process.env.NOTION_FEEDBACK_DB_ID;
+
+    if (!notionToken || !notionDbId) {
+      res.status(500).json({ error: "Mangler NOTION_API_TOKEN eller NOTION_FEEDBACK_DB_ID" });
+      return;
+    }
+
+    const results: Array<{ id: string; collection: string; status: string; notionId?: string; error?: string }> = [];
+
+    // --- Backfill feedback-samlingen ---
+    try {
+      const feedbackSnap = await db.collection("feedback").get();
+      for (const doc of feedbackSnap.docs) {
+        const data = doc.data();
+        if (data.notionSideId) {
+          results.push({ id: doc.id, collection: "feedback", status: "skipped", notionId: data.notionSideId as string });
+          continue;
+        }
+        try {
+          const notionId = await syncTilbakemeldingToNotion(doc.id, {
+            type: data.type ?? "forslag",
+            tittel: data.tittel ?? "(uten tittel)",
+            beskrivelse: data.beskrivelse ?? "",
+            prioritet: data.prioritet ?? null,
+            kilde: data.kilde ?? "fab",
+            side: data.side ?? "ukjent",
+            nettleser: data.nettleser ?? "ukjent",
+            skjermstorrelse: data.skjermstorrelse ?? "ukjent",
+            uid: data.uid ?? "",
+            epost: data.epost ?? null,
+            feilmelding: data.feilmelding ?? null,
+            stackTrace: data.stackTrace ?? null,
+            status: data.status ?? "ny",
+            createdAt: data.createdAt,
+          });
+          if (notionId) {
+            await db.collection("feedback").doc(doc.id).update({ notionSideId: notionId });
+            results.push({ id: doc.id, collection: "feedback", status: "created", notionId });
+          } else {
+            results.push({ id: doc.id, collection: "feedback", status: "error", error: "Notion returnerte null" });
+          }
+        } catch (err: unknown) {
+          results.push({ id: doc.id, collection: "feedback", status: "error", error: (err as Error).message });
+        }
+      }
+    } catch (err) {
+      logger.error("[backfill] Feil ved lesing av feedback-samlingen:", err);
+    }
+
+    // --- Backfill chatFeedback-samlingen ---
+    try {
+      const chatSnap = await db.collection("chatFeedback").get();
+      for (const doc of chatSnap.docs) {
+        const data = doc.data();
+        if (data.notionSideId) {
+          results.push({ id: doc.id, collection: "chatFeedback", status: "skipped", notionId: data.notionSideId as string });
+          continue;
+        }
+        try {
+          const notionId = await syncChatFeedbackToNotion(doc.id, {
+            userId: data.userId ?? "",
+            conversationId: data.conversationId ?? null,
+            messageId: data.messageId ?? "",
+            rating: data.rating ?? "thumbs_down",
+            reason: data.reason ?? null,
+            messageContent: data.messageContent ?? "",
+            createdAt: data.createdAt,
+          });
+          if (notionId) {
+            await db.collection("chatFeedback").doc(doc.id).update({ notionSideId: notionId });
+            results.push({ id: doc.id, collection: "chatFeedback", status: "created", notionId });
+          } else {
+            results.push({ id: doc.id, collection: "chatFeedback", status: "error", error: "Notion returnerte null" });
+          }
+        } catch (err: unknown) {
+          results.push({ id: doc.id, collection: "chatFeedback", status: "error", error: (err as Error).message });
+        }
+      }
+    } catch (err) {
+      logger.error("[backfill] Feil ved lesing av chatFeedback-samlingen:", err);
+    }
+
+    const summary = {
+      total: results.length,
+      skipped: results.filter(r => r.status === "skipped").length,
+      created: results.filter(r => r.status === "created").length,
+      errors: results.filter(r => r.status === "error").length,
+      details: results,
+    };
+    logger.info("[backfillFeedbackTilNotion]", summary);
+    res.json(summary);
   }
 );

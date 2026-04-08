@@ -6,26 +6,25 @@
  *   1. chatFeedback/{id}  — thumbs up/down på AI-meldinger
  *   2. feedback/{id}      — generell plattform-feedback (feil/forslag/ros)
  *
- * Notion-database propertier:
- *   - Tilbakemelding (title)  — emoji + type + tittel
- *   - Type (select)           — "AI-feedback" / "Feil" / "Forslag" / "Ros"
- *   - Prioritet (select)      — "Kritisk" / "Høy" / "Middels" / "Lav" (nullable)
- *   - Beskrivelse (rich_text) — innhold (avkortet)
- *   - Side (rich_text)        — hvilken side feedback kom fra
- *   - Bruker-ID (rich_text)   — anonymisert
- *   - Kilde (select)          — "FAB" / "Error Boundary" / "AI-veileder" osv.
- *   - Nettleser (rich_text)   — teknisk kontekst
- *   - Status (select)         — "Ny" / "Under behandling" / "Løst" / "Avvist"
- *   - Opprettet (date)        — ISO-dato
+ * Notion-database: «Pilotbruker Feedback — Suksess»
+ * Properties (matcher Notion-skjemaet):
+ *   - Feedback (title)       — emoji + type + tittel
+ *   - Type (select)          — "AI-feedback" / "Feil" / "Forslag" / "Ros" / "Annet"
+ *   - Status (select)        — "Ny"
+ *   - Prioritet (select)     — "Kritisk" / "Høy" / "Medium" / "Lav"
+ *   - Beskrivelse (rich_text) — innhold
+ *   - Side (rich_text)       — hvilken side feedback kom fra
+ *   - Bruker (rich_text)     — anonymisert bruker-ID
+ *   - Kilde (select)         — "FAB" / "Sidebar" / "Error Boundary" / "Toast" / "AI-veileder"
+ *   - Nettleser (rich_text)  — teknisk kontekst
+ *   - E-post (email)         — brukerens e-post
+ *   - Dato (date)            — ISO-dato
+ *   - Firestore ID (rich_text) — ID for sporbarhet
  *
- * Secrets (Firebase Functions config):
+ * Miljøvariabler:
  *   NOTION_API_TOKEN         — Notion integration token
  *   NOTION_FEEDBACK_DB_ID    — Notion database ID for feedback
  */
-
-// Leses fra miljøvariabler (satt via Cloud Functions env eller Secret Manager manuelt)
-// Bruker process.env i stedet for defineSecret for å unngå at Firebase CLI
-// krever Secret Manager API under deploy.
 
 // ---------------------------------------------------------------------------
 // Typer
@@ -86,7 +85,7 @@ const TYPE_LABELS: Record<string, string> = {
 const PRIORITET_LABELS: Record<string, string> = {
   kritisk: "Kritisk",
   hoy: "Høy",
-  middels: "Middels",
+  middels: "Medium",
   lav: "Lav",
 };
 
@@ -97,20 +96,14 @@ const KILDE_LABELS: Record<string, string> = {
   toast: "Toast",
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  ny: "Ny",
-  under_behandling: "Under behandling",
-  lost: "Løst",
-  avvist: "Avvist",
-};
-
 // ---------------------------------------------------------------------------
 // Felles Notion API-kall
 // ---------------------------------------------------------------------------
 
 async function createNotionPage(
-  properties: Record<string, unknown>
-): Promise<boolean> {
+  properties: Record<string, unknown>,
+  children?: unknown[]
+): Promise<string | null> {
   const token = process.env.NOTION_API_TOKEN ?? "";
   const databaseId = process.env.NOTION_FEEDBACK_DB_ID ?? "";
 
@@ -118,7 +111,15 @@ async function createNotionPage(
     console.warn(
       "[feedback-notion-sync] Mangler NOTION_API_TOKEN eller NOTION_FEEDBACK_DB_ID — hopper over sync"
     );
-    return false;
+    return null;
+  }
+
+  const body: Record<string, unknown> = {
+    parent: { database_id: databaseId },
+    properties,
+  };
+  if (children && children.length > 0) {
+    body.children = children;
   }
 
   const response = await fetch("https://api.notion.com/v1/pages", {
@@ -128,10 +129,7 @@ async function createNotionPage(
       "Content-Type": "application/json",
       "Notion-Version": "2022-06-28",
     },
-    body: JSON.stringify({
-      parent: { database_id: databaseId },
-      properties,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -139,10 +137,11 @@ async function createNotionPage(
     console.error(
       `[feedback-notion-sync] Notion API feil (${response.status}): ${errorText}`
     );
-    return false;
+    return null;
   }
 
-  return true;
+  const result = (await response.json()) as { id?: string };
+  return result.id ?? null;
 }
 
 // ---------------------------------------------------------------------------
@@ -151,11 +150,12 @@ async function createNotionPage(
 
 /**
  * Synkroniserer ett chatFeedback-dokument til Notion.
+ * Returnerer Notion-side-ID for writeback til Firestore.
  */
 export async function syncChatFeedbackToNotion(
   feedbackId: string,
   data: ChatFeedbackDoc
-): Promise<void> {
+): Promise<string | null> {
   const isPositive = data.rating === "thumbs_up";
   const emoji = isPositive ? "👍" : "👎";
   const ratingLabel = isPositive ? "Positiv" : "Negativ";
@@ -167,13 +167,13 @@ export async function syncChatFeedbackToNotion(
     .filter(Boolean)
     .join(" ");
 
-  const anonymizedUserId = data.userId.slice(0, 8) + "…";
+  const anonymizedUserId = data.userId ? data.userId.slice(0, 8) + "…" : "anonym";
   const createdDate =
-    data.createdAt?.toDate?.()?.toISOString() ?? new Date().toISOString();
+    data.createdAt?.toDate?.()?.toISOString()?.slice(0, 10) ?? new Date().toISOString().slice(0, 10);
 
   const properties: Record<string, unknown> = {
-    Tilbakemelding: {
-      title: [{ text: { content: title } }],
+    Feedback: {
+      title: [{ text: { content: title.slice(0, 200) } }],
     },
     Type: {
       select: { name: "AI-feedback" },
@@ -182,12 +182,12 @@ export async function syncChatFeedbackToNotion(
       rich_text: [
         {
           text: {
-            content: data.messageContent?.slice(0, 500) || "(tom melding)",
+            content: data.messageContent?.slice(0, 2000) || "(tom melding)",
           },
         },
       ],
     },
-    "Bruker-ID": {
+    Bruker: {
       rich_text: [{ text: { content: anonymizedUserId } }],
     },
     Kilde: {
@@ -196,16 +196,13 @@ export async function syncChatFeedbackToNotion(
     Status: {
       select: { name: "Ny" },
     },
-    Opprettet: {
+    Dato: {
       date: { start: createdDate },
     },
+    "Firestore ID": {
+      rich_text: [{ text: { content: feedbackId } }],
+    },
   };
-
-  if (reasonLabel) {
-    properties["Prioritet"] = {
-      select: { name: reasonLabel },
-    };
-  }
 
   if (data.conversationId) {
     properties["Side"] = {
@@ -213,12 +210,13 @@ export async function syncChatFeedbackToNotion(
     };
   }
 
-  const ok = await createNotionPage(properties);
-  if (ok) {
+  const notionId = await createNotionPage(properties);
+  if (notionId) {
     console.log(
-      `[feedback-notion-sync] chatFeedback ${feedbackId} → Notion (${ratingLabel})`
+      `[feedback-notion-sync] chatFeedback ${feedbackId} → Notion ${notionId} (${ratingLabel})`
     );
   }
+  return notionId;
 }
 
 // ---------------------------------------------------------------------------
@@ -227,59 +225,75 @@ export async function syncChatFeedbackToNotion(
 
 /**
  * Synkroniserer ett generelt feedback-dokument til Notion.
+ * Returnerer Notion-side-ID for writeback til Firestore.
  */
 export async function syncTilbakemeldingToNotion(
   feedbackId: string,
   data: TilbakemeldingDoc
-): Promise<void> {
+): Promise<string | null> {
   const emoji = TYPE_EMOJIS[data.type] ?? "📝";
   const typeLabel = TYPE_LABELS[data.type] ?? data.type;
   const title = `${emoji} ${typeLabel}: ${data.tittel.slice(0, 80)}`;
 
-  const anonymizedUserId = data.uid.slice(0, 8) + "…";
+  const anonymizedUserId = data.uid ? data.uid.slice(0, 8) + "…" : "anonym";
   const createdDate =
-    data.createdAt?.toDate?.()?.toISOString() ?? new Date().toISOString();
+    data.createdAt?.toDate?.()?.toISOString()?.slice(0, 10) ?? new Date().toISOString().slice(0, 10);
 
   const properties: Record<string, unknown> = {
-    Tilbakemelding: {
-      title: [{ text: { content: title } }],
+    Feedback: {
+      title: [{ text: { content: title.slice(0, 200) } }],
     },
     Type: {
       select: { name: typeLabel },
     },
-    Beskrivelse: {
-      rich_text: [
-        {
-          text: {
-            content: [
-              data.beskrivelse?.slice(0, 400),
-              data.feilmelding ? `\n\nFeil: ${data.feilmelding}` : "",
-            ]
-              .filter(Boolean)
-              .join(""),
-          },
-        },
-      ],
-    },
-    Side: {
-      rich_text: [{ text: { content: data.side || "ukjent" } }],
-    },
-    "Bruker-ID": {
-      rich_text: [{ text: { content: anonymizedUserId } }],
-    },
-    Kilde: {
-      select: { name: KILDE_LABELS[data.kilde] ?? data.kilde },
-    },
-    Nettleser: {
-      rich_text: [{ text: { content: data.nettleser || "ukjent" } }],
-    },
     Status: {
-      select: { name: STATUS_LABELS[data.status] ?? "Ny" },
+      select: { name: "Ny" },
     },
-    Opprettet: {
+    Dato: {
       date: { start: createdDate },
     },
+    "Firestore ID": {
+      rich_text: [{ text: { content: feedbackId } }],
+    },
+    Bruker: {
+      rich_text: [{ text: { content: anonymizedUserId } }],
+    },
   };
+
+  // Beskrivelse som separat property
+  if (data.beskrivelse) {
+    const beskContent = [
+      data.beskrivelse.slice(0, 1800),
+      data.feilmelding ? `\n\nFeil: ${data.feilmelding}` : "",
+    ]
+      .filter(Boolean)
+      .join("");
+    properties["Beskrivelse"] = {
+      rich_text: [{ text: { content: beskContent } }],
+    };
+  }
+
+  if (data.side) {
+    properties["Side"] = {
+      rich_text: [{ text: { content: data.side.slice(0, 200) } }],
+    };
+  }
+
+  if (data.kilde) {
+    properties["Kilde"] = {
+      select: { name: KILDE_LABELS[data.kilde] ?? data.kilde },
+    };
+  }
+
+  if (data.nettleser) {
+    properties["Nettleser"] = {
+      rich_text: [{ text: { content: data.nettleser.slice(0, 200) } }],
+    };
+  }
+
+  if (data.epost) {
+    properties["E-post"] = { email: data.epost };
+  }
 
   // Prioritet kun for feilrapporter
   if (data.prioritet && PRIORITET_LABELS[data.prioritet]) {
@@ -288,12 +302,34 @@ export async function syncTilbakemeldingToNotion(
     };
   }
 
-  const ok = await createNotionPage(properties);
-  if (ok) {
-    console.log(
-      `[feedback-notion-sync] feedback ${feedbackId} → Notion (${typeLabel})`
+  // Children-blokker for ekstra kontekst
+  const children: unknown[] = [];
+
+  if (data.stackTrace) {
+    children.push(
+      {
+        object: "block",
+        type: "heading_3",
+        heading_3: { rich_text: [{ text: { content: "Stack Trace" } }] },
+      },
+      {
+        object: "block",
+        type: "code",
+        code: {
+          rich_text: [{ text: { content: data.stackTrace.slice(0, 2000) } }],
+          language: "plain text",
+        },
+      }
     );
   }
+
+  const notionId = await createNotionPage(properties, children);
+  if (notionId) {
+    console.log(
+      `[feedback-notion-sync] feedback ${feedbackId} → Notion ${notionId} (${typeLabel})`
+    );
+  }
+  return notionId;
 }
 
 /** Ingen secrets-deklarasjon nødvendig — bruker process.env direkte */
