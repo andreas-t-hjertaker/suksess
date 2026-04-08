@@ -23,10 +23,9 @@
  *   NOTION_FEEDBACK_DB_ID    — Notion database ID for feedback
  */
 
-import { defineSecret } from "firebase-functions/params";
-
-const notionApiToken = defineSecret("NOTION_API_TOKEN");
-const notionFeedbackDbId = defineSecret("NOTION_FEEDBACK_DB_ID");
+// Leses fra miljøvariabler (satt via Cloud Functions env eller Secret Manager manuelt)
+// Bruker process.env i stedet for defineSecret for å unngå at Firebase CLI
+// krever Secret Manager API under deploy.
 
 // ---------------------------------------------------------------------------
 // Typer
@@ -112,8 +111,8 @@ const STATUS_LABELS: Record<string, string> = {
 async function createNotionPage(
   properties: Record<string, unknown>
 ): Promise<boolean> {
-  const token = notionApiToken.value();
-  const databaseId = notionFeedbackDbId.value();
+  const token = process.env.NOTION_API_TOKEN ?? "";
+  const databaseId = process.env.NOTION_FEEDBACK_DB_ID ?? "";
 
   if (!token || !databaseId) {
     console.warn(
@@ -297,5 +296,5 @@ export async function syncTilbakemeldingToNotion(
   }
 }
 
-/** Eksporter secrets slik at triggerne kan deklarere dem */
-export const feedbackNotionSecrets = [notionApiToken, notionFeedbackDbId];
+/** Ingen secrets-deklarasjon nødvendig — bruker process.env direkte */
+export const feedbackNotionSecrets: never[] = [];

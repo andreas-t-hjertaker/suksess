@@ -17,7 +17,6 @@
 import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
-import { defineSecret } from "firebase-functions/params";
 import { withAdmin } from "./middleware";
 
 const db = admin.firestore();
@@ -31,9 +30,7 @@ const ALLOWED_ORIGINS = [
   /^http:\/\/localhost(:\d+)?$/,
 ];
 
-// Weaviate API-nøkkel fra Firebase Secret Manager
-const WEAVIATE_API_KEY = defineSecret("WEAVIATE_API_KEY");
-const WEAVIATE_URL = defineSecret("WEAVIATE_URL");
+// Leses fra miljøvariabler — unngår defineSecret som krever Secret Manager API under deploy
 
 // ---------------------------------------------------------------------------
 // Weaviate REST-klient (ingen SDK — bruker fetch direkte)
@@ -139,12 +136,11 @@ const WEAVIATE_SCHEMA = {
 export const weaviateProvision = onRequest(
   {
     region: "europe-west1",
-    secrets: [WEAVIATE_API_KEY, WEAVIATE_URL],
   },
   async (req, res) => {
     const handler = withAdmin(async ({ res: authRes }) => {
-      const apiKey = WEAVIATE_API_KEY.value();
-      const baseUrl = WEAVIATE_URL.value();
+      const apiKey = process.env.WEAVIATE_API_KEY ?? "";
+      const baseUrl = process.env.WEAVIATE_URL ?? "";
 
       const results: string[] = [];
 
@@ -188,11 +184,10 @@ export const weaviateIndexScheduled = onSchedule(
     schedule: "0 2 * * *",
     timeZone: "Europe/Oslo",
     region: "europe-west1",
-    secrets: [WEAVIATE_API_KEY, WEAVIATE_URL],
   },
   async () => {
-    const apiKey = WEAVIATE_API_KEY.value();
-    const baseUrl = WEAVIATE_URL.value();
+    const apiKey = process.env.WEAVIATE_API_KEY ?? "";
+    const baseUrl = process.env.WEAVIATE_URL ?? "";
 
     const [studyCount, careerCount] = await Promise.allSettled([
       indexStudyProgramsToWeaviate(apiKey, baseUrl),
@@ -222,7 +217,6 @@ export const weaviateSearch = onRequest(
     region: "europe-west1",
     cors: ALLOWED_ORIGINS,
     invoker: "public",
-    secrets: [WEAVIATE_API_KEY, WEAVIATE_URL],
   },
   async (req, res) => {
     if (req.method !== "POST") {
@@ -247,8 +241,8 @@ export const weaviateSearch = onRequest(
       return;
     }
 
-    const apiKey = WEAVIATE_API_KEY.value();
-    const baseUrl = WEAVIATE_URL.value();
+    const apiKey = process.env.WEAVIATE_API_KEY ?? "";
+    const baseUrl = process.env.WEAVIATE_URL ?? "";
 
     try {
       // GraphQL nearText-søk via Weaviate REST API

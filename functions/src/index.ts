@@ -8,7 +8,6 @@ import { routes, findParamRoute } from "./router";
 import {
   syncChatFeedbackToNotion,
   syncTilbakemeldingToNotion,
-  feedbackNotionSecrets,
 } from "./handlers/feedback-notion-sync";
 
 // Tillatte CORS-origins (produksjon + dev)
@@ -108,7 +107,6 @@ export const onChatFeedbackCreated = onDocumentCreated(
   {
     document: "chatFeedback/{feedbackId}",
     region: FUNCTIONS_REGION,
-    secrets: feedbackNotionSecrets,
   },
   async (event) => {
     const snapshot = event.data;
@@ -142,7 +140,6 @@ export const onTilbakemeldingCreated = onDocumentCreated(
   {
     document: "feedback/{feedbackId}",
     region: FUNCTIONS_REGION,
-    secrets: feedbackNotionSecrets,
   },
   async (event) => {
     const snapshot = event.data;
