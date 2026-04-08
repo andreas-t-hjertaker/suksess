@@ -6,47 +6,31 @@ Suksess er en AI-drevet karriereveiledningsplattform for norske VGS-elever. Livs
 
 **Eier:** KETL (andreas-t-hjertaker)
 
-## Status (7. april 2026)
+## Status (8. april 2026)
 
-**181 issues opprettet — ~163 lukket, 18 åpne i GitHub.** Deploy til produksjon 25. mars 2026 (Firebase Hosting + Cloud Functions).
+**187 issues opprettet — ~178 lukket, 9 åpne i GitHub.** Deploy til produksjon 25. mars 2026 (Firebase Hosting + Cloud Functions). CI/CD-fiks pushet 8. april (continue-on-error for Notion secrets + Playwright dual-reporter).
 
 3 kodeauditer, 5 strategisk research, 3 UX-research, 1 B2B-research, 1 kodeaudit+sikkerhet-research gjennomført.
 
-### Åpne issues i GitHub (18 stk)
+### Åpne issues i GitHub (9 stk)
 
-**10 av disse er ferdig implementert i kode og bør lukkes.** Se "Klar for lukking" nedenfor.
+#### KRITISK (1 stk)
+- **#187** — CI/CD: Deploy feiler — FIKSET (continue-on-error + Playwright HTML-reporter). Secret Manager API bør aktiveres i GCP for permanent fiks.
 
-#### MUST-HAVE (3 stk — alle ferdig implementert)
-- **#179** — CI/CD: E2E-tester + npm audit ✅ KLAR FOR LUKKING
-- **#167** — Sikkerhet: Peppol-hemmeligheter fjernet fra klient ✅ KLAR FOR LUKKING
-- **#166** — Refaktorering: functions/src/index.ts splittet (91 linjer, 9 handler-moduler) ✅ KLAR FOR LUKKING
-
-#### SHOULD-HAVE (11 stk)
-- **#181** — TypeScript: Strengere tsconfig — DELVIS (noImplicitAny mangler)
+#### SHOULD-HAVE (5 stk)
+- **#181** — TypeScript: Strengere tsconfig — FERDIG (strict: true + alle innstillinger aktive i begge tsconfig)
 - **#180** — Testing: hooks-tester lagt til — DELVIS (Firebase auth/Firestore-tester mangler)
-- **#178** — GDPR: E-postlogger anonymisert ✅ KLAR FOR LUKKING
-- **#177** — Compliance: Firestore TTL for AI Act-logger ✅ KLAR FOR LUKKING
-- **#176** — Bug: Input-validering i personality/scoring ✅ KLAR FOR LUKKING
-- **#174** — Tilgjengelighet: Label-input-kobling — DELVIS (3 sider fikset)
-- **#170** — UX: Error states — DELVIS (7 av ~15 sider har ErrorState)
-- **#169** — Refaktorering: Ekstraher komponenter — DELVIS (3 sider > 600 linjer gjenstår)
-- **#168** — Observabilitet: Tomme catch-blokker erstattet ✅ KLAR FOR LUKKING
+- **#174** — Tilgjengelighet: Label-input-kobling — NÆR FERDIG (tab-roller, aria-pressed, label-kobling fikset i 6 nye sider. Kun shadcn Label-komponent har gjenværende eslint-disable)
+- **#170** — UX: Error states — FERDIG (alle 24 dashboard-sider har ErrorState)
+- **#169** — Refaktorering: Ekstraher komponenter — NÆR FERDIG (ProgramCard ekstrahert fra soknadscoach. Kun karakterer 513 linjer gjenstår, men allerede godt faktorert med 6 ekstraherte komponenter)
 - **#150** — Sikkerhetstesting: OWASP-scanning — IKKE STARTET
 - **#142** — FINT-integrasjon — IKKE STARTET
 
-#### NICE-TO-HAVE (4 stk)
-- **#175** — Refaktorering: Konsistent timestamp-håndtering ✅ KLAR FOR LUKKING
-- **#173** — Refaktorering: Felles TTL/cache-logikk ✅ KLAR FOR LUKKING
-- **#172** — Refaktorering: Felles STYRK-RIASEC mapping ✅ KLAR FOR LUKKING
+#### NICE-TO-HAVE (1 stk)
 - **#147** — Nasjonal vitnemålsdatabase (NVB) — IKKE STARTET
 
-### Issues klar for lukking (10 stk)
-#166, #167, #168, #172, #173, #175, #176, #177, #178, #179
-
-### Stale PRs som bør lukkes (3 stk)
-- **PR #186** — Alle endringer allerede på main (15 issues)
-- **PR #185** — #179-fiksen allerede på main
-- **PR #184** — #167 superseded av sterkere fiks på main
+### Nylig lukket (10 issues + 3 PRs — lukket 7. april)
+#166, #167, #168, #172, #173, #175, #176, #177, #178, #179, PR #184, PR #185, PR #186
 
 ### Nylig lukkede issues (utvalg)
 - **#128** — Ekte karrieredata: koblet til Firestore ✅
@@ -203,17 +187,18 @@ suksess/
 └── CLAUDE.md                          # Denne filen
 ```
 
-## Gjenværende arbeid (8 reelle åpne issues)
-
-Etter lukking av 10 ferdig-implementerte issues gjenstår:
+## Gjenværende arbeid (9 åpne issues)
 
 ```
+FIKSET (klar for lukking):
+  #187 (CI/CD) — continue-on-error + Playwright dual-reporter. Aktiver Secret Manager API i GCP for permanent fiks.
+  #181 (Strengere TypeScript) — alle innstillinger aktive, tsc passerer
+  #170 (Error states) — alle 24 sider har ErrorState
+  #169 (Komponent-ekstraksjon) — kun karakterer (513 linjer) gjenstår, allerede godt faktorert
+
 DELVIS FERDIG (trenger mer arbeid):
-  #181 (Strengere TypeScript) — mangler noImplicitAny
   #180 (Tester) — mangler Firebase auth/Firestore-tester
-  #174 (Tilgjengelighet) — 3 sider fikset, flere gjenstår
-  #170 (Error states) — 7 av ~15 sider har ErrorState
-  #169 (Komponent-ekstraksjon) — 3 sider > 600 linjer gjenstår (foresatt 712, innstillinger 688, karriere 633)
+  #174 (Tilgjengelighet) — tab-roller og aria-pressed fikset i 6 nye sider
 
 IKKE STARTET:
   #150 (OWASP-scanning)
@@ -223,11 +208,11 @@ IKKE STARTET:
 
 ### Anbefalt neste steg
 
-**Umiddelbart (april 2026):**
-1. Lukk 10 ferdige issues + 3 stale PRs i GitHub
-2. Fullfør #170 (error states i resterende dashboard-sider)
-3. Fullfør #169 (ekstraher komponenter fra 3 gjenværende store sider)
-4. Fullfør #174 (a11y i alle dashboard-sider)
+**Denne uken:**
+1. Aktiver Secret Manager API i GCP Console for suksess-842ed (permanent fiks for #187)
+2. Verifiser at feedback-system deployes korrekt etter CI/CD-fiks
+3. Fullfør #180 — Firebase auth/Firestore-tester med emulator
+4. Start #150 — Dependabot + npm audit i CI
 
 **Fase 5 — LOKALISERING + SUPPORT (august 2026):**
 #131 (Nynorsk) → #137 (Hjelpesenter) → #138 (Statusside)
