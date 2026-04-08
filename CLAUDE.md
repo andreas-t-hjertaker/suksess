@@ -8,44 +8,30 @@ Suksess er en AI-drevet karriereveiledningsplattform for norske VGS-elever. Livs
 
 ## Status (8. april 2026)
 
-**187 issues opprettet — ~178 lukket, 9 åpne i GitHub.** Deploy til produksjon 25. mars 2026 (Firebase Hosting + Cloud Functions). CI/CD-fiks pushet 8. april (continue-on-error for Notion secrets + Playwright dual-reporter).
+**v1.0.0 tagget.** 187 issues opprettet — 183 lukket, 4 åpne i GitHub. Deploy til produksjon live på [karriere.ketl.cloud](https://karriere.ketl.cloud). Full CI/CD-pipeline grønn (quality → test → build → deploy).
 
 3 kodeauditer, 5 strategisk research, 3 UX-research, 1 B2B-research, 1 kodeaudit+sikkerhet-research gjennomført.
 
-### Åpne issues i GitHub (9 stk)
+### Åpne issues i GitHub (4 stk)
 
-#### KRITISK (1 stk)
-- **#187** — CI/CD: Deploy feiler — FIKSET (continue-on-error + Playwright HTML-reporter). Secret Manager API bør aktiveres i GCP for permanent fiks.
-
-#### SHOULD-HAVE (5 stk)
-- **#181** — TypeScript: Strengere tsconfig — FERDIG (strict: true + alle innstillinger aktive i begge tsconfig)
+#### SHOULD-HAVE (2 stk)
 - **#180** — Testing: hooks-tester lagt til — DELVIS (Firebase auth/Firestore-tester mangler)
-- **#174** — Tilgjengelighet: Label-input-kobling — NÆR FERDIG (tab-roller, aria-pressed, label-kobling fikset i 6 nye sider. Kun shadcn Label-komponent har gjenværende eslint-disable)
-- **#170** — UX: Error states — FERDIG (alle 24 dashboard-sider har ErrorState)
-- **#169** — Refaktorering: Ekstraher komponenter — NÆR FERDIG (ProgramCard ekstrahert fra soknadscoach. Kun karakterer 513 linjer gjenstår, men allerede godt faktorert med 6 ekstraherte komponenter)
 - **#150** — Sikkerhetstesting: OWASP-scanning — IKKE STARTET
+
+#### BACKEND/DATA (1 stk)
 - **#142** — FINT-integrasjon — IKKE STARTET
 
 #### NICE-TO-HAVE (1 stk)
 - **#147** — Nasjonal vitnemålsdatabase (NVB) — IKKE STARTET
 
-### Nylig lukket (10 issues + 3 PRs — lukket 7. april)
-#166, #167, #168, #172, #173, #175, #176, #177, #178, #179, PR #184, PR #185, PR #186
-
-### Nylig lukkede issues (utvalg)
-- **#128** — Ekte karrieredata: koblet til Firestore ✅
-- **#130** — AI-generert karrierehandlingsplan ✅
-- **#131** — Nynorsk-støtte ✅
-- **#132** — AI Intervjutrener ✅
-- **#139** — Klient-side rutebeskyttelse ✅
-- **#140** — Loading states og feilhåndtering ✅
-- **#141** — AI Chat-sikkerhet for mindreårige ✅
-- **#145** — Server-side rate limiting ✅
-- **#146** — Tilgjengelighet (ARIA + tastatur) ✅
-- **#148** — Dark mode tema-velger ✅
-- **#149** — Zod env-validering ✅
-- **#112** — Fjern hardkodede Firebase-credentials ✅
-- **#57–#82** — Kodeaudit, strategisk research, UX-research ✅
+### Nylig lukket (8. april 2026)
+- **#187** — CI/CD: Deploy fikset (continue-on-error + defineSecret-fjerning + vitest 4.x-migrasjon) ✅
+- **#181** — TypeScript: Strengere tsconfig — strict: true + alle innstillinger ✅
+- **#174** — Tilgjengelighet: Label-input-kobling fikset i 6 sider ✅
+- **#170** — UX: Error states i alle 24 dashboard-sider ✅
+- **#169** — Refaktorering: Komponent-ekstraksjon fra store sider ✅
+- 7 Dependabot-PRer merget (GitHub Actions v6, vertexai, vitest 4.x, typescript 6.x, @types/node)
+- 26 stale branches slettet, kun `main` gjenstår
 
 ## Repo og issues
 
@@ -187,18 +173,11 @@ suksess/
 └── CLAUDE.md                          # Denne filen
 ```
 
-## Gjenværende arbeid (9 åpne issues)
+## Gjenværende arbeid (4 åpne issues)
 
 ```
-FIKSET (klar for lukking):
-  #187 (CI/CD) — continue-on-error + Playwright dual-reporter. Aktiver Secret Manager API i GCP for permanent fiks.
-  #181 (Strengere TypeScript) — alle innstillinger aktive, tsc passerer
-  #170 (Error states) — alle 24 sider har ErrorState
-  #169 (Komponent-ekstraksjon) — kun karakterer (513 linjer) gjenstår, allerede godt faktorert
-
-DELVIS FERDIG (trenger mer arbeid):
+DELVIS FERDIG:
   #180 (Tester) — mangler Firebase auth/Firestore-tester
-  #174 (Tilgjengelighet) — tab-roller og aria-pressed fikset i 6 nye sider
 
 IKKE STARTET:
   #150 (OWASP-scanning)
@@ -209,10 +188,9 @@ IKKE STARTET:
 ### Anbefalt neste steg
 
 **Denne uken:**
-1. Aktiver Secret Manager API i GCP Console for suksess-842ed (permanent fiks for #187)
-2. Verifiser at feedback-system deployes korrekt etter CI/CD-fiks
-3. Fullfør #180 — Firebase auth/Firestore-tester med emulator
-4. Start #150 — Dependabot + npm audit i CI
+1. Fullfør #180 — Firebase auth/Firestore-tester med emulator
+2. Start #150 — npm audit allerede i CI, legg til OWASP ZAP-scanning
+3. Aktiver Secret Manager API i GCP Console for suksess-842ed (permanent fiks for secrets-synkronisering)
 
 **Fase 5 — LOKALISERING + SUPPORT (august 2026):**
 #131 (Nynorsk) → #137 (Hjelpesenter) → #138 (Statusside)
@@ -267,3 +245,4 @@ Detaljerte tekniske guider i `/research/`-mappen:
 - EU AI Act: Høyrisiko for utdanning+AI for mindreårige, frist aug 2026
 - Regjeringens digitaliseringsstrategi: Feide som datadelingsplattform
 - Datatilsynet AVT-prosjekt: Læringsanalyse med Feide og GDPR
+
