@@ -23,6 +23,14 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [checked, setChecked] = useState(false);
+  const [checkedPath, setCheckedPath] = useState<string | null>(null);
+
+  // Reset checked-state når stien endres (viktig ved direkte URL-navigering)
+  useEffect(() => {
+    if (checkedPath !== pathname) {
+      setChecked(false);
+    }
+  }, [pathname, checkedPath]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -52,6 +60,7 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
         router.replace(redirectUrl);
       } else {
         setChecked(true);
+        setCheckedPath(pathname);
       }
     }
 
