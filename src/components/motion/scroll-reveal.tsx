@@ -38,7 +38,7 @@ export function ScrollReveal({
   delay = 0,
   duration = 0.5,
   offset = 30,
-  margin = "-60px 0px -60px 0px",
+  margin = "0px 0px -40px 0px",
   once = true,
   className,
 }: ScrollRevealProps) {
