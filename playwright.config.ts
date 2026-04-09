@@ -58,9 +58,10 @@ export default defineConfig({
     },
   ],
 
-  // Start dev-server automatisk under test
+  // Start server automatisk under test
+  // I CI bruker vi produksjonsbygget (next start), lokalt bruker vi dev-server
   webServer: {
-    command: "npm run dev",
+    command: process.env.CI ? "npm start" : "npm run dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,

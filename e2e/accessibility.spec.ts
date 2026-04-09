@@ -32,7 +32,7 @@ for (const url of PAGES_TO_TEST) {
       await page.goto(url);
       await page.waitForLoadState("networkidle");
 
-      const buttons = await page.locator("button").all();
+      const buttons = await page.locator("button:not([data-nextjs-dialog-error-previous]):not([data-nextjs-dialog-error-next]):not([data-nextjs-dialog-close])").all();
       for (const btn of buttons) {
         const text = (await btn.innerText()).trim();
         const ariaLabel = await btn.getAttribute("aria-label");
