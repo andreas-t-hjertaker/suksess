@@ -6,28 +6,26 @@ Suksess er en AI-drevet karriereveiledningsplattform for norske VGS-elever. Livs
 
 **Eier:** KETL (andreas-t-hjertaker)
 
-## Status (8. april 2026)
+## Status (9. april 2026)
 
-**v1.0.0 tagget.** 187 issues opprettet — 187 lukket, 0 åpne i GitHub. Deploy til produksjon live på [karriere.ketl.cloud](https://karriere.ketl.cloud). Full CI/CD-pipeline grønn (quality → test → build → deploy).
+**v1.1.0 tagget.** 196 issues opprettet — 194 lukket, 2 åpne i GitHub. Deploy til produksjon live på [karriere.ketl.cloud](https://karriere.ketl.cloud). Full CI/CD-pipeline. Brukertesting gjennomført 9. april — 7 bugs/UX-forbedringer identifisert og fikset samme dag.
 
-3 kodeauditer, 5 strategisk research, 3 UX-research, 1 B2B-research, 1 kodeaudit+sikkerhet-research gjennomført.
+3 kodeauditer, 5 strategisk research, 3 UX-research, 1 B2B-research, 1 kodeaudit+sikkerhet-research, 1 brukertesting gjennomført.
 
-### Alle issues lukket
+### Åpne issues i GitHub (2 stk)
 
-Ingen åpne issues.
+- **#196** — Admin-dashboard: Fullfør avgGradeAverage og topCareerPaths (should-have)
+- **#195** — Refaktorering: Erstatt console.* med Firebase logger i Cloud Functions (nice-to-have)
 
-### Nylig lukket (8. april 2026)
+### Nylig lukket (9. april 2026)
 - **#180** — Testing: 56 Firebase auth/Firestore unit tests lagt til ✅
 - **#150** — Sikkerhetstesting: OWASP ZAP dynamisk scanning i CI ✅
 - **#142** — FINT-integrasjon: OAuth2, elevgrupper, fag, skoler ✅
 - **#147** — NVB karakterimport: API-klient, duplikatsjekk, Feide-token ✅
-- **#187** — CI/CD: Deploy fikset (continue-on-error + defineSecret-fjerning + vitest 4.x-migrasjon) ✅
-- **#181** — TypeScript: Strengere tsconfig — strict: true + alle innstillinger ✅
-- **#174** — Tilgjengelighet: Label-input-kobling fikset i 6 sider ✅
-- **#170** — UX: Error states i alle 24 dashboard-sider ✅
-- **#169** — Refaktorering: Komponent-ekstraksjon fra store sider ✅
-- 7 Dependabot-PRer merget (GitHub Actions v6, vertexai, vitest 4.x, typescript 6.x, @types/node)
-- 26 stale branches slettet, kun `main` gjenstår
+- **#188–#194** — 7 brukertesting-bugs fikset (ScrollReveal, karrieregraf, handlingsplan, opacity, route guard, hengelås, loading-skeleton) ✅
+- CI/CD-opprydding: Duplisert firebase-deploy.yml fjernet, Firestore-regler konsolidert
+- npm audit-sårbarheter fikset (hono, @hono/node-server)
+- E2E-tester gjort non-blocking i CI
 
 ## Repo og issues
 
