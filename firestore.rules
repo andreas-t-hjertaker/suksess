@@ -368,8 +368,10 @@ service cloud.firestore {
     // ---------------------------------------------------------------------------
 
     match /notes/{noteId} {
-      allow read, write: if isAuthenticated() &&
+      allow read, update, delete: if isAuthenticated() &&
         resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() &&
+        request.resource.data.userId == request.auth.uid;
     }
 
     // ---------------------------------------------------------------------------
@@ -400,12 +402,16 @@ service cloud.firestore {
 
     // ---------------------------------------------------------------------------
     // consentAudit/{auditId} — revisjonsspor for samtykke (immutable)
+    // Superadmin kan lese alt; foreldre/elever kan lese sine egne oppføringer
     // ---------------------------------------------------------------------------
 
     match /consentAudit/{auditId} {
-      allow read: if isSuperAdmin();
-      allow create: if isAuthenticated() &&
-        request.resource.data.userId == request.auth.uid;
+      allow read: if isSuperAdmin() ||
+        (isAuthenticated() &&
+         (resource.data.get("parentUid", null) == request.auth.uid ||
+          resource.data.get("studentUid", null) == request.auth.uid ||
+          resource.data.get("userId", null) == request.auth.uid));
+      allow create: if isAuthenticated();
       allow update, delete: if false; // immutable audit trail
     }
 
@@ -499,18 +505,6 @@ service cloud.firestore {
     match /parentConsentTokens/{tokenId} {
       allow read: if false;
       allow write: if false;
-    }
-
-    // ---------------------------------------------------------------------------
-    // consentAudit/{auditId} — immutabel audit-logg for foresatt-handlinger (#106)
-    // Klient kan opprette (logg handling), men ikke endre/slette
-    // ---------------------------------------------------------------------------
-
-    match /consentAudit/{auditId} {
-      allow read: if isAuthenticated() &&
-        (resource.data.parentUid == request.auth.uid || resource.data.studentUid == request.auth.uid);
-      allow create: if isAuthenticated();
-      allow update, delete: if false; // Immutabel
     }
 
     // ---------------------------------------------------------------------------
