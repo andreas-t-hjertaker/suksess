@@ -30,12 +30,14 @@ import {
   Flame,
   Bot,
   User,
+  Lock,
 } from "lucide-react";
 import { SlideIn, StaggerList, StaggerItem, AnimatedCounter } from "@/components/motion";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/hooks/use-locale";
+import { isFeatureUnlocked } from "@/lib/gamification/xp";
 import { ErrorState } from "@/components/error-state";
 import type { UserProfile } from "@/types/domain";
 
@@ -50,18 +52,20 @@ type QuickLinkDef = {
   icon: typeof Sparkles;
   color: string;
   bg: string;
+  /** Feature-ID for XP-gating (vis hengelås om låst) */
+  featureId?: string;
 };
 
 const QUICK_LINK_DEFS: QuickLinkDef[] = [
-  { href: "/dashboard/veileder", labelKey: "aiAdvisor", descKey: "aiAdvisorDesc", icon: Sparkles, color: "text-violet-500", bg: "bg-violet-500/10" },
-  { href: "/dashboard/karriere", labelKey: "careerExplorer", descKey: "careerExplorerDesc", icon: Compass, color: "text-blue-500", bg: "bg-blue-500/10" },
+  { href: "/dashboard/veileder", labelKey: "aiAdvisor", descKey: "aiAdvisorDesc", icon: Sparkles, color: "text-violet-500", bg: "bg-violet-500/10", featureId: "ai-veileder-full" },
+  { href: "/dashboard/karriere", labelKey: "careerExplorer", descKey: "careerExplorerDesc", icon: Compass, color: "text-blue-500", bg: "bg-blue-500/10", featureId: "karrierestiutforsker" },
   { href: "/dashboard/soknadscoach", labelKey: "applicationCoach", descKey: "applicationCoachDesc", icon: ClipboardList, color: "text-orange-500", bg: "bg-orange-500/10" },
-  { href: "/dashboard/karakterer", labelKey: "gradesAndPoints", descKey: "gradesAndPointsDesc", icon: GraduationCap, color: "text-amber-500", bg: "bg-amber-500/10" },
-  { href: "/dashboard/jobbmatch", labelKey: "jobMatch", descKey: "jobMatchDesc", icon: Briefcase, color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  { href: "/dashboard/karakterer", labelKey: "gradesAndPoints", descKey: "gradesAndPointsDesc", icon: GraduationCap, color: "text-amber-500", bg: "bg-amber-500/10", featureId: "karakterer" },
+  { href: "/dashboard/jobbmatch", labelKey: "jobMatch", descKey: "jobMatchDesc", icon: Briefcase, color: "text-emerald-500", bg: "bg-emerald-500/10", featureId: "jobbmatch" },
   { href: "/dashboard/studier", labelKey: "studyMastery", descKey: "studyMasteryDesc", icon: BookOpen, color: "text-cyan-500", bg: "bg-cyan-500/10" },
-  { href: "/dashboard/karrieregraf", labelKey: "careerGraph", descKey: "careerGraphDesc", icon: GitBranch, color: "text-indigo-500", bg: "bg-indigo-500/10" },
-  { href: "/dashboard/analyse", labelKey: "advancedAnalysis", descKey: "advancedAnalysisDesc", icon: BarChart2, color: "text-green-500", bg: "bg-green-500/10" },
-  { href: "/dashboard/cv", labelKey: "cvBuilder", descKey: "cvBuilderDesc", icon: ScrollText, color: "text-rose-500", bg: "bg-rose-500/10" },
+  { href: "/dashboard/karrieregraf", labelKey: "careerGraph", descKey: "careerGraphDesc", icon: GitBranch, color: "text-indigo-500", bg: "bg-indigo-500/10", featureId: "karrierestiutforsker" },
+  { href: "/dashboard/analyse", labelKey: "advancedAnalysis", descKey: "advancedAnalysisDesc", icon: BarChart2, color: "text-green-500", bg: "bg-green-500/10", featureId: "avansert-analyse" },
+  { href: "/dashboard/cv", labelKey: "cvBuilder", descKey: "cvBuilderDesc", icon: ScrollText, color: "text-rose-500", bg: "bg-rose-500/10", featureId: "cv-builder" },
   { href: "/dashboard/profil", labelKey: "myProfile", descKey: "myProfileDesc", icon: Brain, color: "text-teal-500", bg: "bg-teal-500/10" },
 ];
 
@@ -265,14 +269,23 @@ export default function DashboardPage() {
         {/* AI Chat widget */}
         <StaggerItem>
           <Link href="/dashboard/veileder" className="block h-full group">
-            <Card variant="glass" className="h-full transition-all group-hover:shadow-lg group-hover:-translate-y-0.5">
+            <Card variant="glass" className={cn("h-full transition-all", isFeatureUnlocked("ai-veileder-full", totalXp) ? "group-hover:shadow-lg group-hover:-translate-y-0.5" : "opacity-60")}>
               <CardContent className="py-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-500/10">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-500/10 relative">
                     <Bot className="h-4 w-4 text-violet-500" aria-hidden="true" />
+                    {!isFeatureUnlocked("ai-veileder-full", totalXp) && (
+                      <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-muted-foreground/80 text-background">
+                        <Lock className="h-2.5 w-2.5" aria-hidden="true" />
+                      </div>
+                    )}
                   </div>
                   <span className="text-sm font-medium text-muted-foreground">{t.nav.advisor}</span>
-                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" aria-hidden="true" />
+                  {isFeatureUnlocked("ai-veileder-full", totalXp) ? (
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground ml-auto group-hover:text-foreground transition-colors" aria-hidden="true" />
+                  ) : (
+                    <Lock className="h-3.5 w-3.5 text-muted-foreground ml-auto" aria-label="Låst" />
+                  )}
                 </div>
                 <p className="text-sm text-foreground">
                   {t.aiWidget.greeting}
@@ -364,23 +377,38 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-lg font-semibold font-display mb-4">{t.dashboard.explore}</h2>
         <StaggerList className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" staggerDelay={0.05}>
-          {QUICK_LINK_DEFS.map((link) => (
-            <StaggerItem key={link.href}>
-              <Link
-                href={link.href}
-                className="group flex items-center gap-3 rounded-xl border bg-card p-4 transition-all hover:shadow-md hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <div className={cn("flex h-9 w-9 items-center justify-center rounded-full shrink-0", link.bg)}>
-                  <link.icon className={cn("h-4 w-4", link.color)} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{t.quickLinks[link.labelKey]}</p>
-                  <p className="text-xs text-muted-foreground truncate">{t.quickLinks[link.descKey]}</p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 group-hover:text-foreground transition-colors" />
-              </Link>
-            </StaggerItem>
-          ))}
+          {QUICK_LINK_DEFS.map((link) => {
+            const locked = link.featureId ? !isFeatureUnlocked(link.featureId, totalXp) : false;
+            return (
+              <StaggerItem key={link.href}>
+                <Link
+                  href={link.href}
+                  className={cn(
+                    "group flex items-center gap-3 rounded-xl border bg-card p-4 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    locked ? "opacity-60" : "hover:shadow-md hover:-translate-y-0.5"
+                  )}
+                >
+                  <div className={cn("flex h-9 w-9 items-center justify-center rounded-full shrink-0 relative", link.bg)}>
+                    <link.icon className={cn("h-4 w-4", link.color)} />
+                    {locked && (
+                      <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-muted-foreground/80 text-background">
+                        <Lock className="h-2.5 w-2.5" aria-hidden="true" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{t.quickLinks[link.labelKey]}</p>
+                    <p className="text-xs text-muted-foreground truncate">{t.quickLinks[link.descKey]}</p>
+                  </div>
+                  {locked ? (
+                    <Lock className="h-4 w-4 text-muted-foreground shrink-0" aria-label="Låst" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 group-hover:text-foreground transition-colors" aria-hidden="true" />
+                  )}
+                </Link>
+              </StaggerItem>
+            );
+          })}
         </StaggerList>
       </div>
 
