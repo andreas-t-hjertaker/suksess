@@ -23,6 +23,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { showToast } from "@/lib/toast";
 import { ErrorState } from "@/components/error-state";
+import { PageSkeleton } from "@/components/page-skeleton";
 import {
   Download,
   Trash2,
@@ -199,7 +200,11 @@ export default function MineDataPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmText, setConfirmText] = useState("");
 
-  if (!loading && !firebaseUser) {
+  if (loading) {
+    return <PageSkeleton variant="list" cards={4} />;
+  }
+
+  if (!firebaseUser) {
     return (
       <div className="space-y-6 p-4 md:p-6 max-w-2xl">
         <div>
