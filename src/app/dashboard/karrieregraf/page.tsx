@@ -329,12 +329,15 @@ export default function KarriereGrafPage() {
             if (node.type === "root") {
               return (
                 <g key={node.id}>
-                  <circle cx={node.x} cy={node.y} r={36} fill="hsl(var(--primary))" />
+                  <circle cx={node.x} cy={node.y} r={36} fill="hsl(var(--primary))" stroke="hsl(var(--primary-foreground))" strokeWidth={2} />
                   <text x={node.x} y={node.y - 4} textAnchor="middle" fontSize={10} fill="hsl(var(--primary-foreground))" fontWeight="bold">
                     Din
                   </text>
                   <text x={node.x} y={node.y + 8} textAnchor="middle" fontSize={10} fill="hsl(var(--primary-foreground))" fontWeight="bold">
                     profil
+                  </text>
+                  <text x={node.x} y={node.y + 20} textAnchor="middle" fontSize={7} fill="hsl(var(--primary-foreground))" opacity={0.7}>
+                    {riasecCode ?? ""}
                   </text>
                 </g>
               );
