@@ -42,8 +42,10 @@ import {
   ArrowRight,
   RotateCcw,
   Calendar,
+  Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 import type { UserProfile } from "@/types/domain";
 
 // ---------------------------------------------------------------------------
@@ -234,6 +236,7 @@ export default function HandlingsplanPage() {
   const [plan, setPlan] = useState<ActionPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
@@ -254,7 +257,12 @@ export default function HandlingsplanPage() {
           setPlan(snap.data() as ActionPlan);
         }
       } catch (err) {
-        setLoadError(err instanceof Error ? err.message : "Kunne ikke laste handlingsplan");
+        const msg = err instanceof Error ? err.message : "";
+        if (msg.includes("permission") || msg.includes("Permission")) {
+          setPermissionDenied(true);
+        } else {
+          setLoadError(msg || "Kunne ikke laste handlingsplan");
+        }
       }
       setLoading(false);
     }
@@ -305,6 +313,31 @@ export default function HandlingsplanPage() {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (permissionDenied) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-6 p-8 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+          <Lock className="h-7 w-7 text-muted-foreground" />
+        </div>
+        <div className="max-w-sm">
+          <h2 className="text-lg font-semibold mb-2">Låst funksjon</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Handlingsplanen er ikke tilgjengelig ennå. Fullfør flere aktiviteter
+            og bygg opp din profil for å låse opp denne funksjonen.
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="outline" size="sm" render={<Link href="/dashboard" />}>
+            Tilbake til dashboard
+          </Button>
+          <Button size="sm" render={<Link href="/dashboard/profil" />}>
+            Fullfør profil (+XP)
+          </Button>
+        </div>
       </div>
     );
   }
