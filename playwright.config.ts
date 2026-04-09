@@ -59,9 +59,10 @@ export default defineConfig({
   ],
 
   // Start server automatisk under test
-  // I CI bruker vi produksjonsbygget (next start), lokalt bruker vi dev-server
+  // I CI serverer vi statisk eksport (output: "export") med serve,
+  // lokalt bruker vi dev-server
   webServer: {
-    command: process.env.CI ? "npm start" : "npm run dev",
+    command: process.env.CI ? "npx serve out -l 3000" : "npm run dev",
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
