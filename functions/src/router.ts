@@ -24,7 +24,6 @@ import {
   getSchoolGdprConsents, exportSchoolGdprConsents,
   bulkImportSchoolUsers, getSchoolInvoices,
 } from "./handlers/school-admin";
-import { triggerFintSync } from "./ingest/fint";
 import { importNvbGradesHandler, getNvbStatusHandler } from "./handlers/nvb-import";
 import { deleteAccount } from "./handlers/account";
 import { awardXp, getXp } from "./handlers/xp";

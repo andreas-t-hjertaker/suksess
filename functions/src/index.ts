@@ -10,6 +10,7 @@ import {
   syncChatFeedbackToNotion,
   syncTilbakemeldingToNotion,
 } from "./handlers/feedback-notion-sync";
+import { ingestFintScheduled, triggerFintSync } from "./ingest/fint";
 
 // Tillatte CORS-origins (produksjon + dev)
 const ALLOWED_ORIGINS = [
@@ -94,6 +95,12 @@ export const api = onRequest(
     fail(res, "Ikke funnet", 404);
   }
 );
+
+// ============================================================
+// FINT-integrasjon (#142)
+// ============================================================
+
+export { ingestFintScheduled, triggerFintSync };
 
 // ============================================================
 // Firestore-triggere

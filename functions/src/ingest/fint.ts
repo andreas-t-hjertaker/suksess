@@ -40,20 +40,6 @@ type FintElevgruppe = {
   skole?: Array<{ href: string }>;
 };
 
-/** FINT Elev */
-type FintElev = {
-  systemId: { identifikatorverdi: string };
-  person?: {
-    navn?: { fornavn: string; etternavn: string };
-    kontaktinformasjon?: { epostadresse?: string };
-  };
-  elevforhold?: Array<{
-    systemId: { identifikatorverdi: string };
-    /** Relasjon til skole */
-    skole?: Array<{ href: string }>;
-  }>;
-};
-
 /** FINT Undervisningsfag */
 type FintFag = {
   systemId: { identifikatorverdi: string };
@@ -210,18 +196,6 @@ async function fetchSkoler(token: string): Promise<FintSkole[]> {
 // ---------------------------------------------------------------------------
 // Synkroniserings-logikk
 // ---------------------------------------------------------------------------
-
-/**
- * Finn Firebase UID for en elev basert på e-post.
- */
-async function findFirebaseUid(email: string): Promise<string | null> {
-  try {
-    const userRecord = await admin.auth().getUserByEmail(email);
-    return userRecord.uid;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Synkroniser FINT-data for en tenant.
