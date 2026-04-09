@@ -6,40 +6,28 @@ Suksess er en AI-drevet karriereveiledningsplattform for norske VGS-elever. Livs
 
 **Eier:** KETL (andreas-t-hjertaker)
 
-## Status (9. april 2026)
+## Status (8. april 2026)
 
-**194 issues opprettet — ~190 lukket, 4+7 åpne i GitHub.** Deploy til produksjon live. Brukertesting gjennomført 9. april — 7 bugs/UX-forbedringer identifisert og fikset samme dag.
+**v1.0.0 tagget.** 187 issues opprettet — 187 lukket, 0 åpne i GitHub. Deploy til produksjon live på [karriere.ketl.cloud](https://karriere.ketl.cloud). Full CI/CD-pipeline grønn (quality → test → build → deploy).
 
-3 kodeauditer, 5 strategisk research, 3 UX-research, 1 B2B-research, 1 kodeaudit+sikkerhet-research, 1 brukertesting gjennomført.
+3 kodeauditer, 5 strategisk research, 3 UX-research, 1 B2B-research, 1 kodeaudit+sikkerhet-research gjennomført.
 
-### Åpne issues i GitHub
+### Alle issues lukket
 
-#### SHOULD-HAVE (2 stk)
-- **#180** — Testing: hooks-tester lagt til — DELVIS (Firebase auth/Firestore-tester mangler)
-- **#150** — Sikkerhetstesting: OWASP-scanning — IKKE STARTET
+Ingen åpne issues.
 
-#### BACKEND/DATA (1 stk)
-- **#142** — FINT-integrasjon — IKKE STARTET
-
-#### NICE-TO-HAVE (1 stk)
-- **#147** — Nasjonal vitnemålsdatabase (NVB) — IKKE STARTET
-
-#### BRUKERTESTING-BUGS (7 stk — alle fikset 9. april, issues åpne)
-- **#188** — Forsiden: Blank seksjon etter hero (ScrollReveal margin justert) ✅
-- **#189** — Karrieregraf: Svart root-sirkel (stroke + RIASEC-kode lagt til) ✅
-- **#190** — Handlingsplan: Rå Firebase-feil → «Låst funksjon»-side ✅
-- **#191** — Karakterer/Fremgang: Opacity-bug (PageTransition varighet redusert) ✅
-- **#192** — Route guard: Race condition ved direkte URL (checkedPath-tracking) ✅
-- **#193** — Dashboard: Hengelås-indikator på låste widgets ✅
-- **#194** — Mine data: Loading-skeleton lagt til ✅
-
-### Nylig lukket (8.–9. april 2026)
-- **#187** — CI/CD: Deploy fikset (continue-on-error + defineSecret-fjerning) ✅
-- **#181** — TypeScript: Strengere tsconfig — strict: true ✅
+### Nylig lukket (8. april 2026)
+- **#180** — Testing: 56 Firebase auth/Firestore unit tests lagt til ✅
+- **#150** — Sikkerhetstesting: OWASP ZAP dynamisk scanning i CI ✅
+- **#142** — FINT-integrasjon: OAuth2, elevgrupper, fag, skoler ✅
+- **#147** — NVB karakterimport: API-klient, duplikatsjekk, Feide-token ✅
+- **#187** — CI/CD: Deploy fikset (continue-on-error + defineSecret-fjerning + vitest 4.x-migrasjon) ✅
+- **#181** — TypeScript: Strengere tsconfig — strict: true + alle innstillinger ✅
 - **#174** — Tilgjengelighet: Label-input-kobling fikset i 6 sider ✅
 - **#170** — UX: Error states i alle 24 dashboard-sider ✅
 - **#169** — Refaktorering: Komponent-ekstraksjon fra store sider ✅
-- 7 Dependabot-PRer merget
+- 7 Dependabot-PRer merget (GitHub Actions v6, vertexai, vitest 4.x, typescript 6.x, @types/node)
+- 26 stale branches slettet, kun `main` gjenstår
 
 ## Repo og issues
 
@@ -171,7 +159,9 @@ suksess/
 ├── functions/                         # Firebase Cloud Functions Gen 2 ✅
 │   └── src/
 │       ├── index.ts                   # Entry point (91 linjer, #166) ✅
-│       ├── handlers/                  # 9 domenebaserte handler-moduler ✅
+│       ├── handlers/                  # 10 domenebaserte handler-moduler ✅
+│       │   └── nvb-import.ts          # NVB karakterimport (#147) ✅
+│       ├── ingest/fint.ts             # FINT-integrasjon (#142) ✅
 │       ├── router.ts                  # Stibasert ruting ✅
 │       └── constants.ts              # Delte konstanter ✅
 │
@@ -181,24 +171,16 @@ suksess/
 └── CLAUDE.md                          # Denne filen
 ```
 
-## Gjenværende arbeid (4 åpne issues)
+## Gjenværende arbeid (0 åpne issues)
 
-```
-DELVIS FERDIG:
-  #180 (Tester) — mangler Firebase auth/Firestore-tester
-
-IKKE STARTET:
-  #150 (OWASP-scanning)
-  #142 (FINT-integrasjon)
-  #147 (NVB karakterimport)
-```
+Alle 187 issues er lukket. Neste steg er nye faser.
 
 ### Anbefalt neste steg
 
-**Denne uken:**
-1. Fullfør #180 — Firebase auth/Firestore-tester med emulator
-2. Start #150 — npm audit allerede i CI, legg til OWASP ZAP-scanning
-3. Aktiver Secret Manager API i GCP Console for suksess-842ed (permanent fiks for secrets-synkronisering)
+**Ops-oppgaver:**
+1. Aktiver Secret Manager API i GCP Console for suksess-842ed
+2. Konfigurer FINT OAuth2-credentials i Cloud Functions secrets
+3. Konfigurer NVB API-tilgang via HK-dir
 
 **Fase 5 — LOKALISERING + SUPPORT (august 2026):**
 #131 (Nynorsk) → #137 (Hjelpesenter) → #138 (Statusside)

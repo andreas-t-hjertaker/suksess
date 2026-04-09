@@ -123,6 +123,8 @@ export const UserProfileSchema = z.object({
 // Grade — users/{userId}/grades/{gradeId}
 // ---------------------------------------------------------------------------
 
+export const GradeSourceSchema = z.enum(["manual", "nvb"]);
+
 export const GradeSchema = z.object({
   ...withFirestoreTimestamps,
   userId: z.string(),
@@ -132,6 +134,8 @@ export const GradeSchema = z.object({
   term: TermTypeSchema,
   year: z.number().int(),
   programSubjectId: z.string().nullable(),
+  source: GradeSourceSchema.optional().default("manual"),
+  nvbImportedAt: firestoreTimestamp,
 });
 
 // ---------------------------------------------------------------------------
@@ -227,6 +231,49 @@ export const TenantSchema = z.object({
   primaryColor: z.string().nullable(),
   adminUids: z.array(z.string()),
   active: z.boolean(),
+  orgNumber: z.string().nullable().optional(),
+  fintEnabled: z.boolean().optional().default(false),
+});
+
+// ---------------------------------------------------------------------------
+// FINT-data (#142)
+// ---------------------------------------------------------------------------
+
+export const FintGroupMemberSchema = z.object({
+  fintElevId: z.string(),
+  name: z.string(),
+  email: z.string().nullable(),
+  firebaseUid: z.string().nullable(),
+});
+
+export const FintGroupSchema = z.object({
+  fintSystemId: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  tenantId: z.string(),
+  memberCount: z.number(),
+  members: z.array(FintGroupMemberSchema),
+  subjects: z.array(z.string()),
+  schoolYear: z.string(),
+  lastSyncedAt: firestoreTimestamp,
+});
+
+export const FintSubjectSchema = z.object({
+  fintSystemId: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  grepFagkode: z.string().nullable(),
+  tenantId: z.string(),
+  lastSyncedAt: firestoreTimestamp,
+});
+
+export const FintSchoolSchema = z.object({
+  fintSystemId: z.string(),
+  name: z.string(),
+  orgNumber: z.string().nullable(),
+  email: z.string().nullable(),
+  tenantId: z.string(),
+  lastSyncedAt: firestoreTimestamp,
 });
 
 // ---------------------------------------------------------------------------

@@ -24,6 +24,8 @@ import {
   getSchoolGdprConsents, exportSchoolGdprConsents,
   bulkImportSchoolUsers, getSchoolInvoices,
 } from "./handlers/school-admin";
+import { triggerFintSync } from "./ingest/fint";
+import { importNvbGradesHandler, getNvbStatusHandler } from "./handlers/nvb-import";
 import { deleteAccount } from "./handlers/account";
 import { awardXp, getXp } from "./handlers/xp";
 import { verifyConsent } from "./handlers/consent";
@@ -100,6 +102,9 @@ export const routes: Route[] = [
   // XP
   { method: "POST", path: "/xp/award", handler: awardXp },
   { method: "GET", path: "/xp", handler: getXp },
+  // NVB karakterimport (#147)
+  { method: "POST", path: "/nvb/import", handler: importNvbGradesHandler },
+  { method: "GET", path: "/nvb/status", handler: getNvbStatusHandler },
 ];
 
 // ============================================================

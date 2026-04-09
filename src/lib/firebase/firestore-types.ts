@@ -132,6 +132,10 @@ export type TenantDocument = {
   stripeCustomerId: string | null;
   dpaSignedAt: Timestamp | null;      // Dato DBA ble signert
   dpaSignedBy: string | null;         // E-post til den som signerte
+  /** FINT-integrasjon aktivert (#142) */
+  fintEnabled: boolean;
+  /** Feide org-ID for FINT */
+  feideOrgId: string | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };

@@ -106,6 +106,55 @@ export type Tenant = WithFirestoreTimestamps & {
   primaryColor: string | null;
   adminUids: string[];
   active: boolean;
+  /** Organisasjonsnummer for FINT-integrasjon (#142) */
+  orgNumber: string | null;
+  /** Om FINT-synkronisering er aktivert (#142) */
+  fintEnabled: boolean;
+};
+
+// ---------------------------------------------------------------------------
+// FINT-data (fintGroups/, fintSubjects/, fintSchools/) — Issue #142
+// ---------------------------------------------------------------------------
+
+/** FINT elevgruppe (basisgruppe / undervisningsgruppe) */
+export type FintGroup = {
+  fintSystemId: string;
+  name: string;
+  description: string | null;
+  tenantId: string;
+  memberCount: number;
+  members: FintGroupMember[];
+  subjects: string[];
+  schoolYear: string;
+  lastSyncedAt: Timestamp | null;
+};
+
+export type FintGroupMember = {
+  fintElevId: string;
+  name: string;
+  email: string | null;
+  firebaseUid: string | null;
+};
+
+/** FINT undervisningsfag */
+export type FintSubject = {
+  fintSystemId: string;
+  name: string;
+  description: string | null;
+  /** Grep/UDIR fagkode for kobling til karakterer */
+  grepFagkode: string | null;
+  tenantId: string;
+  lastSyncedAt: Timestamp | null;
+};
+
+/** FINT skole */
+export type FintSchool = {
+  fintSystemId: string;
+  name: string;
+  orgNumber: string | null;
+  email: string | null;
+  tenantId: string;
+  lastSyncedAt: Timestamp | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -213,6 +262,8 @@ export type GeneratedContent = WithFirestoreTimestamps & {
 
 export type TermType = "vt" | "ht"; // vår / høst
 
+export type GradeSource = "manual" | "nvb";
+
 export type Grade = WithFirestoreTimestamps & {
   userId: string;
   subject: string;
@@ -221,6 +272,10 @@ export type Grade = WithFirestoreTimestamps & {
   term: TermType;
   year: number;
   programSubjectId: string | null;
+  /** Kilde for karakteren: manuelt registrert eller importert fra NVB (#147) */
+  source: GradeSource;
+  /** Tidspunkt for NVB-import (kun for source="nvb") */
+  nvbImportedAt: Timestamp | null;
 };
 
 // ---------------------------------------------------------------------------

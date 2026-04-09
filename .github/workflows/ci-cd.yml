@@ -64,6 +64,62 @@ jobs:
         run: cd functions && npm audit --audit-level=high
 
   # ══════════════════════════════════════════════════════════════════════════
+  # 1c. OWASP ZAP — dynamisk sikkerhetsskanning (#150)
+  # ══════════════════════════════════════════════════════════════════════════
+  owasp-zap:
+    name: OWASP ZAP Scan
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install and build
+        run: |
+          npm ci
+          npm run build
+        env:
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_DATABASE_URL: ${{ secrets.NEXT_PUBLIC_FIREBASE_DATABASE_URL }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+          NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID }}
+          NEXT_PUBLIC_APP_NAME: Suksess
+          NEXT_PUBLIC_REGION: europe-west1
+
+      - name: Start Next.js (static export)
+        run: npx serve out -l 3000 &
+        env:
+          CI: true
+
+      - name: Wait for server
+        run: npx wait-on http://localhost:3000 --timeout 30000
+
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: "http://localhost:3000"
+          rules_file_name: ".zap/rules.tsv"
+          cmd_options: "-a -j"
+          fail_action: false
+
+      - name: Upload ZAP report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: zap-report
+          path: report_html.html
+          retention-days: 30
+
+  # ══════════════════════════════════════════════════════════════════════════
   # 2. TESTS — unit + integration (alle branches)
   # ══════════════════════════════════════════════════════════════════════════
   test:

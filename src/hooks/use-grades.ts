@@ -62,6 +62,8 @@ export function useGrades() {
       await setDoc(ref, {
         ...grade,
         userId: firebaseUser.uid,
+        source: "manual",
+        nvbImportedAt: null,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
