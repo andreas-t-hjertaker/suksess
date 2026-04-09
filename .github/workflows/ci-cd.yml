@@ -56,14 +56,12 @@ jobs:
 
       - name: Audit root dependencies (fail on high/critical)
         run: npm audit --audit-level=high
-        continue-on-error: false
 
       - name: Install functions dependencies
         run: cd functions && npm ci
 
       - name: Audit functions dependencies
         run: cd functions && npm audit --audit-level=high
-        continue-on-error: false
 
   # ══════════════════════════════════════════════════════════════════════════
   # 2. TESTS — unit + integration (alle branches)
@@ -195,7 +193,7 @@ jobs:
   preview:
     name: Preview Deploy (PR)
     runs-on: ubuntu-latest
-    needs: [test, build]
+    needs: [quality, test, build]
     if: github.event_name == 'pull_request'
     permissions:
       checks: write
@@ -240,7 +238,7 @@ jobs:
   deploy:
     name: Production Deploy
     runs-on: ubuntu-latest
-    needs: [test, build]
+    needs: [quality, security, test, build]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment: production
     steps:

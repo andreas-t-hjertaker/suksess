@@ -12,6 +12,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { FirebaseError } from "firebase/app";
 import { useAuth } from "@/hooks/use-auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
@@ -257,10 +258,10 @@ export default function HandlingsplanPage() {
           setPlan(snap.data() as ActionPlan);
         }
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "";
-        if (msg.includes("permission") || msg.includes("Permission")) {
+        if (err instanceof FirebaseError && err.code === "permission-denied") {
           setPermissionDenied(true);
         } else {
+          const msg = err instanceof Error ? err.message : "";
           setLoadError(msg || "Kunne ikke laste handlingsplan");
         }
       }
