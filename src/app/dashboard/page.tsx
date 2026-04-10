@@ -79,9 +79,9 @@ type ChecklistMessages = typeof import("@/lib/i18n/locales").MESSAGES.nb.checkli
 
 function getChecklist(profile: UserProfile | null, gradeCount: number, cl: ChecklistMessages): CheckItem[] {
   return [
-    { label: cl.completeOnboarding, done: !!profile, href: "/dashboard" },
-    { label: cl.takeBigFive, done: !!profile?.bigFive, href: "/dashboard" },
-    { label: cl.takeRiasec, done: !!profile?.riasec, href: "/dashboard" },
+    { label: cl.completeOnboarding, done: !!profile, href: "/onboarding" },
+    { label: cl.takeBigFive, done: !!profile?.bigFive, href: "/onboarding" },
+    { label: cl.takeRiasec, done: !!profile?.riasec, href: "/onboarding" },
     { label: cl.registerGrades, done: gradeCount > 0, href: "/dashboard/karakterer" },
     { label: cl.exploreCareerPaths, done: !!profile?.riasec, href: "/dashboard/karriere" },
     { label: cl.chatWithAdvisor, done: false, href: "/dashboard/veileder" },
@@ -248,22 +248,41 @@ export default function DashboardPage() {
 
         {/* RIASEC Interesseprofil */}
         <StaggerItem>
-          <Card variant="glass" className="h-full">
-            <CardContent className="py-6">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10">
-                  <Compass className="h-4 w-4 text-blue-500" aria-hidden="true" />
+          {riasecCode ? (
+            <Card variant="glass" className="h-full">
+              <CardContent className="py-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10">
+                    <Compass className="h-4 w-4 text-blue-500" aria-hidden="true" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground">{t.dashboard.interestProfile}</span>
                 </div>
-                <span className="text-sm font-medium text-muted-foreground">{t.dashboard.interestProfile}</span>
-              </div>
-              <p className="text-3xl font-bold font-mono">
-                {riasecCode ?? "—"}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1.5">
-                {riasecCode ? t.dashboard.riasecCode : t.dashboard.completeOnboarding}
-              </p>
-            </CardContent>
-          </Card>
+                <p className="text-3xl font-bold font-mono">
+                  {riasecCode}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  {t.dashboard.riasecCode}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <Link href="/onboarding" className="block h-full group">
+              <Card variant="glass" className="h-full transition-all group-hover:shadow-lg group-hover:-translate-y-0.5">
+                <CardContent className="py-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10">
+                      <Compass className="h-4 w-4 text-blue-500" aria-hidden="true" />
+                    </div>
+                    <span className="text-sm font-medium text-muted-foreground">{t.dashboard.interestProfile}</span>
+                  </div>
+                  <p className="text-3xl font-bold font-mono">—</p>
+                  <p className="text-xs text-primary mt-1.5 group-hover:underline">
+                    {t.dashboard.completeOnboarding} →
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+          )}
         </StaggerItem>
 
         {/* AI Chat widget */}
