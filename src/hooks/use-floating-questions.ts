@@ -42,8 +42,9 @@ function buildInterleavedQueue() {
   const ri = RIASEC_QUESTIONS.map((q) => ({ ...q, type: "riasec" as const }));
   const st = STRENGTH_QUESTIONS.map((q) => ({ ...q, type: "strengths" as const }));
 
-  const queues = [bf, ri, st];
-  const result: typeof bf = [];
+  const queues: (PersonalityQuestion & { type: "bigfive" | "riasec" | "strengths" })[][] =
+    [bf, ri, st];
+  const result: (PersonalityQuestion & { type: "bigfive" | "riasec" | "strengths" })[] = [];
   let idx = 0;
 
   while (queues.some((q) => q.length > 0)) {
