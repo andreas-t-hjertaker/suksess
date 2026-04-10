@@ -490,15 +490,15 @@ export function OnboardingStepper() {
       aria-busy={saving}
       className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
     >
-      <Card className="w-full max-w-xl shadow-2xl">
+      <Card className="w-full max-w-xl max-h-[90vh] shadow-2xl flex flex-col">
         {/* Fremdriftslinje øverst */}
         <Progress
           value={overallProgress}
-          className="h-1 rounded-none rounded-t-xl"
+          className="h-1 rounded-none rounded-t-xl shrink-0"
           aria-label={`Onboarding ${overallProgress}% fullført`}
         />
         {/* Steg-indikatorer */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-2">
+        <div className="flex items-center justify-between px-6 pt-6 pb-2 shrink-0">
           {STEPS.map((s, i) => {
             const Icon = s.icon;
             const isActive = i === step;
@@ -526,7 +526,7 @@ export function OnboardingStepper() {
           })}
         </div>
 
-        <CardContent className="px-6 pb-4 pt-2 min-h-[340px] relative overflow-hidden">
+        <CardContent className="px-6 pb-4 pt-2 min-h-[280px] relative overflow-y-auto flex-1">
 
           {/* Micro-celebration overlay */}
           <AnimatePresence>
@@ -753,7 +753,7 @@ export function OnboardingStepper() {
                   Vurder hvert utsagn fra 1 (stemmer ikke) til 5 (stemmer svært godt).
                 </p>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
                 {BIG_FIVE_BLOCKS[bigFiveBlock].map((q) => (
                   <QuestionRow
                     key={q.id}
@@ -792,7 +792,7 @@ export function OnboardingStepper() {
                     Vurder i hvilken grad hvert utsagn passer deg.
                   </p>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
                   {block.map((q) => (
                     <QuestionRow
                       key={q.id}
@@ -910,7 +910,7 @@ export function OnboardingStepper() {
         </CardContent>
 
         {/* Navigasjon */}
-        <CardContent className="flex items-center justify-between border-t pt-4 pb-5">
+        <CardContent className="flex items-center justify-between border-t pt-4 pb-5 shrink-0">
           <Button variant="ghost" size="sm" onClick={handleSkip} className="text-muted-foreground">
             Hopp over
           </Button>
