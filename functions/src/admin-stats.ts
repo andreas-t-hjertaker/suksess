@@ -99,6 +99,63 @@ async function calcLlmCost(tenantId: string): Promise<number> {
   return snap.docs.reduce((sum, d) => sum + ((d.data().costNok as number) || 0), 0);
 }
 
+async function calcAvgGradeAverage(userIds: string[]): Promise<number | null> {
+  if (userIds.length === 0) return null;
+  let totalSum = 0;
+  let studentCount = 0;
+
+  const batches = [];
+  for (let i = 0; i < userIds.length; i += 10) {
+    batches.push(userIds.slice(i, i + 10));
+  }
+
+  for (const batch of batches) {
+    const results = await Promise.all(
+      batch.map((uid) => db.collection("users").doc(uid).collection("grades").get())
+    );
+    for (const snap of results) {
+      if (snap.empty) continue;
+      let sum = 0;
+      let count = 0;
+      for (const d of snap.docs) {
+        const grade = d.data().grade as number | undefined;
+        if (typeof grade === "number" && grade >= 1 && grade <= 6) {
+          sum += grade;
+          count++;
+        }
+      }
+      if (count > 0) {
+        totalSum += sum / count;
+        studentCount++;
+      }
+    }
+  }
+
+  return studentCount > 0 ? Math.round((totalSum / studentCount) * 100) / 100 : null;
+}
+
+async function calcTopCareerPaths(tenantId: string): Promise<Array<{ id: string; count: number }>> {
+  // Aggreger fra careerPathClicks-collection (logget fra frontend)
+  const snap = await db.collection("careerPathClicks")
+    .where("tenantId", "==", tenantId)
+    .get();
+
+  if (snap.empty) return [];
+
+  const counts: Record<string, number> = {};
+  for (const d of snap.docs) {
+    const pathId = d.data().careerPathId as string;
+    if (pathId) {
+      counts[pathId] = (counts[pathId] ?? 0) + 1;
+    }
+  }
+
+  return Object.entries(counts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 10)
+    .map(([id, count]) => ({ id, count }));
+}
+
 async function calcDropoutRisk(userIds: string[]): Promise<{ high: number; medium: number; low: number }> {
   const result = { high: 0, medium: 0, low: 0 };
   if (userIds.length === 0) return result;
@@ -182,6 +239,12 @@ export const getSchoolStats = withTenant(async ({ tenantId, user, res }) => {
   // RIASEC-fordeling (anonymisert)
   const riasecDistribution = await calcRiasecDistribution(userIds.slice(0, 100)); // Maks 100 for ytelse
 
+  // Gjennomsnittskarakter
+  const avgGradeAverage = await calcAvgGradeAverage(userIds.slice(0, 100));
+
+  // Populære karriereveier
+  const topCareerPaths = await calcTopCareerPaths(effectiveTenantId);
+
   // LLM-kostnad
   const llmCostLast30Days = await calcLlmCost(effectiveTenantId);
 
@@ -205,10 +268,10 @@ export const getSchoolStats = withTenant(async ({ tenantId, user, res }) => {
     activeStudents7d,
     personalityTestCompletionRate,
     programfagSelectionRate,
-    avgGradeAverage: null, // Krever separat aggregering — TODO
+    avgGradeAverage,
     riasecDistribution,
     clusterDistribution,
-    topCareerPaths: [], // TODO: aggreger fra karrieregraf-klikk
+    topCareerPaths,
     aiChatStats: {
       totalConversations,
       avgMessagesPerConversation: totalConversations > 0
