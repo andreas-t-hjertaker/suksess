@@ -8,6 +8,7 @@
  */
 
 import * as admin from "firebase-admin";
+import { logger } from "firebase-functions/v2";
 
 const db = admin.firestore();
 
@@ -34,7 +35,7 @@ export async function fetchAdmissionStats(): Promise<
     });
 
     if (!response.ok) {
-      console.warn(`DBH API svarte ${response.status}`);
+      logger.warn(`DBH API svarte ${response.status}`);
       return [];
     }
 
@@ -46,7 +47,7 @@ export async function fetchAdmissionStats(): Promise<
       quota: String(row["Kvote"] ?? "ordinær"),
     }));
   } catch (err) {
-    console.error("Feil ved henting fra DBH:", err);
+    logger.error("Feil ved henting fra DBH:", err);
     return [];
   }
 }
@@ -83,7 +84,7 @@ export async function fetchHistoricalAdmissionPoints(): Promise<
     });
 
     if (!response.ok) {
-      console.warn(`DBH tabell 571 svarte ${response.status}`);
+      logger.warn(`DBH tabell 571 svarte ${response.status}`);
       return [];
     }
 
@@ -97,7 +98,7 @@ export async function fetchHistoricalAdmissionPoints(): Promise<
       pointsOrdinary: Number(row["Poenggrense ordinær kvote"] ?? 0),
     }));
   } catch (err) {
-    console.error("Feil ved henting av historiske poenggrenser:", err);
+    logger.error("Feil ved henting av historiske poenggrenser:", err);
     return [];
   }
 }

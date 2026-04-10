@@ -17,6 +17,7 @@
 import * as admin from "firebase-admin";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { onRequest } from "firebase-functions/v2/https";
+import { logger } from "firebase-functions/v2";
 import { withAuth } from "./middleware";
 
 const auth = admin.auth();
@@ -227,6 +228,6 @@ export const onUserCreated = onDocumentCreated(
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    console.info(`Ny bruker opprettet: ${userId}, rolle: ${userData.role}, tenant: ${userData.tenantId}`);
+    logger.info(`Ny bruker opprettet: ${userId}, rolle: ${userData.role}, tenant: ${userData.tenantId}`);
   }
 );

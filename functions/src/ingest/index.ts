@@ -18,6 +18,7 @@
 import * as admin from "firebase-admin";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onRequest } from "firebase-functions/v2/https";
+import { logger } from "firebase-functions/v2";
 import { withAdmin } from "../middleware";
 import { fetchUtdanningNoPrograms, ingestStudyPrograms, ingestYrker, ingestStyrk08, ingestVgsPrograms, ingestStudievelgeren, ingestGrepFagkoder } from "./utdanning-no";
 import { fetchAdmissionStats, ingestAdmissionStats, fetchHistoricalAdmissionPoints, ingestHistoricalAdmissionPoints } from "./dbh";
@@ -43,7 +44,7 @@ export const ingestUtdanningNoScheduled = onSchedule(
     region: "europe-west1",
   },
   async () => {
-    console.info("[ingest] Starter utdanning.no ingest...");
+    logger.info("[ingest] Starter utdanning.no ingest...");
 
     // Hent yrker, STYRK-08 og VGS-program parallelt
     const [yrkerCount, styrkCount, vgsCount] = await Promise.all([
@@ -62,7 +63,7 @@ export const ingestUtdanningNoScheduled = onSchedule(
     const programs = await fetchUtdanningNoPrograms();
     const studyCount = await ingestStudyPrograms(programs);
 
-    console.info(
+    logger.info(
       `[ingest] utdanning.no: ${yrkerCount} yrker, ${styrkCount} STYRK-08, ` +
       `${vgsCount} VGS-program, ${studyCount} studieprogrammer, ` +
       `${studievelgerenCount} studievelgeren, ${grepCount} grep-fagkoder lagret`
@@ -81,7 +82,7 @@ export const ingestDBHScheduled = onSchedule(
     region: "europe-west1",
   },
   async () => {
-    console.info("[ingest] Starter DBH ingest...");
+    logger.info("[ingest] Starter DBH ingest...");
 
     const [stats, historicalPoints] = await Promise.all([
       fetchAdmissionStats(),
@@ -93,7 +94,7 @@ export const ingestDBHScheduled = onSchedule(
       ingestHistoricalAdmissionPoints(historicalPoints),
     ]);
 
-    console.info(`[ingest] DBH: ${count} opptaksrekorder, ${historicalCount} historiske poenggrenser lagret`);
+    logger.info(`[ingest] DBH: ${count} opptaksrekorder, ${historicalCount} historiske poenggrenser lagret`);
   }
 );
 
@@ -108,9 +109,9 @@ export const ingestYrkesfagScheduled = onSchedule(
     region: "europe-west1",
   },
   async () => {
-    console.info("[ingest] Starter yrkesfag ingest...");
+    logger.info("[ingest] Starter yrkesfag ingest...");
     const result = await ingestAllYrkesfag();
-    console.info(
+    logger.info(
       `[ingest] Yrkesfag: ${result.larefag} lærefag, ${result.bedrifter} bedrifter, ${result.lonn} lønnsdata lagret`
     );
   }
@@ -127,9 +128,9 @@ export const ingestSSBScheduled = onSchedule(
     region: "europe-west1",
   },
   async () => {
-    console.info("[ingest] Starter SSB yrkesstatistikk ingest...");
+    logger.info("[ingest] Starter SSB yrkesstatistikk ingest...");
     const count = await ingestSSBOccupationStats();
-    console.info(`[ingest] SSB: ${count} yrkesrekorder oppdatert`);
+    logger.info(`[ingest] SSB: ${count} yrkesrekorder oppdatert`);
   }
 );
 
@@ -155,7 +156,7 @@ async function ingestSSBOccupationStats(): Promise<number> {
     });
 
     if (!resp.ok) {
-      console.warn(`SSB API svarte ${resp.status}`);
+      logger.warn(`SSB API svarte ${resp.status}`);
       return 0;
     }
 
@@ -199,7 +200,7 @@ async function ingestSSBOccupationStats(): Promise<number> {
     await batch.commit();
     return count;
   } catch (err) {
-    console.error("[ingest] SSB feil:", err);
+    logger.error("[ingest] SSB feil:", err);
     return 0;
   }
 }

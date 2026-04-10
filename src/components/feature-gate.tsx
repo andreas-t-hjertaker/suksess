@@ -6,9 +6,9 @@
  */
 
 import { useXp } from "@/hooks/use-xp";
-import { isFeatureUnlocked, LEVELS } from "@/lib/gamification/xp";
+import { isFeatureUnlocked, LEVELS, XP_VALUES } from "@/lib/gamification/xp";
 import { Button } from "@/components/ui/button";
-import { Lock } from "lucide-react";
+import { Lock, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 type FeatureGateProps = {
@@ -58,11 +58,27 @@ export function FeatureGate({ feature, children, lockedMessage }: FeatureGatePro
         </div>
       )}
 
+      {xpNeeded > 0 && (
+        <div className="rounded-xl border bg-muted/30 px-4 py-3 text-sm max-w-xs">
+          <div className="flex items-center gap-1.5 font-medium mb-1.5">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            Slik tjener du XP
+          </div>
+          <ul className="space-y-0.5 text-xs text-muted-foreground">
+            <li>Fullfør onboarding — +{XP_VALUES.onboarding_complete} XP</li>
+            <li>Ta personlighetstest — +{XP_VALUES.personality_test} XP</li>
+            <li>Ta interessetest — +{XP_VALUES.riasec_test} XP</li>
+            <li>Registrer karakterer — +{XP_VALUES.grades_added} XP per fag</li>
+            <li>Daglig innlogging — +{XP_VALUES.daily_login} XP</li>
+          </ul>
+        </div>
+      )}
+
       <div className="flex gap-3">
         <Button variant="outline" size="sm" render={<Link href="/dashboard" />}>
           Tilbake til dashboard
         </Button>
-        <Button size="sm" render={<Link href="/dashboard/profil" />}>
+        <Button size="sm" render={<Link href="/onboarding" />}>
           Fullfør profil (+XP)
         </Button>
       </div>

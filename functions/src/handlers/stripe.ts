@@ -1,5 +1,6 @@
 import * as admin from "firebase-admin";
 import Stripe from "stripe";
+import { logger } from "firebase-functions/v2";
 import { success, fail, withAuth, withAdmin, type RouteContext } from "../middleware";
 import { processStripeInvoiceForEhf, getEhfStatus, retryEhfDelivery } from "../ehf";
 import { db } from "../constants";
@@ -84,7 +85,7 @@ export const handleWebhook = async ({ req, res }: RouteContext) => {
   const sig = req.headers["stripe-signature"] as string;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
-    console.error("STRIPE_WEBHOOK_SECRET er ikke konfigurert");
+    logger.error("STRIPE_WEBHOOK_SECRET er ikke konfigurert");
     fail(res, "Webhook-konfigurasjon mangler", 500);
     return;
   }
@@ -193,9 +194,9 @@ export const handleWebhook = async ({ req, res }: RouteContext) => {
               },
               { invoices: getStripe().invoices }
             );
-            console.log(`[EHF] Faktura ${invoice.id}: ${ehfResult.ehfStatus}`);
+            logger.info(`[EHF] Faktura ${invoice.id}: ${ehfResult.ehfStatus}`);
           } catch (err) {
-            console.error(`[EHF] Feil ved EHF-generering for ${invoice.id}:`, err);
+            logger.error(`[EHF] Feil ved EHF-generering for ${invoice.id}:`, err);
           }
         }
       }

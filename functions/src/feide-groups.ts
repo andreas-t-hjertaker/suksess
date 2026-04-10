@@ -13,6 +13,7 @@
 import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
+import { logger } from "firebase-functions/v2";
 import { withAuth } from "./middleware";
 
 const db = admin.firestore();
@@ -251,7 +252,7 @@ export const feideSyncGroups = onRequest(
         const result = await syncGroupsForTenant(tenantId, token);
         authRes.status(200).json({ success: true, data: result });
       } catch (err) {
-        console.error("[feide-groups] Synkronisering feilet:", err);
+        logger.error("[feide-groups] Synkronisering feilet:", err);
         authRes.status(500).json({
           success: false,
           error: err instanceof Error ? err.message : "Ukjent feil",
@@ -274,7 +275,7 @@ export const scheduledFeideGroupSync = onSchedule(
     timeZone: "Europe/Oslo",
   },
   async () => {
-    console.info("[feide-groups] Starter planlagt synkronisering");
+    logger.info("[feide-groups] Starter planlagt synkronisering");
 
     // Hent alle aktive tenanter med Feide-konfigurasjon
     const tenantsSnap = await db
@@ -291,23 +292,23 @@ export const scheduledFeideGroupSync = onSchedule(
       const token = data.feideAccessToken;
 
       if (!token) {
-        console.warn(`[feide-groups] Tenant ${tenantDoc.id} mangler access token, hopper over`);
+        logger.warn(`[feide-groups] Tenant ${tenantDoc.id} mangler access token, hopper over`);
         continue;
       }
 
       try {
         const result = await syncGroupsForTenant(tenantDoc.id, token);
         totalSynced += result.groupsSynced;
-        console.info(
+        logger.info(
           `[feide-groups] Synkroniserte ${result.groupsSynced} grupper, ${result.membersSynced} medlemmer for ${tenantDoc.id}`
         );
       } catch (err) {
         errors++;
-        console.error(`[feide-groups] Feil for tenant ${tenantDoc.id}:`, err);
+        logger.error(`[feide-groups] Feil for tenant ${tenantDoc.id}:`, err);
       }
     }
 
-    console.info(
+    logger.info(
       `[feide-groups] Synkronisering fullført: ${totalSynced} grupper, ${errors} feil`
     );
   }

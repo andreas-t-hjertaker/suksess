@@ -8,6 +8,7 @@
  */
 
 import * as admin from "firebase-admin";
+import { logger } from "firebase-functions/v2";
 
 const db = admin.firestore();
 
@@ -84,7 +85,7 @@ export async function updateCareerPathDemand(): Promise<void> {
 export async function fetchSsbOccupationStats(): Promise<null> {
   // SSB API: https://data.ssb.no/api/v0/no/table/13315/
   // Implementeres når NAV-integrasjon er validert
-  console.info("SSB-integrasjon ikke implementert ennå");
+  logger.info("SSB-integrasjon ikke implementert ennå");
   return null;
 }
 

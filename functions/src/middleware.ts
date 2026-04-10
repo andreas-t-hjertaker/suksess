@@ -3,6 +3,7 @@ import type { Response } from "express";
 import type { DecodedIdToken } from "firebase-admin/auth";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
+import { logger } from "firebase-functions/v2";
 import { z, type ZodSchema } from "zod";
 
 // ============================================================
@@ -443,7 +444,7 @@ export async function checkUserRateLimit(
     return true;
   } catch (err) {
     // Ved Firestore-feil: tillat forespørselen (fail-open) og logg
-    console.error("[rate-limit] Firestore-feil:", err);
+    logger.error("[rate-limit] Firestore-feil:", err);
     return true;
   }
 }
@@ -491,7 +492,7 @@ export async function checkTenantQuota(
 
       // Varsl ved 80% kvotebruk
       if (used === Math.floor(quota.aiCallsPerMonth * 0.8)) {
-        console.warn(
+        logger.warn(
           `[tenant-quota] Tenant ${tenantId} har brukt 80% av AI-kvoten (${used}/${quota.aiCallsPerMonth})`
         );
       }
@@ -525,7 +526,7 @@ export async function checkTenantQuota(
     return true;
   } catch (err) {
     // Fail-open ved Firestore-feil
-    console.error("[tenant-quota] Firestore-feil:", err);
+    logger.error("[tenant-quota] Firestore-feil:", err);
     return true;
   }
 }

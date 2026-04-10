@@ -100,8 +100,8 @@ export default function ProfilPage() {
         <p className="text-muted-foreground max-w-sm">
           Fullfør personlighetstesten i onboarding for å se din profil.
         </p>
-        <Link href="/dashboard">
-          <Button>Gå til dashboard</Button>
+        <Link href="/onboarding">
+          <Button>Start personlighetstest</Button>
         </Link>
       </div>
     );

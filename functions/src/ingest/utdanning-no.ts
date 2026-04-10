@@ -11,6 +11,7 @@
  */
 
 import * as admin from "firebase-admin";
+import { logger } from "firebase-functions/v2";
 
 const db = admin.firestore();
 
@@ -57,13 +58,13 @@ async function fetchYrker(): Promise<Yrke[]> {
       signal: AbortSignal.timeout(FETCH_TIMEOUT),
     });
     if (!resp.ok) {
-      console.warn(`[utdanning.no] /jobbkompasset/v2/yrker svarte ${resp.status}`);
+      logger.warn(`[utdanning.no] /jobbkompasset/v2/yrker svarte ${resp.status}`);
       return [];
     }
     const data = await resp.json();
     return Array.isArray(data) ? data : (data as { results?: Yrke[] }).results ?? [];
   } catch (err) {
-    console.error("[utdanning.no] Feil ved henting av yrker:", err);
+    logger.error("[utdanning.no] Feil ved henting av yrker:", err);
     return [];
   }
 }
@@ -77,13 +78,13 @@ async function fetchStyrk08(): Promise<Styrk08[]> {
       signal: AbortSignal.timeout(FETCH_TIMEOUT),
     });
     if (!resp.ok) {
-      console.warn(`[utdanning.no] /kategorisystemer/styrk08 svarte ${resp.status}`);
+      logger.warn(`[utdanning.no] /kategorisystemer/styrk08 svarte ${resp.status}`);
       return [];
     }
     const data = await resp.json();
     return Array.isArray(data) ? data : [];
   } catch (err) {
-    console.error("[utdanning.no] Feil ved henting av STYRK-08:", err);
+    logger.error("[utdanning.no] Feil ved henting av STYRK-08:", err);
     return [];
   }
 }
@@ -97,13 +98,13 @@ async function fetchVgsProgram(): Promise<VgsProgram[]> {
       signal: AbortSignal.timeout(FETCH_TIMEOUT),
     });
     if (!resp.ok) {
-      console.warn(`[utdanning.no] /legacy-lopet/utdanningsprogram svarte ${resp.status}`);
+      logger.warn(`[utdanning.no] /legacy-lopet/utdanningsprogram svarte ${resp.status}`);
       return [];
     }
     const data = await resp.json();
     return Array.isArray(data) ? data : [];
   } catch (err) {
-    console.error("[utdanning.no] Feil ved henting av VGS-program:", err);
+    logger.error("[utdanning.no] Feil ved henting av VGS-program:", err);
     return [];
   }
 }
@@ -232,7 +233,7 @@ export async function ingestStudievelgeren(): Promise<number> {
         }
       );
       if (!resp.ok) {
-        console.warn(`[studievelgeren] side ${page} svarte ${resp.status}`);
+        logger.warn(`[studievelgeren] side ${page} svarte ${resp.status}`);
         break;
       }
 
@@ -269,7 +270,7 @@ export async function ingestStudievelgeren(): Promise<number> {
       hasMore = programs.length === 500;
       page++;
     } catch (err) {
-      console.error(`[studievelgeren] Feil side ${page}:`, err);
+      logger.error(`[studievelgeren] Feil side ${page}:`, err);
       break;
     }
   }
@@ -292,14 +293,14 @@ export async function ingestGrepFagkoder(): Promise<number> {
         signal: AbortSignal.timeout(FETCH_TIMEOUT),
       });
       if (!fallback.ok) {
-        console.warn("[grep] Ingen fagkode-endepunkt tilgjengelig");
+        logger.warn("[grep] Ingen fagkode-endepunkt tilgjengelig");
         return 0;
       }
       return processGrepData(await fallback.json());
     }
     return processGrepData(await resp.json());
   } catch (err) {
-    console.error("[grep] Feil ved henting av fagkoder:", err);
+    logger.error("[grep] Feil ved henting av fagkoder:", err);
     return 0;
   }
 }

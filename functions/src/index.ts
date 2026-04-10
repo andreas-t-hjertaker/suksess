@@ -120,7 +120,7 @@ export const onChatFeedbackCreated = onDocumentCreated(
   async (event) => {
     const snapshot = event.data;
     if (!snapshot) {
-      console.warn("[onChatFeedbackCreated] Tomt snapshot — ignorerer");
+      logger.warn("[onChatFeedbackCreated] Tomt snapshot — ignorerer");
       return;
     }
 
@@ -158,7 +158,7 @@ export const onTilbakemeldingCreated = onDocumentCreated(
   async (event) => {
     const snapshot = event.data;
     if (!snapshot) {
-      console.warn("[onTilbakemeldingCreated] Tomt snapshot — ignorerer");
+      logger.warn("[onTilbakemeldingCreated] Tomt snapshot — ignorerer");
       return;
     }
 

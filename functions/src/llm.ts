@@ -11,6 +11,7 @@
 
 import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
+import { logger } from "firebase-functions/v2";
 import { withRateLimitedValidation, success, fail } from "./middleware";
 import { z } from "zod";
 
@@ -103,7 +104,7 @@ function detectCrisis(text: string, userId?: string): boolean {
       userId: userId ?? "anonymous",
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
       patternMatched: true,
-    }).catch((err) => { console.error("Feil ved krise-logging:", err); });
+    }).catch((err) => { logger.error("Feil ved krise-logging:", err); });
   }
   return matched;
 }
@@ -243,7 +244,7 @@ async function callGemini(
     costNok,
     latencyMs,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  }).catch((err) => { console.error("Feil ved LLM-logging:", err); });
+  }).catch((err) => { logger.error("Feil ved LLM-logging:", err); });
 
   return { text, inputTokens, outputTokens, costNok };
 }

@@ -24,7 +24,6 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { useApiKeys } from "@/hooks/use-api-keys";
-import { ErrorState } from "@/components/error-state";
 import { useAuth } from "@/hooks/use-auth";
 import { showToast } from "@/lib/toast";
 import { formatDate } from "@/lib/utils";
@@ -101,7 +100,18 @@ export default function UtviklerPage() {
   if (loadError) {
     return (
       <div className="max-w-2xl mx-auto p-4">
-        <ErrorState message={loadError} onRetry={() => window.location.reload()} />
+        <Card>
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <Code className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <CardTitle>Utvikler-tilgang ikke tilgjengelig</CardTitle>
+            <CardDescription>
+              API-nøkler og utviklerverktøy er kun tilgjengelig for kontoer med utviklertilgang.
+              Kontakt administrator dersom du trenger tilgang.
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </div>
     );
   }

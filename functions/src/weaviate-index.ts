@@ -17,6 +17,7 @@
 import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
+import { logger } from "firebase-functions/v2";
 import { withAdmin } from "./middleware";
 
 const db = admin.firestore();
@@ -194,7 +195,7 @@ export const weaviateIndexScheduled = onSchedule(
       indexCareerPathsToWeaviate(apiKey, baseUrl),
     ]);
 
-    console.info("Weaviate indeksering fullført:", {
+    logger.info("Weaviate indeksering fullført:", {
       studyPrograms: studyCount.status === "fulfilled" ? studyCount.value : "feilet",
       careerPaths: careerCount.status === "fulfilled" ? careerCount.value : "feilet",
     });
@@ -278,7 +279,7 @@ export const weaviateSearch = onRequest(
 
       res.status(200).json({ results });
     } catch (err) {
-      console.error("[weaviate-search] Feil:", err);
+      logger.error("[weaviate-search] Feil:", err);
       res.status(500).json({ error: "Søk feilet", results: [] });
     }
   }
@@ -331,7 +332,7 @@ async function indexStudyProgramsToWeaviate(
       );
       count++;
     } catch (err) {
-      console.warn(`Feil ved indeksering av studieprogram ${doc.id}:`, err);
+      logger.warn(`Feil ved indeksering av studieprogram ${doc.id}:`, err);
     }
   }
 
@@ -368,7 +369,7 @@ async function indexCareerPathsToWeaviate(
       );
       count++;
     } catch (err) {
-      console.warn(`Feil ved indeksering av karrierevei ${doc.id}:`, err);
+      logger.warn(`Feil ved indeksering av karrierevei ${doc.id}:`, err);
     }
   }
 

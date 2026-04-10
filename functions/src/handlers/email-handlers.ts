@@ -1,5 +1,6 @@
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
+import { logger } from "firebase-functions/v2";
 import { success, fail, withAuth, withAdmin, withRateLimit } from "../middleware";
 import { sendEmail } from "../email";
 import { db } from "../constants";
@@ -33,7 +34,7 @@ export const sendEmailHandler = withRateLimit("api", async ({ req, res }) => {
     const result = await sendEmail({ to, subject, html, text: text || "", replyTo });
     success(res, { messageId: result.messageId, provider: result.provider });
   } catch (err) {
-    console.error("[email] Sending feilet:", err);
+    logger.error("[email] Sending feilet:", err);
     fail(res, "E-postsending feilet", 500);
   }
 });
@@ -142,7 +143,7 @@ export const sendParentConsentEmail = withAuth(async ({ user, req, res }) => {
     });
     success(res, { sent: true });
   } catch (err) {
-    console.error("[parent-consent] E-post feilet:", err);
+    logger.error("[parent-consent] E-post feilet:", err);
     fail(res, "E-postsending feilet", 500);
   }
 });

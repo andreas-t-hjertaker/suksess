@@ -10,6 +10,7 @@
  */
 
 import * as admin from "firebase-admin";
+import { logger } from "firebase-functions/v2";
 
 const db = admin.firestore();
 
@@ -45,13 +46,13 @@ async function fetchLarefag(): Promise<Larefag[]> {
       signal: AbortSignal.timeout(FETCH_TIMEOUT),
     });
     if (!resp.ok) {
-      console.warn(`[yrkesfag] /fagvelgeren/larefag svarte ${resp.status}`);
+      logger.warn(`[yrkesfag] /fagvelgeren/larefag svarte ${resp.status}`);
       return [];
     }
     const data = await resp.json();
     return Array.isArray(data) ? data : [];
   } catch (err) {
-    console.error("[yrkesfag] Feil ved henting av lærefag:", err);
+    logger.error("[yrkesfag] Feil ved henting av lærefag:", err);
     return [];
   }
 }
@@ -65,13 +66,13 @@ async function fetchLaerebedrifter(): Promise<Laerebedrift[]> {
       signal: AbortSignal.timeout(FETCH_TIMEOUT),
     });
     if (!resp.ok) {
-      console.warn(`[yrkesfag] /laerebedrifter svarte ${resp.status}`);
+      logger.warn(`[yrkesfag] /laerebedrifter svarte ${resp.status}`);
       return [];
     }
     const data = await resp.json();
     return Array.isArray(data) ? data : [];
   } catch (err) {
-    console.error("[yrkesfag] Feil ved henting av lærebedrifter:", err);
+    logger.error("[yrkesfag] Feil ved henting av lærebedrifter:", err);
     return [];
   }
 }
@@ -93,13 +94,13 @@ async function fetchFagarbeiderLonn(): Promise<FagarbeiderLonn[]> {
       signal: AbortSignal.timeout(FETCH_TIMEOUT),
     });
     if (!resp.ok) {
-      console.warn(`[yrkesfag] /lonnsniva svarte ${resp.status}`);
+      logger.warn(`[yrkesfag] /lonnsniva svarte ${resp.status}`);
       return [];
     }
     const data = await resp.json();
     return Array.isArray(data) ? data : [];
   } catch (err) {
-    console.error("[yrkesfag] Feil ved henting av lønnsdata:", err);
+    logger.error("[yrkesfag] Feil ved henting av lønnsdata:", err);
     return [];
   }
 }
