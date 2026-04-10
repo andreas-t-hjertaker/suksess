@@ -110,6 +110,7 @@ jobs:
           rules_file_name: ".zap/rules.tsv"
           cmd_options: "-a -j"
           fail_action: false
+          allow_issue_writing: false
 
       - name: Upload ZAP report
         uses: actions/upload-artifact@v7
