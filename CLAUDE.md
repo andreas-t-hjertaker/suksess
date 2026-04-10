@@ -6,26 +6,26 @@ Suksess er en AI-drevet karriereveiledningsplattform for norske VGS-elever. Livs
 
 **Eier:** KETL (andreas-t-hjertaker)
 
-## Status (9. april 2026)
+## Status (10. april 2026)
 
-**v1.1.0 tagget.** 196 issues opprettet — 194 lukket, 2 åpne i GitHub. Deploy til produksjon live på [karriere.ketl.cloud](https://karriere.ketl.cloud). Full CI/CD-pipeline. Brukertesting gjennomført 9. april — 7 bugs/UX-forbedringer identifisert og fikset samme dag.
+**v1.2.0 tagget.** 206 issues opprettet — 205 lukket, 1 åpen i GitHub. Deploy til produksjon live på [karriere.ketl.cloud](https://karriere.ketl.cloud). Full CI/CD-pipeline. Brukertesting gjennomført 9. april — 7 bugs/UX-forbedringer identifisert og fikset samme dag.
 
 3 kodeauditer, 5 strategisk research, 3 UX-research, 1 B2B-research, 1 kodeaudit+sikkerhet-research, 1 brukertesting gjennomført.
 
-### Åpne issues i GitHub (2 stk)
+### Åpne issues i GitHub (1 stk)
 
-- **#196** — Admin-dashboard: Fullfør avgGradeAverage og topCareerPaths (should-have)
-- **#195** — Refaktorering: Erstatt console.* med Firebase logger i Cloud Functions (nice-to-have)
+- **#199** — Enhancement: E2E-test for feedback-loop verifisering FAB → Firestore → Notion (nice-to-have)
 
-### Nylig lukket (9. april 2026)
-- **#180** — Testing: 56 Firebase auth/Firestore unit tests lagt til ✅
-- **#150** — Sikkerhetstesting: OWASP ZAP dynamisk scanning i CI ✅
-- **#142** — FINT-integrasjon: OAuth2, elevgrupper, fag, skoler ✅
-- **#147** — NVB karakterimport: API-klient, duplikatsjekk, Feide-token ✅
-- **#188–#194** — 7 brukertesting-bugs fikset (ScrollReveal, karrieregraf, handlingsplan, opacity, route guard, hengelås, loading-skeleton) ✅
-- CI/CD-opprydding: Duplisert firebase-deploy.yml fjernet, Firestore-regler konsolidert
-- npm audit-sårbarheter fikset (hono, @hono/node-server)
-- E2E-tester gjort non-blocking i CI
+### Nylig lukket (10. april 2026)
+- **#195** — Refaktorering: console.* → Firebase logger i Cloud Functions ✅
+- **#196** — Admin-dashboard: avgGradeAverage og topCareerPaths implementert ✅
+- **#197** — Bug: Onboarding overflow ved valg av spørsmål ✅
+- **#198** — Bug: dashboard/utvikler feilmelding ✅
+- **#200–#203** — Dependabot: actions/upload-artifact, google-github-actions/auth+setup-gcloud, zaproxy/action-baseline ✅
+- **#204** — UX: Re-entry vei til onboarding for innloggede brukere ✅
+- **#205** — UX: XP-krav og tips på låste funksjonssider ✅
+- CI: ZAP auto-issue creation deaktivert (403 permission fix)
+- Stale branches ryddet: fix/open-issues-batch-april-10, claude/tender-faraday-HpkT2
 
 ## Repo og issues
 
@@ -169,9 +169,9 @@ suksess/
 └── CLAUDE.md                          # Denne filen
 ```
 
-## Gjenværende arbeid (0 åpne issues)
+## Gjenværende arbeid (1 åpen issue)
 
-Alle 187 issues er lukket. Neste steg er nye faser.
+205 av 206 issues lukket. Kun #199 (E2E feedback-loop test, nice-to-have) gjenstår.
 
 ### Anbefalt neste steg
 
