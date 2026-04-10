@@ -112,7 +112,7 @@ jobs:
           fail_action: false
 
       - name: Upload ZAP report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: zap-report
@@ -236,7 +236,7 @@ jobs:
           NEXT_PUBLIC_REGION: europe-west1
 
       - name: Upload test report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
