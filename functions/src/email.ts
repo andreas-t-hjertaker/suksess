@@ -9,6 +9,7 @@
 
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
+import { logger } from "firebase-functions/v2";
 
 function getDb() {
   return admin.firestore();
@@ -134,7 +135,7 @@ export async function sendEmail(payload: SendEmailPayload): Promise<EmailResult>
     result = await sendViaSmtp(payload);
   } else {
     // I utvikling/test: logg og returner uten å sende
-    console.log("[email] Ingen e-posttransport konfigurert. Logget e-post:", {
+    logger.info("[email] Ingen e-posttransport konfigurert. Logget e-post:", {
       to: payload.to.map((r) => `${hashEmail(r.email)}@${emailDomain(r.email)}`),
       subject: payload.subject,
     });

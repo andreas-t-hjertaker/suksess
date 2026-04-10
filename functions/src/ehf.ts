@@ -6,6 +6,7 @@
  */
 
 import * as admin from "firebase-admin";
+import { logger } from "firebase-functions/v2";
 
 function getDb() {
   return admin.firestore();
@@ -365,7 +366,7 @@ export async function processStripeInvoiceForEhf(
       metadata: { ...stripeInvoice.metadata, ehfStatus, ehfSentAt: new Date().toISOString() },
     });
   } catch (err) {
-    console.error("[EHF] Kunne ikke oppdatere Stripe-metadata:", err);
+    logger.error("[EHF] Kunne ikke oppdatere Stripe-metadata:", err);
   }
 
   // Logg til audit

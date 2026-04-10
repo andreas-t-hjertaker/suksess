@@ -26,6 +26,8 @@
  *   NOTION_FEEDBACK_DB_ID    — Notion database ID for feedback
  */
 
+import { logger } from "firebase-functions/v2";
+
 // ---------------------------------------------------------------------------
 // Typer
 // ---------------------------------------------------------------------------
@@ -108,7 +110,7 @@ async function createNotionPage(
   const databaseId = process.env.NOTION_FEEDBACK_DB_ID ?? "";
 
   if (!token || !databaseId) {
-    console.warn(
+    logger.warn(
       "[feedback-notion-sync] Mangler NOTION_API_TOKEN eller NOTION_FEEDBACK_DB_ID — hopper over sync"
     );
     return null;
@@ -134,7 +136,7 @@ async function createNotionPage(
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(
+    logger.error(
       `[feedback-notion-sync] Notion API feil (${response.status}): ${errorText}`
     );
     return null;
@@ -212,7 +214,7 @@ export async function syncChatFeedbackToNotion(
 
   const notionId = await createNotionPage(properties);
   if (notionId) {
-    console.log(
+    logger.info(
       `[feedback-notion-sync] chatFeedback ${feedbackId} → Notion ${notionId} (${ratingLabel})`
     );
   }
@@ -325,7 +327,7 @@ export async function syncTilbakemeldingToNotion(
 
   const notionId = await createNotionPage(properties, children);
   if (notionId) {
-    console.log(
+    logger.info(
       `[feedback-notion-sync] feedback ${feedbackId} → Notion ${notionId} (${typeLabel})`
     );
   }
