@@ -6,7 +6,6 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/firestore";
 import { updateProfile } from "firebase/auth";
 import { uploadFile } from "@/lib/firebase/storage";
-import { saveUserProfile, saveTestResult } from "@/lib/firebase/profiles";
 import { serverTimestamp as firestoreServerTimestamp } from "firebase/firestore";
 import { nowISO, todayISO } from "@/lib/utils/time";
 import { Button } from "@/components/ui/button";
@@ -14,33 +13,15 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
-import { RadarChart } from "@/components/radar-chart";
-import {
-  BIG_FIVE_QUESTIONS,
-  RIASEC_QUESTIONS,
-  STRENGTH_QUESTIONS,
-} from "@/lib/personality/questions";
-import {
-  scoreBigFive,
-  scoreRiasec,
-  scoreStrengths,
-  getTopStrengths,
-  getRiasecCode,
-  type RawAnswers,
-} from "@/lib/personality/scoring";
 import {
   Upload,
   Loader2,
   Rocket,
-  Brain,
-  Compass,
-  Star,
+  Sparkles,
+  ShieldCheck,
   ChevronLeft,
   ChevronRight,
   Check,
-  ShieldCheck,
-  Sparkles,
-  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
@@ -54,11 +35,6 @@ const STORAGE_KEY = "suksess-onboarding-progress";
 
 type SavedProgress = {
   step: number;
-  bigFiveBlock: number;
-  riasecBlock: number;
-  bigFiveAnswers: RawAnswers;
-  riasecAnswers: RawAnswers;
-  strengthAnswers: RawAnswers;
   displayName: string;
   consentPersonality: boolean;
   consentAnalytics: boolean;
@@ -104,7 +80,7 @@ const stepVariants = {
 };
 
 // ---------------------------------------------------------------------------
-// Steg-definisjon
+// Steg-definisjon (forenklet: kun intro + samtykke + profil)
 // ---------------------------------------------------------------------------
 
 const STEPS = [
@@ -112,10 +88,6 @@ const STEPS = [
   { id: "goals", label: "Mål", icon: Sparkles },
   { id: "consent", label: "Samtykke", icon: ShieldCheck },
   { id: "profile", label: "Profil", icon: Upload },
-  { id: "bigfive", label: "Personlighet", icon: Brain },
-  { id: "riasec", label: "Interesser", icon: Compass },
-  { id: "strengths", label: "Styrker", icon: Star },
-  { id: "results", label: "Resultater", icon: Check },
 ] as const;
 
 const GOALS = [
@@ -128,32 +100,6 @@ const GOALS = [
 type StepId = (typeof STEPS)[number]["id"];
 const TOTAL_STEPS = STEPS.length;
 
-// Likert-skala med emoji
-const LIKERT = [
-  { value: 1, label: "Stemmer ikke", emoji: "😕" },
-  { value: 2, label: "Stemmer lite", emoji: "🤔" },
-  { value: 3, label: "Nøytral", emoji: "😐" },
-  { value: 4, label: "Stemmer godt", emoji: "🙂" },
-  { value: 5, label: "Stemmer svært godt", emoji: "🤩" },
-];
-
-// Big Five-spørsmål i blokker av 8 (ett steg per dimensjon)
-const BIG_FIVE_BLOCKS = [
-  BIG_FIVE_QUESTIONS.slice(0, 8),   // openness
-  BIG_FIVE_QUESTIONS.slice(8, 16),  // conscientiousness
-  BIG_FIVE_QUESTIONS.slice(16, 24), // extraversion
-  BIG_FIVE_QUESTIONS.slice(24, 32), // agreeableness
-  BIG_FIVE_QUESTIONS.slice(32, 40), // neuroticism
-];
-
-const BIG_FIVE_TITLES = [
-  "Åpenhet for opplevelser",
-  "Planmessighet",
-  "Utadvendthet",
-  "Medmenneskelighet",
-  "Emosjonell stabilitet",
-];
-
 // ---------------------------------------------------------------------------
 // Komponent
 // ---------------------------------------------------------------------------
@@ -164,8 +110,7 @@ export function OnboardingStepper() {
   const [checking, setChecking] = useState(true);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
-  const [direction, setDirection] = useState(1); // 1 = fremover, -1 = bakover
-  const [celebration, setCelebration] = useState<string | null>(null);
+  const [direction, setDirection] = useState(1);
 
   // Mål-setting
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
@@ -179,21 +124,6 @@ export function OnboardingStepper() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Big Five: sub-blokk (0-4), svar
-  const [bigFiveBlock, setBigFiveBlock] = useState(0);
-  const [bigFiveAnswers, setBigFiveAnswers] = useState<RawAnswers>({});
-
-  // RIASEC: sub-blokk (0-5), svar
-  const [riasecBlock, setRiasecBlock] = useState(0);
-  const [riasecAnswers, setRiasecAnswers] = useState<RawAnswers>({});
-
-  // Styrker
-  const [strengthAnswers, setStrengthAnswers] = useState<RawAnswers>({});
-
-  // Beregnede resultater
-  const [bigFiveScores, setBigFiveScores] = useState<ReturnType<typeof scoreBigFive> | null>(null);
-  const [riasecScores, setRiasecScores] = useState<ReturnType<typeof scoreRiasec> | null>(null);
-
   useEffect(() => {
     if (!firebaseUser) {
       setChecking(false);
@@ -202,15 +132,9 @@ export function OnboardingStepper() {
     getDoc(doc(db, "users", firebaseUser.uid)).then((snap) => {
       if (!snap.exists() || !snap.data()?.onboardingComplete) {
         setDisplayName(firebaseUser.displayName || "");
-        // Gjenopprett lagret fremdrift
         const saved = loadProgress();
         if (saved) {
           setStep(saved.step);
-          setBigFiveBlock(saved.bigFiveBlock);
-          setRiasecBlock(saved.riasecBlock);
-          setBigFiveAnswers(saved.bigFiveAnswers);
-          setRiasecAnswers(saved.riasecAnswers);
-          setStrengthAnswers(saved.strengthAnswers);
           if (saved.displayName) setDisplayName(saved.displayName);
           if (saved.selectedGoal) setSelectedGoal(saved.selectedGoal);
           setConsentPersonality(saved.consentPersonality);
@@ -227,31 +151,12 @@ export function OnboardingStepper() {
     if (!show) return;
     saveProgress({
       step,
-      bigFiveBlock,
-      riasecBlock,
-      bigFiveAnswers,
-      riasecAnswers,
-      strengthAnswers,
       displayName,
       consentPersonality,
       consentAnalytics,
       selectedGoal,
     });
-  }, [show, step, bigFiveBlock, riasecBlock, bigFiveAnswers, riasecAnswers, strengthAnswers, displayName, consentPersonality, consentAnalytics, selectedGoal]);
-
-  // Micro-celebration ved dimensjon-fullføring
-  function showCelebration(message: string) {
-    setCelebration(message);
-    setTimeout(() => setCelebration(null), 2000);
-  }
-
-  // Beregn scorer når vi ankommer results-steget
-  useEffect(() => {
-    if (STEPS[step].id === "results") {
-      setBigFiveScores(scoreBigFive(bigFiveAnswers));
-      setRiasecScores(scoreRiasec(riasecAnswers));
-    }
-  }, [step, bigFiveAnswers, riasecAnswers]);
+  }, [show, step, displayName, consentPersonality, consentAnalytics, selectedGoal]);
 
   // ---------------------------------------------------------------------------
   // Handlinger
@@ -274,52 +179,12 @@ export function OnboardingStepper() {
     if (!firebaseUser) return;
     setSaving(true);
     try {
-      const bf = scoreBigFive(bigFiveAnswers);
-      const rs = scoreRiasec(riasecAnswers);
-      const st = scoreStrengths(strengthAnswers);
-      const topStrengths = getTopStrengths(st);
-
       // Lagre visningsnavn
       if (displayName && displayName !== firebaseUser.displayName) {
         await updateProfile(firebaseUser, { displayName });
       }
 
-      // Lagre profil
-      await saveUserProfile(firebaseUser.uid, {
-        userId: firebaseUser.uid,
-        bigFive: bf,
-        riasec: rs,
-        strengths: topStrengths,
-        interests: [],
-        learningStyle: null,
-        clusterId: null,
-        lastUpdated: null,
-      });
-
-      // Lagre testresultater
-      await saveTestResult(firebaseUser.uid, {
-        userId: firebaseUser.uid,
-        testType: "big_five",
-        rawAnswers: bigFiveAnswers,
-        scores: bf,
-        completedAt: null,
-      });
-      await saveTestResult(firebaseUser.uid, {
-        userId: firebaseUser.uid,
-        testType: "riasec",
-        rawAnswers: riasecAnswers,
-        scores: rs,
-        completedAt: null,
-      });
-      await saveTestResult(firebaseUser.uid, {
-        userId: firebaseUser.uid,
-        testType: "strengths",
-        rawAnswers: strengthAnswers,
-        scores: st,
-        completedAt: null,
-      });
-
-      // Marker onboarding ferdig (inkl. GDPR-samtykke)
+      // Marker onboarding ferdig (profil + samtykke)
       await setDoc(
         doc(db, "users", firebaseUser.uid),
         {
@@ -333,16 +198,17 @@ export function OnboardingStepper() {
           role: "student",
           tenantId: null,
           photoURL: firebaseUser.photoURL,
+          selectedGoal: selectedGoal,
         },
         { merge: true }
       );
 
-      // Gi XP for fullført onboarding
+      // Gi XP for fullført onboarding (profil)
       await setDoc(
         doc(db, "users", firebaseUser.uid, "gamification", "xp"),
         {
-          totalXp: 110, // onboarding(50) + personality_test(30) + riasec_test(30)
-          earnedAchievements: ["first_login", "profile_complete", "test_taker"],
+          totalXp: 50,
+          earnedAchievements: ["first_login", "profile_complete"],
           streak: 1,
           lastLoginDate: todayISO(),
           updatedAt: firestoreServerTimestamp(),
@@ -355,7 +221,7 @@ export function OnboardingStepper() {
     } finally {
       setSaving(false);
     }
-  }, [firebaseUser, displayName, bigFiveAnswers, riasecAnswers, strengthAnswers, consentAnalytics]);
+  }, [firebaseUser, displayName, consentAnalytics, selectedGoal]);
 
   async function handleSkip() {
     if (!firebaseUser) return;
@@ -375,65 +241,18 @@ export function OnboardingStepper() {
   function canGoNext(): boolean {
     const current = STEPS[step].id;
     if (current === "consent") {
-      return consentPersonality; // personlighetstest-samtykke er påkrevd
-    }
-    if (current === "bigfive") {
-      const block = BIG_FIVE_BLOCKS[bigFiveBlock];
-      return block.every((q) => bigFiveAnswers[q.id] !== undefined);
-    }
-    if (current === "riasec") {
-      const block = RIASEC_QUESTIONS.slice(riasecBlock * 5, riasecBlock * 5 + 5);
-      return block.every((q) => riasecAnswers[q.id] !== undefined);
-    }
-    if (current === "strengths") {
-      return STRENGTH_QUESTIONS.every((q) => strengthAnswers[q.id] !== undefined);
+      return consentPersonality;
     }
     return true;
   }
 
   function handleNext() {
     setDirection(1);
-    const current = STEPS[step].id;
-
-    if (current === "bigfive" && bigFiveBlock < BIG_FIVE_BLOCKS.length - 1) {
-      setBigFiveBlock((b) => b + 1);
-      showCelebration(`${BIG_FIVE_TITLES[bigFiveBlock]} fullført! ✓`);
-      return;
-    }
-    if (current === "riasec" && riasecBlock < 5) {
-      setRiasecBlock((b) => b + 1);
-      return;
-    }
-
-    // Celebration ved overgang til nytt steg
-    if (current === "bigfive") {
-      setBigFiveBlock(0);
-      showCelebration("Personlighetstest fullført! 🎉");
-    }
-    if (current === "riasec") {
-      setRiasecBlock(0);
-      showCelebration("Interessetest fullført! 🎉");
-    }
-    if (current === "strengths") {
-      showCelebration("Styrketest fullført! 🎉");
-    }
-
     setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
   }
 
   function handlePrev() {
     setDirection(-1);
-    const current = STEPS[step].id;
-    if (current === "bigfive" && bigFiveBlock > 0) {
-      setBigFiveBlock((b) => b - 1);
-      return;
-    }
-    if (current === "riasec" && riasecBlock > 0) {
-      setRiasecBlock((b) => b - 1);
-      return;
-    }
-    if (current === "bigfive") setBigFiveBlock(BIG_FIVE_BLOCKS.length - 1);
-    if (current === "riasec") setRiasecBlock(5);
     setStep((s) => Math.max(s - 1, 0));
   }
 
@@ -445,41 +264,7 @@ export function OnboardingStepper() {
 
   const currentStepId = STEPS[step].id as StepId;
   const initials = (displayName || user?.email || "?").charAt(0).toUpperCase();
-
-  // Fremdrift for spørsmålssteg
-  function innerProgress() {
-    if (currentStepId === "bigfive") {
-      const answered = BIG_FIVE_BLOCKS[bigFiveBlock].filter(
-        (q) => bigFiveAnswers[q.id] !== undefined
-      ).length;
-      return `${answered} / ${BIG_FIVE_BLOCKS[bigFiveBlock].length}`;
-    }
-    if (currentStepId === "riasec") {
-      const block = RIASEC_QUESTIONS.slice(riasecBlock * 5, riasecBlock * 5 + 5);
-      const answered = block.filter((q) => riasecAnswers[q.id] !== undefined).length;
-      return `${answered} / 5`;
-    }
-    if (currentStepId === "strengths") {
-      const answered = STRENGTH_QUESTIONS.filter(
-        (q) => strengthAnswers[q.id] !== undefined
-      ).length;
-      return `${answered} / ${STRENGTH_QUESTIONS.length}`;
-    }
-    return null;
-  }
-
-  const innerProgressText = innerProgress();
-
-  // Beregn overordnet fremdrift i prosent
-  const totalAnswered = Object.keys(bigFiveAnswers).length + Object.keys(riasecAnswers).length + Object.keys(strengthAnswers).length;
-  const totalQuestions = 40 + 30 + 14; // Big Five + RIASEC + Styrker
-  const overallProgress = Math.round(
-    ((step + (currentStepId === "bigfive" ? bigFiveBlock / 5 : 0) +
-      (currentStepId === "riasec" ? riasecBlock / 6 : 0)) /
-      (TOTAL_STEPS - 1)) * 100
-  );
-  const remainingQuestions = totalQuestions - totalAnswered;
-  const estimatedMinutes = Math.max(1, Math.ceil(remainingQuestions * 0.15));
+  const overallProgress = Math.round((step / (TOTAL_STEPS - 1)) * 100);
 
   return (
     <div
@@ -527,27 +312,9 @@ export function OnboardingStepper() {
         </div>
 
         <CardContent className="px-6 pb-4 pt-2 min-h-[280px] relative overflow-y-auto flex-1">
-
-          {/* Micro-celebration overlay */}
-          <AnimatePresence>
-            {celebration && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.8, y: -20 }}
-                className="absolute inset-0 z-10 flex items-center justify-center bg-background/90 backdrop-blur-sm"
-              >
-                <div className="text-center space-y-2">
-                  <Trophy className="mx-auto h-10 w-10 text-primary" aria-hidden="true" />
-                  <p className="text-lg font-semibold" role="status">{celebration}</p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
           <AnimatePresence mode="wait" custom={direction}>
           <motion.div
-            key={`${currentStepId}-${bigFiveBlock}-${riasecBlock}`}
+            key={currentStepId}
             custom={direction}
             variants={stepVariants}
             initial="enter"
@@ -568,29 +335,12 @@ export function OnboardingStepper() {
               </motion.div>
               <CardTitle className="text-2xl font-display">Velkommen til Suksess!</CardTitle>
               <p className="text-muted-foreground">
-                Vi hjelper deg med å finne den studieveien og karrieren som passer deg best.
-                Svar på noen spørsmål om deg selv — det tar ca. 10–15 minutter.
+                Vi hjelper deg med å finne studieveien og karrieren som passer deg best.
+                Sett opp profilen din raskt — vi blir bedre kjent med deg over tid.
               </p>
               <p className="text-xs text-muted-foreground">
-                Du kan når som helst lukke og gjenoppta der du slapp.
+                Bare noen få steg, så er du i gang!
               </p>
-              <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
-                <div className="rounded-lg bg-muted p-3">
-                  <Brain className="mx-auto mb-1 h-5 w-5 text-primary" />
-                  <p className="font-medium">Personlighetstest</p>
-                  <p className="text-xs text-muted-foreground">Big Five (OCEAN)</p>
-                </div>
-                <div className="rounded-lg bg-muted p-3">
-                  <Compass className="mx-auto mb-1 h-5 w-5 text-primary" />
-                  <p className="font-medium">Interessetest</p>
-                  <p className="text-xs text-muted-foreground">RIASEC / Holland</p>
-                </div>
-                <div className="rounded-lg bg-muted p-3">
-                  <Star className="mx-auto mb-1 h-5 w-5 text-primary" />
-                  <p className="font-medium">Styrker</p>
-                  <p className="text-xs text-muted-foreground">VIA-inspirert</p>
-                </div>
-              </div>
             </div>
           )}
 
@@ -640,7 +390,6 @@ export function OnboardingStepper() {
                 Du kan se, eksportere og slette all data fra <strong>Mine data</strong>-siden.
               </p>
               <div className="space-y-3">
-                {/* Påkrevd */}
                 <label className="flex items-start gap-3 rounded-lg border p-4 cursor-pointer hover:bg-muted/50 transition-colors">
                   <input
                     type="checkbox"
@@ -661,7 +410,6 @@ export function OnboardingStepper() {
                     </p>
                   </div>
                 </label>
-                {/* Valgfritt */}
                 <label className="flex items-start gap-3 rounded-lg border p-4 cursor-pointer hover:bg-muted/50 transition-colors">
                   <input
                     type="checkbox"
@@ -739,172 +487,6 @@ export function OnboardingStepper() {
             </div>
           )}
 
-          {/* ---- STEG: BIG FIVE ---- */}
-          {currentStepId === "bigfive" && (
-            <div className="space-y-4 py-2">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                  Personlighetstest · Dimensjon {bigFiveBlock + 1} av {BIG_FIVE_BLOCKS.length}
-                </p>
-                <CardTitle className="mt-0.5 text-lg">
-                  {BIG_FIVE_TITLES[bigFiveBlock]}
-                </CardTitle>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Vurder hvert utsagn fra 1 (stemmer ikke) til 5 (stemmer svært godt).
-                </p>
-              </div>
-              <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-                {BIG_FIVE_BLOCKS[bigFiveBlock].map((q) => (
-                  <QuestionRow
-                    key={q.id}
-                    text={q.text}
-                    value={bigFiveAnswers[q.id]}
-                    onChange={(v) =>
-                      setBigFiveAnswers((prev) => ({ ...prev, [q.id]: v }))
-                    }
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ---- STEG: RIASEC ---- */}
-          {currentStepId === "riasec" && (() => {
-            const block = RIASEC_QUESTIONS.slice(riasecBlock * 5, riasecBlock * 5 + 5);
-            const riasecTitles = [
-              "Realistisk — praktisk & teknisk",
-              "Undersøkende — analytisk & vitenskapelig",
-              "Artistisk — kreativ & ekspressiv",
-              "Sosial — hjelpende & pedagogisk",
-              "Entrepenørisk — ledende & selgende",
-              "Konvensjonell — strukturert & systematisk",
-            ];
-            return (
-              <div className="space-y-4 py-2">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                    Interessetest · Gruppe {riasecBlock + 1} av 6
-                  </p>
-                  <CardTitle className="mt-0.5 text-lg">
-                    {riasecTitles[riasecBlock]}
-                  </CardTitle>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Vurder i hvilken grad hvert utsagn passer deg.
-                  </p>
-                </div>
-                <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-                  {block.map((q) => (
-                    <QuestionRow
-                      key={q.id}
-                      text={q.text}
-                      value={riasecAnswers[q.id]}
-                      onChange={(v) =>
-                        setRiasecAnswers((prev) => ({ ...prev, [q.id]: v }))
-                      }
-                    />
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* ---- STEG: STYRKER ---- */}
-          {currentStepId === "strengths" && (
-            <div className="space-y-4 py-2">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                  Styrketest
-                </p>
-                <CardTitle className="mt-0.5 text-lg">Hva er du god på?</CardTitle>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Vurder utsagnene om dine styrker.
-                </p>
-              </div>
-              <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-                {STRENGTH_QUESTIONS.map((q) => (
-                  <QuestionRow
-                    key={q.id}
-                    text={q.text}
-                    value={strengthAnswers[q.id]}
-                    onChange={(v) =>
-                      setStrengthAnswers((prev) => ({ ...prev, [q.id]: v }))
-                    }
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ---- STEG: RESULTATER ---- */}
-          {currentStepId === "results" && bigFiveScores && riasecScores && (() => {
-            const strengthScores = scoreStrengths(strengthAnswers);
-            const topStrengths = getTopStrengths(strengthScores);
-            const riasecCode = getRiasecCode(riasecScores);
-
-            const bigFiveAxes = [
-              { label: "Åpenhet", value: bigFiveScores.openness },
-              { label: "Planmessig", value: bigFiveScores.conscientiousness },
-              { label: "Utadvendt", value: bigFiveScores.extraversion },
-              { label: "Medmennesk.", value: bigFiveScores.agreeableness },
-              { label: "Emosj. stab.", value: 100 - bigFiveScores.neuroticism },
-            ];
-
-            const riasecAxes = [
-              { label: "Realistisk", value: riasecScores.realistic },
-              { label: "Undersøkende", value: riasecScores.investigative },
-              { label: "Artistisk", value: riasecScores.artistic },
-              { label: "Sosial", value: riasecScores.social },
-              { label: "Entrepr.", value: riasecScores.enterprising },
-              { label: "Konvensjonnell", value: riasecScores.conventional },
-            ];
-
-            const STRENGTH_LABELS: Record<string, string> = {
-              kreativitet: "Kreativitet",
-              nysgjerrighet: "Nysgjerrighet",
-              lederskap: "Lederskap",
-              empati: "Empati",
-              utholdenhet: "Utholdenhet",
-              humor: "Humor",
-              rettferdighet: "Rettferdighet",
-            };
-
-            return (
-              <div className="space-y-4 py-2">
-                <div className="text-center">
-                  <CardTitle className="text-xl">Din personlighetsprofil</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    RIASEC-kode: <span className="font-bold text-primary">{riasecCode}</span>
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center">
-                    <p className="text-xs font-semibold text-muted-foreground mb-1">Big Five</p>
-                    <RadarChart axes={bigFiveAxes} size={190} className="mx-auto" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs font-semibold text-muted-foreground mb-1">RIASEC</p>
-                    <RadarChart axes={riasecAxes} size={190} className="mx-auto" />
-                  </div>
-                </div>
-                <div className="rounded-lg bg-muted p-3">
-                  <p className="text-xs font-semibold text-muted-foreground mb-1">
-                    Topp-styrker
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {topStrengths.map((s) => (
-                      <span
-                        key={s}
-                        className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
-                      >
-                        {STRENGTH_LABELS[s] ?? s}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-
           </motion.div>
           </AnimatePresence>
         </CardContent>
@@ -915,12 +497,6 @@ export function OnboardingStepper() {
             Hopp over
           </Button>
           <div className="flex items-center gap-3">
-            {innerProgressText && (
-              <span className="text-xs text-muted-foreground">{innerProgressText}</span>
-            )}
-            {(currentStepId === "bigfive" || currentStepId === "riasec" || currentStepId === "strengths") && remainingQuestions > 0 && (
-              <span className="text-xs text-muted-foreground hidden sm:inline">~{estimatedMinutes} min igjen</span>
-            )}
             {step > 0 && (
               <Button variant="outline" size="sm" onClick={handlePrev}>
                 <ChevronLeft className="h-4 w-4 mr-1" />
@@ -945,47 +521,6 @@ export function OnboardingStepper() {
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// QuestionRow — enkelt Likert-spørsmål
-// ---------------------------------------------------------------------------
-
-function QuestionRow({
-  text,
-  value,
-  onChange,
-}: {
-  text: string;
-  value: number | undefined;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div className="space-y-1.5" role="group" aria-label={text}>
-      <p className="text-sm" id={undefined}>{text}</p>
-      <div className="flex gap-1.5" role="radiogroup" aria-label={`Svar på: ${text}`}>
-        {LIKERT.map((l) => (
-          <button
-            key={l.value}
-            type="button"
-            role="radio"
-            aria-checked={value === l.value}
-            aria-label={`${l.value} — ${l.label}`}
-            onClick={() => onChange(l.value)}
-            className={cn(
-              "flex h-9 flex-1 items-center justify-center rounded-lg border text-sm transition-all",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-              value === l.value
-                ? "border-primary bg-primary/10 scale-110 shadow-sm"
-                : "border-border hover:border-primary/50 hover:bg-primary/5"
-            )}
-          >
-            <span aria-hidden="true">{l.emoji}</span>
-          </button>
-        ))}
-      </div>
     </div>
   );
 }

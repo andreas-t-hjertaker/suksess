@@ -47,6 +47,10 @@ const FeedbackFAB = dynamic(
   () => import("@/components/feedback-fab").then((m) => ({ default: m.FeedbackFAB })),
   { ssr: false }
 );
+const FloatingQuestion = dynamic(
+  () => import("@/components/floating-question").then((m) => ({ default: m.FloatingQuestion })),
+  { ssr: false }
+);
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
@@ -146,6 +150,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
       <LevelUpOverlay />
       <BadgeToastListener />
       <FeedbackFAB />
+      <FloatingQuestion />
     </div>
   );
 }
