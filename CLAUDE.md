@@ -6,15 +6,21 @@ Suksess er en AI-drevet karriereveiledningsplattform for norske VGS-elever. Livs
 
 **Eier:** KETL (andreas-t-hjertaker)
 
-## Status (10. april 2026)
+## Status (13. april 2026)
 
-**v1.2.0 tagget.** 206 issues opprettet — 205 lukket, 1 åpen i GitHub. Deploy til produksjon live på [karriere.ketl.cloud](https://karriere.ketl.cloud). Full CI/CD-pipeline. Brukertesting gjennomført 9. april — 7 bugs/UX-forbedringer identifisert og fikset samme dag.
+**v1.2.0 tagget.** 215 issues opprettet — 208 lukket, 7 åpne i GitHub (1 enhancement + 6 bugs under review). Deploy til produksjon live på [karriere.ketl.cloud](https://karriere.ketl.cloud). Full CI/CD-pipeline. Brukertesting gjennomført 10. og 12. april — 6 nye bugs identifisert og fikset 13. april.
 
-3 kodeauditer, 5 strategisk research, 3 UX-research, 1 B2B-research, 1 kodeaudit+sikkerhet-research, 1 brukertesting gjennomført.
+3 kodeauditer, 5 strategisk research, 3 UX-research, 1 B2B-research, 1 kodeaudit+sikkerhet-research, 2 brukertestinger gjennomført.
 
-### Åpne issues i GitHub (1 stk)
+### Åpne issues i GitHub (7 stk — 6 fikset, venter merge)
 
-- **#199** — Enhancement: E2E-test for feedback-loop verifisering FAB → Firestore → Notion (nice-to-have)
+- **#199** — Enhancement: E2E-test for feedback-loop (nice-to-have)
+- **#210** — Bug: «Første steg» achievement ulåst → fikset i `claude/tender-faraday-WKztM`
+- **#211** — Bug: Ingen toast etter feedback → fikset
+- **#212** — Bug: Falsk RIASEC «IRS» fallback → fikset
+- **#213** — Bug: /onboarding viser landingsside → fikset
+- **#214** — Bug: FloatingQuestion blokkerer sidebar + gjenoppstår → fikset
+- **#215** — Bug: XP oppdateres ikke etter karakter → fikset
 
 ### Nylig lukket (10. april 2026)
 - **#195** — Refaktorering: console.* → Firebase logger i Cloud Functions ✅
@@ -169,9 +175,9 @@ suksess/
 └── CLAUDE.md                          # Denne filen
 ```
 
-## Gjenværende arbeid (1 åpen issue)
+## Gjenværende arbeid (7 åpne issues)
 
-205 av 206 issues lukket. Kun #199 (E2E feedback-loop test, nice-to-have) gjenstår.
+208 av 215 issues lukket. 6 bugs fikset i `claude/tender-faraday-WKztM` (venter merge). #199 (E2E feedback-loop test, nice-to-have) gjenstår.
 
 ### Anbefalt neste steg
 
