@@ -127,6 +127,11 @@ export function useXp() {
     const snap = await getDoc(ref);
     const data = parseDoc(snap, XpDocSchema) as XpDoc | undefined;
 
+    // Lås opp «Første steg»-achievement ved første innlogging (#210)
+    if (!data?.earnedAchievements?.includes("first_login")) {
+      await unlockAchievement("first_login");
+    }
+
     if (data?.lastLoginDate === today) return; // Allerede sjekket inn i dag
 
     const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];

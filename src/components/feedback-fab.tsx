@@ -14,15 +14,12 @@ import { Button } from "@/components/ui/button";
 import { FeedbackDialog } from "@/components/feedback-dialog";
 import { lyttPaaFeilrapport, type FeilRapportData } from "@/lib/feil-kontekst";
 import type { TilbakemeldingType, TilbakemeldingKilde } from "@/types/domain";
-import { toast } from "sonner";
-import { useFeedback } from "@/hooks/use-feedback";
 
 export function FeedbackFAB() {
   const [open, setOpen] = useState(false);
   const [kilde, setKilde] = useState<TilbakemeldingKilde>("fab");
   const [initialType, setInitialType] = useState<TilbakemeldingType | undefined>();
   const [feilKontekst, setFeilKontekst] = useState<FeilRapportData | undefined>();
-  const { sisteSendt } = useFeedback();
 
   // Lytt på feilrapport-events fra ErrorBoundary
   useEffect(() => {
@@ -34,13 +31,6 @@ export function FeedbackFAB() {
     });
     return cleanup;
   }, []);
-
-  // Vis toast-melding etter vellykket innsending
-  useEffect(() => {
-    if (sisteSendt) {
-      toast.success(sisteSendt.melding);
-    }
-  }, [sisteSendt]);
 
   const handleOpen = useCallback(() => {
     setKilde("fab");

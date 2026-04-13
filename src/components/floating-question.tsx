@@ -62,7 +62,7 @@ export function FloatingQuestion() {
         animate={{ opacity: 1, x: 0, y: 0 }}
         exit={{ opacity: 0, x: -40, scale: 0.95 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="fixed bottom-20 left-4 z-[9999] w-80 sm:bottom-6 sm:left-6"
+        className="fixed bottom-20 left-4 z-[9999] w-80 sm:bottom-6 sm:left-64"
       >
         <div className="rounded-xl border border-border bg-popover p-4 shadow-xl">
           {/* Header */}

@@ -39,7 +39,7 @@ export function useGradeForm() {
         source: "manual",
         nvbImportedAt: null,
       });
-      earnXp("grades_added");
+      await earnXp("grades_added");
       setNewSubject("");
       setNewFagkode("");
       setNewGrade(4);

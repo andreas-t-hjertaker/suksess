@@ -127,7 +127,7 @@ export function useFloatingQuestions(): FloatingQuestionState {
   const { firebaseUser } = useAuth();
   const [answers, setAnswers] = useState<RawAnswers>({});
   const [loading, setLoading] = useState(true);
-  const [isDismissed, setIsDismissed] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(() => isSessionDismissed());
   const [sessionCount, setSessionCount] = useState(0);
   const savingRef = useRef(false);
 

@@ -233,7 +233,7 @@ function JobMatchPage() {
     setDoc(ref, { ids: [...favorites], updatedAt: serverTimestamp() });
   }, [favorites, user]);
 
-  const riasecCode = profile?.riasec ? getRiasecCode(profile.riasec) : "IRS";
+  const riasecCode = profile?.riasec ? getRiasecCode(profile.riasec) : null;
 
   // Jobbsøk med ekte NAV-data
   const {
@@ -265,7 +265,7 @@ function JobMatchPage() {
     const name = user?.displayName ?? "eleven";
     const strengths = profile?.strengths?.join(", ") ?? "";
     return `Du er en norsk karriererådgiver som hjelper ${name} med å skrive søknadsbrev.
-Profil: RIASEC-kode ${riasecCode}${strengths ? `, styrker: ${strengths}` : ""}.
+Profil: ${riasecCode ? `RIASEC-kode ${riasecCode}` : "Ingen RIASEC-profil ennå"}${strengths ? `, styrker: ${strengths}` : ""}.
 Skriv alltid på norsk. Skriv profesjonelle, personlige søknadsbrev på 3–4 avsnitt.
 Tilpass brevet til stilling og bedrift. Fremhev relevante styrker og motivasjon.`;
   }, [user, riasecCode, profile]);
@@ -295,7 +295,7 @@ Beskrivelse: ${job.description}`;
       <div>
         <h1 className="text-2xl font-bold">Jobbmatch</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Ekte stillinger fra NAV matchet mot din RIASEC-profil ({riasecCode}).
+          Ekte stillinger fra NAV{riasecCode ? ` matchet mot din RIASEC-profil (${riasecCode})` : ""}.
         </p>
       </div>
 

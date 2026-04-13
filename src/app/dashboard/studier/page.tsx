@@ -103,11 +103,11 @@ export default function StudierPage() {
     return subscribeToUserProfile(user.uid, setProfile);
   }, [user]);
 
-  const riasecCode = profile?.riasec ? getRiasecCode(profile.riasec) : "IRS";
+  const riasecCode = profile?.riasec ? getRiasecCode(profile.riasec) : null;
   const { grades: userGrades } = useGrades();
   const gradePoints = useMemo(() => calculateGradePoints(userGrades), [userGrades]);
-  const opptaksdata = useOpptaksdata(gradePoints.totalPoints, riasecCode);
-  const studyTips = useMemo(() => getTipsForProfile(riasecCode), [riasecCode]);
+  const opptaksdata = useOpptaksdata(gradePoints.totalPoints, riasecCode ?? "");
+  const studyTips = useMemo(() => getTipsForProfile(riasecCode ?? ""), [riasecCode]);
 
   const totalCredits = courses.filter((c) => c.passed).reduce((s, c) => s + c.credits, 0);
   const targetCredits = 180; // Typisk bachelor
@@ -317,7 +317,7 @@ export default function StudierPage() {
           <div className="rounded-xl border bg-primary/5 border-primary/20 p-4">
             <div className="flex items-center gap-2 mb-2">
               <Target className="h-4 w-4 text-primary" aria-hidden="true" />
-              <p className="text-sm font-medium">Anbefalte studieprogram basert på RIASEC ({riasecCode})</p>
+              <p className="text-sm font-medium">Anbefalte studieprogram{riasecCode ? ` basert på RIASEC (${riasecCode})` : ""}</p>
             </div>
             <p className="text-xs text-muted-foreground">
               {gradePoints.totalPoints > 0
@@ -381,7 +381,7 @@ export default function StudierPage() {
           <div className="rounded-xl border bg-primary/5 border-primary/20 p-4">
             <div className="flex items-center gap-2 mb-2">
               <Brain className="h-4 w-4 text-primary" aria-hidden="true" />
-              <p className="text-sm font-medium">Tips basert på din RIASEC-profil ({riasecCode})</p>
+              <p className="text-sm font-medium">Tips{riasecCode ? ` basert på din RIASEC-profil (${riasecCode})` : " for studenter"}</p>
             </div>
             <p className="text-xs text-muted-foreground">
               Disse studietipsene er tilpasset din personlighetstype. {profile ? "" : "Fullfør profilen for enda mer personlige tips."}

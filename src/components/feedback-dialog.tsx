@@ -32,11 +32,18 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFeedback } from "@/hooks/use-feedback";
+import { toast } from "sonner";
 import type {
   TilbakemeldingType,
   TilbakemeldingKilde,
   TilbakemeldingPrioritet,
 } from "@/types/domain";
+
+const TOAST_MELDINGER: Record<TilbakemeldingType, string> = {
+  feil: "Feilrapporten er sendt — takk for hjelpen!",
+  forslag: "Forslaget er sendt — vi setter pris på innspillet!",
+  ros: "Tusen takk for de hyggelige ordene!",
+};
 
 type FeedbackDialogProps = {
   open: boolean;
@@ -144,6 +151,7 @@ export function FeedbackDialog({
     });
 
     if (ok) {
+      toast.success(TOAST_MELDINGER[type]);
       resetForm();
       onOpenChange(false);
     }

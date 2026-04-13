@@ -79,10 +79,10 @@ export default function SoknadsCoachPage() {
     if (!user) return;
     return subscribeToUserProfile(user.uid, setProfile);
   }, [user]);
-  const riasecCode = profile?.riasec ? getRiasecCode(profile.riasec) : "IRS";
+  const riasecCode = profile?.riasec ? getRiasecCode(profile.riasec) : null;
 
   // Live opptaksdata
-  const opptaksdata = useOpptaksdata(myPoints, riasecCode);
+  const opptaksdata = useOpptaksdata(myPoints, riasecCode ?? "");
 
   const [search, setSearch] = useState("");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
